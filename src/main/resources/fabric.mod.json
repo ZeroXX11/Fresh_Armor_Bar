@@ -23,11 +23,7 @@
 		]
 	},
 	"mixins": [
-		"fresh-armor-bar.mixins.json",
-		{
-			"config": "fresh-armor-bar.client.mixins.json",
-			"environment": "client"
-		}
+      "fresh-armor-bar.client.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.18.4",
