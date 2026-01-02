@@ -3,21 +3,17 @@
 	"id": "fresh-armor-bar",
 	"version": "${version}",
 	"name": "Fresh Armor Bar",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Replaces the vanilla armor bar with a custom texture-based HUD!",
 	"authors": [
-		"Me!"
+		"ZeroXXII"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/ZeroXX11/Fresh_Armor_Bar"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/fresh-armor-bar/icon.png",
-	"environment": "*",
+	"environment": "client",
 	"entrypoints": {
-		"main": [
-			"com.fresharmorbar.FreshArmorBar"
-		],
 		"client": [
 			"com.fresharmorbar.FreshArmorBarClient"
 		]
@@ -27,7 +23,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.18.4",
-		"minecraft": "~1.20.1",
+		"minecraft": ">=1.20.1 <1.21",
 		"java": ">=17",
 		"fabric-api": "*"
 	}
