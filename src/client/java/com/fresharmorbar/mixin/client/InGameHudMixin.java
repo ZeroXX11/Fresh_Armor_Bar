@@ -33,8 +33,18 @@ public class InGameHudMixin {
     // strip 27x9: [left | right | full]
     @Unique private static final Identifier BASE_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/base.png");
+    @Unique private static final Identifier LEATHER_STRIP =
+            new Identifier(MODID, "textures/gui/armorbar/leather.png");
+    @Unique private static final Identifier CHAIN_STRIP =
+            new Identifier(MODID, "textures/gui/armorbar/chainmail.png");
+    @Unique private static final Identifier IRON_STRIP =
+            new Identifier(MODID, "textures/gui/armorbar/iron.png");
+    @Unique private static final Identifier GOLD_STRIP =
+            new Identifier(MODID, "textures/gui/armorbar/gold.png");
     @Unique private static final Identifier DIAMOND_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/diamond.png");
+    @Unique private static final Identifier NETHERITE_STRIP =
+            new Identifier(MODID, "textures/gui/armorbar/netherite.png");
 
     // 20 mezzi-pip (10 icone * 2)
     @Unique private final Identifier[] fab$halfStrip = new Identifier[20];
@@ -156,8 +166,12 @@ public class InGameHudMixin {
 
     @Unique
     private Identifier fab$stripForMaterial(ArmorMaterial material) {
-        // per ora: solo diamond speciale, tutto il resto base
+        if (material == ArmorMaterials.LEATHER) return LEATHER_STRIP;
+        if (material == ArmorMaterials.CHAIN) return CHAIN_STRIP;
+        if (material == ArmorMaterials.IRON) return IRON_STRIP;
+        if (material == ArmorMaterials.GOLD) return GOLD_STRIP;
         if (material == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
+        if (material == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
         return BASE_STRIP;
     }
 
