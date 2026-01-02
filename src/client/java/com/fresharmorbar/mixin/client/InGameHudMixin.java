@@ -33,6 +33,8 @@ public class InGameHudMixin {
     // strip 27x9: [left | right | full]
     @Unique private static final Identifier BASE_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/base.png");
+    @Unique private static final Identifier TURTLE_STRIP =
+            new Identifier(MODID, "textures/gui/armorbar/turtle.png");
     @Unique private static final Identifier LEATHER_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/leather.png");
     @Unique private static final Identifier CHAIN_STRIP =
@@ -166,6 +168,7 @@ public class InGameHudMixin {
 
     @Unique
     private Identifier fab$stripForMaterial(ArmorMaterial material) {
+        if (material == ArmorMaterials.TURTLE) return TURTLE_STRIP;
         if (material == ArmorMaterials.LEATHER) return LEATHER_STRIP;
         if (material == ArmorMaterials.CHAIN) return CHAIN_STRIP;
         if (material == ArmorMaterials.IRON) return IRON_STRIP;
