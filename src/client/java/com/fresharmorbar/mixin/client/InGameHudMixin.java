@@ -1,5 +1,6 @@
 package com.fresharmorbar.mixin.client;
 
+import com.fresharmorbar.client.ArmorEnchantOverlay;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -117,6 +118,14 @@ public class InGameHudMixin {
 
         // 3) disegna overlay (full/half-left/half-right)
         fab$drawOverlayRow(ctx, xLeft, s);
+
+        // 4) aggiunge overlay enchant (full/half-left/half-right)
+        ArmorEnchantOverlay.draw(
+                ctx,
+                player,
+                xLeft,
+                s
+        );
     }
 
     @Unique
