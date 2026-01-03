@@ -1,15 +1,13 @@
 package com.fresharmorbar.mixin.client;
 
 import com.fresharmorbar.client.ArmorEnchantOverlay;
+import com.fresharmorbar.client.ArmorHalfIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Arrays;
+
 @Mixin(InGameHud.class)
 public class InGameHudMixin {
 
@@ -27,7 +27,7 @@ public class InGameHudMixin {
 
     @Unique private static final String MODID = "fresh-armor-bar";
 
-    // 9x9 fisso (lo si disegna sempre)
+    // 9x9
     @Unique private static final Identifier EMPTY_TEX =
             new Identifier(MODID, "textures/gui/armorbar/empty.png");
 
@@ -35,30 +35,31 @@ public class InGameHudMixin {
     @Unique private static final Identifier BASE_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/base.png");
     @Unique private static final Identifier TURTLE_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/turtle.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
     @Unique private static final Identifier LEATHER_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/leather.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/leather.png");
     @Unique private static final Identifier CHAIN_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/chainmail.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/chain.png");
     @Unique private static final Identifier IRON_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/iron.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/iron.png");
     @Unique private static final Identifier GOLD_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/gold.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/gold.png");
     @Unique private static final Identifier DIAMOND_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/diamond.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/diamond.png");
     @Unique private static final Identifier NETHERITE_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/netherite.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/netherite.png");
 
-    // 20 mezzi-pip (10 icone * 2)
+    // u coords nella strip 27x9
+    @Unique private static final int U_LEFT  = 0;
+    @Unique private static final int U_RIGHT = 9;
+    @Unique private static final int U_FULL  = 18;
+
+    // buffer riusato
     @Unique private final Identifier[] fab$halfStrip = new Identifier[20];
 
     /**
-     * BLOCCA SOLO le icone armatura VANILLA (e quindi anche quelle modificate da resource-pack).
-     * In InGameHud#renderStatusBars la vanilla fa:
-     * context.drawTexture(ICONS, x, s, 34, 9, 9, 9); // full
-     * context.drawTexture(ICONS, x, s, 25, 9, 9, 9); // half
-     * context.drawTexture(ICONS, x, s, 16, 9, 9, 9); // empty
-     * Intercettiamo QUELLE e non disegniamo nulla.
+     * Blocca SOLO le icone armatura VANILLA (icons.png riga armatura).
+     * Così puoi disegnare il tuo empty+overlay senza doppio rendering.
      */
     @Redirect(
             method = "renderStatusBars",
@@ -68,64 +69,49 @@ public class InGameHudMixin {
             )
     )
     private void fab$hideVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h) {
-        // ci interessa SOLO icons.png (quello delle HUD icons)
-        // e SOLO la riga armatura (v=9) con le 3 sprite (u=16/25/34) 9x9
         if (tex != null
                 && "textures/gui/icons.png".equals(tex.getPath())
                 && v == 9
                 && w == 9 && h == 9
                 && (u == 16 || u == 25 || u == 34)) {
-            return; // non disegnare => resource-pack non appare più dietro
+            return; // non disegnare le icone armatura vanilla
         }
-
-        // tutto il resto resta vanilla
         ctx.drawTexture(tex, x, y, u, v, w, h);
     }
 
-    /**
-     * Disegniamo DOPO la vanilla, sopra.
-     * (Compatibile con Raised perché la Y vanilla è già “quella giusta”.)
-     */
     @Inject(method = "renderStatusBars", at = @At("TAIL"))
-    private void fab$drawArmorBar(DrawContext ctx, CallbackInfo ci) {
+    private void fab$renderArmorBar(DrawContext ctx, CallbackInfo ci) {
         if (client == null || client.player == null) return;
 
         PlayerEntity player = client.player;
-        int armor = player.getArmor(); // 0..20
 
-        // posizione vanilla X
-        int xLeft = this.client.getWindow().getScaledWidth() / 2 - 91;
+        // posizione base vanilla
+        int scaledWidth = client.getWindow().getScaledWidth();
+        int scaledHeight = client.getWindow().getScaledHeight();
+        int xLeft = scaledWidth / 2 - 91;
 
-        // ricostruiamo la Y vanilla "s" come fa renderStatusBars
-        int scaledHeight = this.client.getWindow().getScaledHeight();
+        // logica “altezza” per non sovrapporsi ai cuori (come vanilla)
         int o = scaledHeight - 39;
-
         float maxHealth = player.getMaxHealth();
         int absorption = (int) Math.ceil(player.getAbsorptionAmount());
         int q = (int) Math.ceil(((maxHealth + absorption) / 2.0f) / 10.0f);
         int r = Math.max(10 - (q - 2), 3);
+        int y = o - (q - 1) * r - 10;
 
-        int s = o - (q - 1) * r - 10; // Y barra armatura vanilla
+        // 1) empty row sempre
+        fab$drawEmptyRow(ctx, xLeft, y);
 
-        // 1) sempre disegna gli empty fissi (10 icone)
-        fab$drawEmptyRow(ctx, xLeft, s);
+        // se armor 0, fine (mostri solo empty)
+        if (player.getArmor() <= 0) return;
 
-        // se non hai armatura, finito: rimangono solo gli empty
-        if (armor <= 0) return;
+        // 2) costruisci i 20 half del MATERIALE (senza duplicare logica)
+        fab$buildMaterialHalves(player);
 
-        // 2) costruisci i 20 mezzi-pip con ordine: testa -> petto -> gambe -> piedi
-        fab$buildHalfStrips(player);
+        // 3) disegna overlay materiale
+        fab$drawMaterialRow(ctx, xLeft, y);
 
-        // 3) disegna overlay (full/half-left/half-right)
-        fab$drawOverlayRow(ctx, xLeft, s);
-
-        // 4) aggiunge overlay enchant (full/half-left/half-right)
-        ArmorEnchantOverlay.draw(
-                ctx,
-                player,
-                xLeft,
-                s
-        );
+        // 4) overlay enchant separato
+        ArmorEnchantOverlay.draw(ctx, player, xLeft, y);
     }
 
     @Unique
@@ -136,85 +122,49 @@ public class InGameHudMixin {
         }
     }
 
-    /**
-     * Riempie i 20 mezzi-pip in ordine: HEAD -> CHEST -> LEGS -> FEET.
-     * Ogni "half" = 1 punto armatura.
-     */
     @Unique
-    private void fab$buildHalfStrips(PlayerEntity player) {
+    private void fab$buildMaterialHalves(PlayerEntity player) {
+        Arrays.fill(fab$halfStrip, null);
 
-        // lascia null dove non c'è armatura
-        for (int i = 0; i < 20; i++) fab$halfStrip[i] = null;
-
-        int half = 0;
-
-        EquipmentSlot[] order = new EquipmentSlot[] {
-                EquipmentSlot.HEAD,
-                EquipmentSlot.CHEST,
-                EquipmentSlot.LEGS,
-                EquipmentSlot.FEET
-        };
-
-        for (EquipmentSlot slot : order) {
-            if (half >= 20) break;
-
-            ItemStack stack = player.getEquippedStack(slot);
-            if (stack.isEmpty()) continue;
-
-            if (!(stack.getItem() instanceof ArmorItem armorItem)) continue;
-
-            int protection = armorItem.getProtection(); // es: elmo diamond = 3
-            if (protection <= 0) continue;
-
-            Identifier strip = fab$stripForMaterial(armorItem.getMaterial());
-
-            // 1 punto armatura = 1 half (2 half = 1 icona piena)
-            for (int k = 0; k < protection && half < 20; k++) {
-                fab$halfStrip[half++] = strip;
-            }
-        }
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) ->
+                fab$halfStrip[idx] = fab$stripForMaterial(armor.getMaterial())
+        );
     }
 
     @Unique
     private Identifier fab$stripForMaterial(ArmorMaterial material) {
-        if (material == ArmorMaterials.TURTLE) return TURTLE_STRIP;
-        if (material == ArmorMaterials.LEATHER) return LEATHER_STRIP;
-        if (material == ArmorMaterials.CHAIN) return CHAIN_STRIP;
-        if (material == ArmorMaterials.IRON) return IRON_STRIP;
-        if (material == ArmorMaterials.GOLD) return GOLD_STRIP;
-        if (material == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
-        if (material == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
+        if (material instanceof ArmorMaterials m) {
+            return switch (m) {
+                case TURTLE    -> TURTLE_STRIP;
+                case LEATHER   -> LEATHER_STRIP;
+                case CHAIN     -> CHAIN_STRIP;
+                case IRON      -> IRON_STRIP;
+                case GOLD      -> GOLD_STRIP;
+                case DIAMOND   -> DIAMOND_STRIP;
+                case NETHERITE -> NETHERITE_STRIP;
+            };
+        }
+        // modded materials fallback
         return BASE_STRIP;
     }
 
-    /**
-     * Disegna 10 icone:
-     * - se metà sinistra e destra hanno la stessa strip => FULL (u=18)
-     * - altrimenti disegna LEFT (u=0) e RIGHT (u=9)
-     */
     @Unique
-    private void fab$drawOverlayRow(DrawContext ctx, int xLeft, int y) {
+    private void fab$drawMaterialRow(DrawContext ctx, int xLeft, int y) {
         for (int slot = 0; slot < 10; slot++) {
             int iconX = xLeft + slot * 8;
 
-            Identifier leftStrip  = fab$halfStrip[slot * 2];
-            Identifier rightStrip = fab$halfStrip[slot * 2 + 1];
+            Identifier left = fab$halfStrip[slot * 2];
+            Identifier right = fab$halfStrip[slot * 2 + 1];
 
-            if (leftStrip == null && rightStrip == null) continue;
+            if (left == null && right == null) continue;
 
-            if (leftStrip != null && leftStrip.equals(rightStrip)) {
-                // FULL: u=18
-                ctx.drawTexture(leftStrip, iconX, y, 18, 0, 9, 9, 27, 9);
-            } else {
-                if (leftStrip != null) {
-                    // LEFT: u=0
-                    ctx.drawTexture(leftStrip, iconX, y, 0, 0, 9, 9, 27, 9);
-                }
-                if (rightStrip != null) {
-                    // RIGHT: u=9
-                    ctx.drawTexture(rightStrip, iconX, y, 9, 0, 9, 9, 27, 9);
-                }
+            if (left != null && left.equals(right)) {
+                ctx.drawTexture(left, iconX, y, U_FULL, 0, 9, 9, 27, 9);
+                continue;
             }
+
+            if (left != null)  ctx.drawTexture(left,  iconX, y, U_LEFT,  0, 9, 9, 27, 9);
+            if (right != null) ctx.drawTexture(right, iconX, y, U_RIGHT, 0, 9, 9, 27, 9);
         }
     }
 }
