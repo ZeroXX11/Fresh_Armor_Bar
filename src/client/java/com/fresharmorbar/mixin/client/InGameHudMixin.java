@@ -39,7 +39,7 @@ public class InGameHudMixin {
     @Unique private static final Identifier LEATHER_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/strips/leather.png");
     @Unique private static final Identifier CHAIN_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/chain.png");
+            new Identifier(MODID, "textures/gui/armorbar/strips/chainmail.png");
     @Unique private static final Identifier IRON_STRIP =
             new Identifier(MODID, "textures/gui/armorbar/strips/iron.png");
     @Unique private static final Identifier GOLD_STRIP =

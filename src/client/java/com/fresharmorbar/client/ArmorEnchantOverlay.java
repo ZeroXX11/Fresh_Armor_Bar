@@ -23,7 +23,7 @@ public final class ArmorEnchantOverlay {
     private static final int U_FULL  = 18;
 
     // cooldown: parte DOPO che l’animazione finisce
-    private static final long INTERVAL_MS = 6_000;
+    private static final long INTERVAL_MS = 4_000;
 
     // Sprite sheet 27x180 = 20 frame da 27x9
     private static final int TEX_W = 27;
