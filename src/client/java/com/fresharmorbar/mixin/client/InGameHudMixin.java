@@ -9,6 +9,7 @@ import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,25 +31,25 @@ public class InGameHudMixin {
 
     // 9x9
     @Unique private static final Identifier EMPTY_TEX =
-            new Identifier(MODID, "textures/gui/armorbar/empty.png");
+            Identifier.of(MODID, "textures/gui/armorbar/empty.png");
 
     // strip 27x9: [left | right | full]
     @Unique private static final Identifier BASE_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/base.png");
+            Identifier.of(MODID, "textures/gui/armorbar/base.png");
     @Unique private static final Identifier TURTLE_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/turtle.png");
     @Unique private static final Identifier LEATHER_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/leather.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/leather.png");
     @Unique private static final Identifier CHAIN_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/chainmail.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/chainmail.png");
     @Unique private static final Identifier IRON_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/iron.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/iron.png");
     @Unique private static final Identifier GOLD_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/gold.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/gold.png");
     @Unique private static final Identifier DIAMOND_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/diamond.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/diamond.png");
     @Unique private static final Identifier NETHERITE_STRIP =
-            new Identifier(MODID, "textures/gui/armorbar/strips/netherite.png");
+            Identifier.of(MODID, "textures/gui/armorbar/strips/netherite.png");
 
     // u coords nella strip 27x9
     @Unique private static final int U_LEFT  = 0;
@@ -136,18 +137,15 @@ public class InGameHudMixin {
     }
 
     @Unique
-    private Identifier fab$stripForMaterial(ArmorMaterial material) {
-        if (material instanceof ArmorMaterials m) {
-            return switch (m) {
-                case TURTLE    -> TURTLE_STRIP;
-                case LEATHER   -> LEATHER_STRIP;
-                case CHAIN     -> CHAIN_STRIP;
-                case IRON      -> IRON_STRIP;
-                case GOLD      -> GOLD_STRIP;
-                case DIAMOND   -> DIAMOND_STRIP;
-                case NETHERITE -> NETHERITE_STRIP;
-            };
-        }
+    private Identifier fab$stripForMaterial(RegistryEntry<ArmorMaterial> material) {
+        if (material == ArmorMaterials.TURTLE)    return TURTLE_STRIP;
+        if (material == ArmorMaterials.LEATHER)   return LEATHER_STRIP;
+        if (material == ArmorMaterials.CHAIN)     return CHAIN_STRIP;
+        if (material == ArmorMaterials.IRON)      return IRON_STRIP;
+        if (material == ArmorMaterials.GOLD)      return GOLD_STRIP;
+        if (material == ArmorMaterials.DIAMOND)   return DIAMOND_STRIP;
+        if (material == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
+
         // modded materials fallback
         return BASE_STRIP;
     }
