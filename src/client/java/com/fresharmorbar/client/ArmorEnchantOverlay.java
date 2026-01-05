@@ -11,10 +11,10 @@ public final class ArmorEnchantOverlay {
     private static final String MODID = "fresh-armor-bar";
 
     private static final Identifier ENCH_COLOR =
-            new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_color.png");
+            Identifier.of(MODID, "textures/gui/armorbar/overlays/enchant/ench_color.png");
 
     private static final Identifier ENCH_ANIM =
-            new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_anim.png");
+            Identifier.of(MODID, "textures/gui/armorbar/overlays/enchant/ench_anim.png");
 
     private static final boolean[] ENCH_HALF = new boolean[20];
 

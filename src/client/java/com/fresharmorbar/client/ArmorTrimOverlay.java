@@ -1,6 +1,7 @@
 package com.fresharmorbar.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.trim.ArmorTrim;
@@ -14,10 +15,10 @@ public final class ArmorTrimOverlay {
     private static final String MODID = "fresh-armor-bar";
 
     private static final Identifier TRIM_MASK =
-            new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_mask.png");
+            Identifier.of(MODID, "textures/gui/armorbar/overlays/trim/trim_mask.png");
 
     private static final Identifier TRIM_SHAD =
-            new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_shad.png");
+            Identifier.of(MODID, "textures/gui/armorbar/overlays/trim/trim_shad.png");
 
     private static final int TEX_W = 27;
     private static final int TEX_H = 9;
@@ -72,17 +73,14 @@ public final class ArmorTrimOverlay {
      * @return true se almeno un half ha un trim (quindi va disegnato qualcosa)
      */
     private static boolean buildTrimHalves(PlayerEntity player) {
-        var registryManager = player.getWorld().getRegistryManager();
 
         final boolean[] any = { false };
 
         ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
-            var opt = ArmorTrim.getTrim(registryManager, stack);
-            if (opt.isEmpty()) return;
+            ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
+            if (trim == null) return;
 
-            ArmorTrim trim = opt.get();
             ArmorTrimMaterial mat = trim.getMaterial().value();
-
             TRIM_RGB[idx] = rgbForAssetName(mat.assetName());
             any[0] = true;
         });
