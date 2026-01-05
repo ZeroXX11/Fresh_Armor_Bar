@@ -11,6 +11,7 @@ import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
+import com.mojang.blaze3d.systems.RenderSystem;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -91,11 +92,20 @@ public class InGameHudMixin {
         int r = Math.max(10 - (q - 2), 3);
         int y = o - (q - 1) * r - 10;
 
+        // dato che si cancella renderArmor vanilla, si ripristina lo stato di render per le trasparenze
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
         // 1) Empty row sempre
         fab$drawEmptyRow(ctx, xLeft, y);
 
         // se armor 0, fine (mostri solo empty)
-        if (player.getArmor() <= 0) return;
+        if (player.getArmor() <= 0) {
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            RenderSystem.disableBlend();
+            return;
+        }
 
         // 2) costruisci i 20 half del MATERIALE (senza duplicare logica)
         fab$buildMaterialHalves(player);
@@ -106,8 +116,15 @@ public class InGameHudMixin {
         // 4) Trim overlay
         ArmorTrimOverlay.draw(ctx, player, xLeft, y);
 
+        // Importante: il trim spesso usa setShaderColor -> reset prima dell’enchant
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
         // 5) Enchant overlay
         ArmorEnchantOverlay.draw(ctx, player, xLeft, y);
+
+        // lascia lo stato pulito per il resto dell’HUD
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.disableBlend();
     }
 
     @Unique
