@@ -105,16 +105,16 @@ public final class ArmorTrimOverlay {
 
     private static int rgbForAssetName(String assetName) {
         return switch (assetName) {
-            case "quartz"    -> 0xE0D8C2;
-            case "iron"      -> 0x6E7575;
+            case "quartz"    -> 0xEFECEA;
+            case "iron"      -> 0xC3CFD1;
             case "netherite" -> 0x3A353B;
             case "redstone"  -> 0xE32008;
             case "copper"    -> 0xE0806B;
-            case "gold"      -> 0xC09A29;
+            case "gold"      -> 0xE9D63E;
             case "emerald"   -> 0x2BBE5A;
             case "diamond"   -> 0x45D6D1;
-            case "lapis"     -> 0x2C4AA6;
-            case "amethyst"  -> 0x9A5CC6;
+            case "lapis"     -> 0x1C4C9A;
+            case "amethyst"  -> 0xC78DF0;
             default          -> 0xFFFFFF; // fallback per modded trim materials
         };
     }
