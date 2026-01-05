@@ -17,7 +17,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Arrays;
@@ -63,22 +62,14 @@ public class InGameHudMixin {
      * Blocca SOLO le icone armatura VANILLA (icons.png riga armatura).
      * Così puoi disegnare il tuo empty+overlay senza doppio rendering.
      */
-    @Redirect(
-            method = "renderStatusBars",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIIIII)V"
-            )
-    )
-    private void fab$hideVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h) {
-        if (tex != null
-                && "textures/gui/icons.png".equals(tex.getPath())
-                && v == 9
-                && w == 9 && h == 9
-                && (u == 16 || u == 25 || u == 34)) {
-            return; // non disegnare le icone armatura vanilla
-        }
-        ctx.drawTexture(tex, x, y, u, v, w, h);
+    @Inject(method = "renderArmor", at = @At("HEAD"), cancellable = true)
+    private static void fab$cancelVanillaArmor(
+            DrawContext ctx,
+            PlayerEntity player,
+            int int2, int int3, int int4, int x,
+            CallbackInfo ci
+    ) {
+        ci.cancel();
     }
 
     @Inject(method = "renderStatusBars", at = @At("TAIL"))
