@@ -1,6 +1,7 @@
 package com.fresharmorbar.mixin.client;
 
 import com.fresharmorbar.client.ArmorEnchantOverlay;
+import com.fresharmorbar.client.ArmorTrimOverlay;
 import com.fresharmorbar.client.ArmorHalfIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -98,7 +99,7 @@ public class InGameHudMixin {
         int r = Math.max(10 - (q - 2), 3);
         int y = o - (q - 1) * r - 10;
 
-        // 1) empty row sempre
+        // 1) Empty row sempre
         fab$drawEmptyRow(ctx, xLeft, y);
 
         // se armor 0, fine (mostri solo empty)
@@ -107,10 +108,13 @@ public class InGameHudMixin {
         // 2) costruisci i 20 half del MATERIALE (senza duplicare logica)
         fab$buildMaterialHalves(player);
 
-        // 3) disegna overlay materiale
+        // 3) Material overlay
         fab$drawMaterialRow(ctx, xLeft, y);
 
-        // 4) overlay enchant separato
+        // 4) Trim overlay
+        ArmorTrimOverlay.draw(ctx, player, xLeft, y);
+
+        // 5) Enchant overlay
         ArmorEnchantOverlay.draw(ctx, player, xLeft, y);
     }
 
