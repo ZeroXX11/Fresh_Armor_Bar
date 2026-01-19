@@ -46,7 +46,7 @@ public final class ArmorEnchantOverlay {
     public static void draw(DrawContext ctx, PlayerEntity player, int xLeft, int y) {
         // 1) calcola half enchantati
         Arrays.fill(ENCH_HALF, false);
-        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) ->
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack, equip) ->
                 ENCH_HALF[idx] = stack.hasEnchantments()
         );
 

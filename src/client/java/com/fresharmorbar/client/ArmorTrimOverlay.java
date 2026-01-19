@@ -7,6 +7,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.equipment.trim.ArmorTrim;
 import net.minecraft.item.equipment.trim.ArmorTrimMaterial;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
@@ -45,6 +46,12 @@ public final class ArmorTrimOverlay {
             "emerald",
             "gold"
     );
+
+    private static String trimMaterialId(RegistryEntry<ArmorTrimMaterial> entry) {
+        return entry.getKey()
+                .map(k -> k.getValue().getPath()) // "diamond", "gold", ...
+                .orElse("unknown");
+    }
 
     private ArmorTrimOverlay() {}
 
@@ -93,13 +100,11 @@ public final class ArmorTrimOverlay {
 
         final boolean[] any = { false };
 
-        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack, equip) -> {
             ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
             if (trim == null) return;
 
-            ArmorTrimMaterial mat = trim.material().value();
-
-            String asset = mat.assetName();
+            String asset = trimMaterialId(trim.material());
 
             TRIM_RGB[idx] = rgbForAssetName(asset);
             TRIM_GLOW_HALF[idx] = GLOW_TRIMS.contains(asset);
@@ -129,13 +134,11 @@ public final class ArmorTrimOverlay {
         Arrays.fill(outRgb, NO_TRIM);
         Arrays.fill(outGlow, false);
 
-        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack, equip) -> {
             ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
             if (trim == null) return;
 
-            ArmorTrimMaterial mat = trim.material().value();
-
-            String asset = mat.assetName();
+            String asset = trimMaterialId(trim.material());
             outRgb[idx] = rgbForAssetName(asset);
             outGlow[idx] = GLOW_TRIMS.contains(asset);
         });

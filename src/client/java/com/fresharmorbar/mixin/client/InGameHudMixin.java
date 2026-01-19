@@ -13,7 +13,9 @@ import net.minecraft.item.equipment.ArmorMaterials;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -99,8 +101,13 @@ public class InGameHudMixin {
         int y = o - (q - 1) * r - 10;
 
         // dato che si cancella renderArmor vanilla, si ripristina lo stato di render per le trasparenze
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        GlStateManager._enableBlend();
+        GlStateManager._blendFuncSeparate(
+                GL11.GL_SRC_ALPHA,
+                GL11.GL_ONE_MINUS_SRC_ALPHA,
+                GL11.GL_ONE,
+                GL11.GL_ONE_MINUS_SRC_ALPHA
+        );
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         // 1) Empty row sempre
@@ -109,7 +116,7 @@ public class InGameHudMixin {
         // se armor 0, fine (mostri solo empty)
         if (player.getArmor() <= 0) {
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            RenderSystem.disableBlend();
+            GlStateManager._disableBlend();
             return;
         }
 
@@ -130,7 +137,7 @@ public class InGameHudMixin {
 
         // lascia lo stato pulito per il resto dell’HUD
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        RenderSystem.disableBlend();
+        GlStateManager._disableBlend();
     }
 
     @Unique
@@ -145,7 +152,7 @@ public class InGameHudMixin {
     private void fab$buildMaterialHalves(PlayerEntity player) {
         Arrays.fill(fab$halfStrip, null);
 
-        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack, equip) -> {
             ArmorMaterial mat = fab$materialFromStack(stack);
             fab$halfStrip[idx] = (mat != null) ? fab$stripForMaterial(mat) : BASE_STRIP;
         });
