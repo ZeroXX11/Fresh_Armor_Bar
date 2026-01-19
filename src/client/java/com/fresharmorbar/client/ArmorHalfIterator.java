@@ -1,6 +1,9 @@
 package com.fresharmorbar.client;
 
+import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
@@ -34,7 +37,11 @@ public final class ArmorHalfIterator {
             if (stack.isEmpty()) continue;
             if (!(stack.getItem() instanceof ArmorItem armor)) continue;
 
-            int protection = armor.getProtection();
+            int[] prot = {0};
+            stack.applyAttributeModifier(AttributeModifierSlot.forEquipmentSlot(slot), (a, m) -> {
+                if (a == EntityAttributes.ARMOR && m.operation() == EntityAttributeModifier.Operation.ADD_VALUE) prot[0] += (int) m.value();
+            });
+            int protection = prot[0];
             if (protection <= 0) continue;
 
             for (int i = 0; i < protection && half < 20; i++) {

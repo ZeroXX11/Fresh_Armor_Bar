@@ -1,6 +1,7 @@
 package com.fresharmorbar.client;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 
@@ -99,7 +100,7 @@ public final class ArmorEnchantOverlay {
             else u = U_RIGHT;
 
             // Base sempre
-            ctx.drawTexture(ENCH_COLOR, iconX, y, u, 0, 9, 9, TEX_W, COLOR_TEX_H);
+            ctx.drawTexture(RenderLayer::getGuiTextured, ENCH_COLOR, iconX, y, u, 0f, 9, 9, TEX_W, COLOR_TEX_H);
 
             // Anim sopra (se attiva)
             if (animating) {
@@ -107,7 +108,7 @@ public final class ArmorEnchantOverlay {
                 if (frame >= FRAME_COUNT) frame = FRAME_COUNT - 1;
 
                 int vAnim = frame * FRAME_H;
-                ctx.drawTexture(ENCH_ANIM, iconX, y, u, vAnim, 9, 9, TEX_W, ANIM_TEX_H);
+                ctx.drawTexture(RenderLayer::getGuiTextured, ENCH_ANIM, iconX, y, u, vAnim, 9, 9, TEX_W, ANIM_TEX_H);
             }
         }
     }
