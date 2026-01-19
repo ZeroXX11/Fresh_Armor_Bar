@@ -1,11 +1,12 @@
 package com.fresharmorbar.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.trim.ArmorTrim;
-import net.minecraft.item.trim.ArmorTrimMaterial;
+import net.minecraft.item.equipment.trim.ArmorTrim;
+import net.minecraft.item.equipment.trim.ArmorTrimMaterial;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
@@ -80,7 +81,7 @@ public final class ArmorTrimOverlay {
             ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
             if (trim == null) return;
 
-            ArmorTrimMaterial mat = trim.getMaterial().value();
+            ArmorTrimMaterial mat = trim.material().value();
             TRIM_RGB[idx] = rgbForAssetName(mat.assetName());
             any[0] = true;
         });
@@ -94,11 +95,11 @@ public final class ArmorTrimOverlay {
         float b = ( rgb        & 0xFF) / 255f;
 
         RenderSystem.setShaderColor(r, g, b, 1f);
-        ctx.drawTexture(TRIM_MASK, x, y, u, 0, 9, 9, TEX_W, TEX_H);
+        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_MASK, x, y, u, 0f, 9, 9, TEX_W, TEX_H);
 
         // --- SHADOW (non tintata) ---
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        ctx.drawTexture(TRIM_SHAD, x, y, u, 0, 9, 9, TEX_W, TEX_H);
+        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_SHAD, x, y, u, 0f, 9, 9, TEX_W, TEX_H);
     }
 
     private static int rgbForAssetName(String assetName) {
