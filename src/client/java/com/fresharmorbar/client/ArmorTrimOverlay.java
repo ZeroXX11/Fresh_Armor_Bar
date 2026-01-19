@@ -99,6 +99,17 @@ public final class ArmorTrimOverlay {
         ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_SHAD, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, 0xFFFFFFFF);
     }
 
+    public static void buildTrimRgb(PlayerEntity player, int[] out) {
+        Arrays.fill(out, NO_TRIM);
+
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+            ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
+            if (trim == null) return;
+
+            ArmorTrimMaterial mat = trim.material().value();
+            out[idx] = rgbForAssetName(mat.assetName());
+        });
+    }
 
     private static int rgbForAssetName(String assetName) {
         return switch (assetName) {

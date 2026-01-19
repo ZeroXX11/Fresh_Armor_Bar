@@ -61,6 +61,9 @@ public class InGameHudMixin {
     // buffer riusato
     @Unique private final Identifier[] fab$halfStrip = new Identifier[20];
 
+    @Unique
+    private final int[] fab$halfTrimRgb = new int[20];
+
     /**
      * Blocca SOLO le icone armatura VANILLA (icons.png riga armatura).
      * Così puoi disegnare il tuo empty+overlay senza doppio rendering.
@@ -145,6 +148,8 @@ public class InGameHudMixin {
             ArmorMaterial mat = fab$materialFromStack(stack);
             fab$halfStrip[idx] = (mat != null) ? fab$stripForMaterial(mat) : BASE_STRIP;
         });
+
+        ArmorTrimOverlay.buildTrimRgb(player, fab$halfTrimRgb);
     }
 
     @Unique
@@ -176,24 +181,35 @@ public class InGameHudMixin {
         return BASE_STRIP;
     }
 
-
     @Unique
     private void fab$drawMaterialRow(DrawContext ctx, int xLeft, int y) {
         for (int slot = 0; slot < 10; slot++) {
             int iconX = xLeft + slot * 8;
 
-            Identifier left = fab$halfStrip[slot * 2];
-            Identifier right = fab$halfStrip[slot * 2 + 1];
+            int li = slot * 2;
+            int ri = li + 1;
+
+            Identifier left  = fab$halfStrip[li];
+            Identifier right = fab$halfStrip[ri];
+
+            int leftTrim  = fab$halfTrimRgb[li];
+            int rightTrim = fab$halfTrimRgb[ri];
 
             if (left == null && right == null) continue;
 
-            if (left != null && left.equals(right)) {
-                ctx.drawTexture(RenderLayer::getGuiTextured, left, iconX, y, U_FULL, 0f, 9, 9, 27, 9);
+            boolean sameMat  = (left != null && left.equals(right));
+            boolean sameTrim = (leftTrim == rightTrim);
+
+            // FULL solo se stesso materiale E stesso trim
+            if (sameMat && sameTrim) {
+                ctx.drawTexture(RenderLayer::getGuiTextured, left, iconX, y, (float) U_FULL, 0f, 9, 9, 27, 9);
                 continue;
             }
 
-            if (left != null)  ctx.drawTexture(RenderLayer::getGuiTextured, left,  iconX, y, U_LEFT,  0f, 9, 9, 27, 9);
-            if (right != null) ctx.drawTexture(RenderLayer::getGuiTextured, right, iconX, y, U_RIGHT, 0f, 9, 9, 27, 9);
+            // split
+            if (left != null)  ctx.drawTexture(RenderLayer::getGuiTextured, left,  iconX, y, (float) U_LEFT,  0f, 9, 9, 27, 9);
+            if (right != null) ctx.drawTexture(RenderLayer::getGuiTextured, right, iconX, y, (float) U_RIGHT, 0f, 9, 9, 27, 9);
         }
     }
+
 }
