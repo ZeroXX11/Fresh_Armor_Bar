@@ -5,6 +5,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.item.trim.ArmorTrimMaterial;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
@@ -102,6 +104,32 @@ public final class ArmorTrimOverlay {
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         ctx.drawTexture(TRIM_SHAD, x, y, u, 0, 9, 9, TEX_W, TEX_H);
     }
+
+    public static void buildTrimRgb(PlayerEntity player, int[] out) {
+        Arrays.fill(out, NO_TRIM);
+
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+            if (stack == null || stack.isEmpty()) return;
+
+            NbtCompound nbt = stack.getNbt();
+            if (nbt == null) return;
+
+            // Trim data is stored in the "Trim" compound in 1.20.x
+            if (!nbt.contains("Trim", NbtElement.COMPOUND_TYPE)) return;
+            NbtCompound trim = nbt.getCompound("Trim");
+
+            // "material" is an id string like "minecraft:emerald"
+            if (!trim.contains("material", NbtElement.STRING_TYPE)) return;
+            String materialId = trim.getString("material");
+
+            // take the path ("emerald") to reuse your rgbForAssetName mapping
+            Identifier id = Identifier.tryParse(materialId);
+            if (id == null) return;
+
+            out[idx] = rgbForAssetName(id.getPath());
+        });
+    }
+
 
     private static int rgbForAssetName(String assetName) {
         return switch (assetName) {

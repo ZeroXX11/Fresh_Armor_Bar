@@ -58,6 +58,8 @@ public class InGameHudMixin {
     // buffer riusato
     @Unique private final Identifier[] fab$halfStrip = new Identifier[20];
 
+    @Unique private final int[] fab$halfTrimRgb = new int[20];
+
     /**
      * Blocca SOLO le icone armatura VANILLA (icons.png riga armatura).
      * Così puoi disegnare il tuo empty+overlay senza doppio rendering.
@@ -133,6 +135,8 @@ public class InGameHudMixin {
         ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) ->
                 fab$halfStrip[idx] = fab$stripForMaterial(armor.getMaterial())
         );
+
+        ArmorTrimOverlay.buildTrimRgb(player, fab$halfTrimRgb);
     }
 
     @Unique
@@ -157,18 +161,30 @@ public class InGameHudMixin {
         for (int slot = 0; slot < 10; slot++) {
             int iconX = xLeft + slot * 8;
 
-            Identifier left = fab$halfStrip[slot * 2];
-            Identifier right = fab$halfStrip[slot * 2 + 1];
+            int li = slot * 2;
+            int ri = li + 1;
+
+            Identifier left  = fab$halfStrip[li];
+            Identifier right = fab$halfStrip[ri];
+
+            int leftTrim  = fab$halfTrimRgb[li];
+            int rightTrim = fab$halfTrimRgb[ri];
 
             if (left == null && right == null) continue;
 
-            if (left != null && left.equals(right)) {
+            boolean sameMat  = (left != null && left.equals(right));
+            boolean sameTrim = (leftTrim == rightTrim);
+
+            // FULL solo se stesso materiale E stesso trim
+            if (sameMat && sameTrim) {
                 ctx.drawTexture(left, iconX, y, U_FULL, 0, 9, 9, 27, 9);
                 continue;
             }
 
+            // split
             if (left != null)  ctx.drawTexture(left,  iconX, y, U_LEFT,  0, 9, 9, 27, 9);
             if (right != null) ctx.drawTexture(right, iconX, y, U_RIGHT, 0, 9, 9, 27, 9);
         }
     }
+
 }
