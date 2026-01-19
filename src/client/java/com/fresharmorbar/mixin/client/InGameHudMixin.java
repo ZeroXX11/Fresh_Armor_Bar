@@ -58,6 +58,7 @@ public class InGameHudMixin {
 
     // buffer riusato
     @Unique private final Identifier[] fab$halfStrip = new Identifier[20];
+    @Unique private final boolean[] fab$halfTrimGlow = new boolean[20];
 
     @Unique
     private final int[] fab$halfTrimRgb = new int[20];
@@ -146,7 +147,7 @@ public class InGameHudMixin {
                 fab$halfStrip[idx] = fab$stripForMaterial(armor.getMaterial())
         );
 
-        ArmorTrimOverlay.buildTrimRgb(player, fab$halfTrimRgb);
+        ArmorTrimOverlay.buildTrimData(player, fab$halfTrimRgb, fab$halfTrimGlow);
     }
 
     @Unique
