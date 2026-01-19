@@ -6,10 +6,12 @@ import com.fresharmorbar.client.ArmorHalfIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ArmorMaterial;
-import net.minecraft.item.ArmorMaterials;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.item.equipment.ArmorMaterial;
+import net.minecraft.item.equipment.ArmorMaterials;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.spongepowered.asm.mixin.Final;
@@ -131,7 +133,7 @@ public class InGameHudMixin {
     private void fab$drawEmptyRow(DrawContext ctx, int xLeft, int y) {
         for (int slot = 0; slot < 10; slot++) {
             int iconX = xLeft + slot * 8;
-            ctx.drawTexture(EMPTY_TEX, iconX, y, 0, 0, 9, 9, 9, 9);
+            ctx.drawTexture(RenderLayer::getGuiTextured, EMPTY_TEX, iconX, y, 0f, 0f, 9, 9, 9, 9);
         }
     }
 
@@ -139,24 +141,41 @@ public class InGameHudMixin {
     private void fab$buildMaterialHalves(PlayerEntity player) {
         Arrays.fill(fab$halfStrip, null);
 
-        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) ->
-                fab$halfStrip[idx] = fab$stripForMaterial(armor.getMaterial())
-        );
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+            ArmorMaterial mat = fab$materialFromStack(stack);
+            fab$halfStrip[idx] = (mat != null) ? fab$stripForMaterial(mat) : BASE_STRIP;
+        });
     }
 
     @Unique
-    private Identifier fab$stripForMaterial(RegistryEntry<ArmorMaterial> material) {
-        if (material == ArmorMaterials.TURTLE)    return TURTLE_STRIP;
-        if (material == ArmorMaterials.LEATHER)   return LEATHER_STRIP;
-        if (material == ArmorMaterials.CHAIN)     return CHAIN_STRIP;
-        if (material == ArmorMaterials.IRON)      return IRON_STRIP;
-        if (material == ArmorMaterials.GOLD)      return GOLD_STRIP;
-        if (material == ArmorMaterials.DIAMOND)   return DIAMOND_STRIP;
-        if (material == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
+    private ArmorMaterial fab$materialFromStack(ItemStack stack) {
+        Identifier id = Registries.ITEM.getId(stack.getItem());
+        String p = id.getPath();
 
-        // modded materials fallback
+        if (p.contains("turtle"))    return ArmorMaterials.TURTLE_SCUTE;
+        if (p.contains("leather"))   return ArmorMaterials.LEATHER;
+        if (p.contains("chain"))     return ArmorMaterials.CHAIN;
+        if (p.contains("iron"))      return ArmorMaterials.IRON;
+        if (p.contains("gold"))      return ArmorMaterials.GOLD;
+        if (p.contains("diamond"))   return ArmorMaterials.DIAMOND;
+        if (p.contains("netherite")) return ArmorMaterials.NETHERITE;
+
+        return null; // modded fallback
+    }
+
+    @Unique
+    private Identifier fab$stripForMaterial(ArmorMaterial m) {
+        if (m == ArmorMaterials.TURTLE_SCUTE) return TURTLE_STRIP;
+        if (m == ArmorMaterials.LEATHER)      return LEATHER_STRIP;
+        if (m == ArmorMaterials.CHAIN)        return CHAIN_STRIP;
+        if (m == ArmorMaterials.IRON)         return IRON_STRIP;
+        if (m == ArmorMaterials.GOLD)         return GOLD_STRIP;
+        if (m == ArmorMaterials.DIAMOND)      return DIAMOND_STRIP;
+        if (m == ArmorMaterials.NETHERITE)    return NETHERITE_STRIP;
+
         return BASE_STRIP;
     }
+
 
     @Unique
     private void fab$drawMaterialRow(DrawContext ctx, int xLeft, int y) {
@@ -169,12 +188,12 @@ public class InGameHudMixin {
             if (left == null && right == null) continue;
 
             if (left != null && left.equals(right)) {
-                ctx.drawTexture(left, iconX, y, U_FULL, 0, 9, 9, 27, 9);
+                ctx.drawTexture(RenderLayer::getGuiTextured, left, iconX, y, U_FULL, 0f, 9, 9, 27, 9);
                 continue;
             }
 
-            if (left != null)  ctx.drawTexture(left,  iconX, y, U_LEFT,  0, 9, 9, 27, 9);
-            if (right != null) ctx.drawTexture(right, iconX, y, U_RIGHT, 0, 9, 9, 27, 9);
+            if (left != null)  ctx.drawTexture(RenderLayer::getGuiTextured, left,  iconX, y, U_LEFT,  0f, 9, 9, 27, 9);
+            if (right != null) ctx.drawTexture(RenderLayer::getGuiTextured, right, iconX, y, U_RIGHT, 0f, 9, 9, 27, 9);
         }
     }
 }
