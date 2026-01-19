@@ -101,6 +101,18 @@ public final class ArmorTrimOverlay {
         ctx.drawTexture(TRIM_SHAD, x, y, u, 0, 9, 9, TEX_W, TEX_H);
     }
 
+    public static void buildTrimRgb(PlayerEntity player, int[] out) {
+        Arrays.fill(out, NO_TRIM);
+
+        ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
+            ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
+            if (trim == null) return;
+
+            ArmorTrimMaterial mat = trim.getMaterial().value();
+            out[idx] = rgbForAssetName(mat.assetName());
+        });
+    }
+
     private static int rgbForAssetName(String assetName) {
         return switch (assetName) {
             case "quartz"    -> 0xEFECEA;
