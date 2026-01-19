@@ -10,6 +10,7 @@ import net.minecraft.item.equipment.trim.ArmorTrimMaterial;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
+import java.util.Set;
 
 public final class ArmorTrimOverlay {
 
@@ -20,6 +21,9 @@ public final class ArmorTrimOverlay {
 
     private static final Identifier TRIM_SHAD =
             Identifier.of(MODID, "textures/gui/armorbar/overlays/trim/trim_shad.png");
+
+    private static final Identifier TRIM_GLOW_TEX =
+            Identifier.of(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
 
     private static final int TEX_W = 27;
     private static final int TEX_H = 9;
@@ -33,10 +37,20 @@ public final class ArmorTrimOverlay {
     // per ogni half (20): NO_TRIM se niente, altrimenti 0xRRGGBB
     private static final int[] TRIM_RGB = new int[20];
 
+    // per ogni half (20): true se deve disegnare il glow (solo diamond per ora)
+    private static final boolean[] TRIM_GLOW_HALF = new boolean[20];
+
+    private static final Set<String> GLOW_TRIMS = Set.of(
+            "diamond",
+            "emerald",
+            "gold"
+    );
+
     private ArmorTrimOverlay() {}
 
     public static void draw(DrawContext ctx, PlayerEntity player, int xLeft, int y) {
         Arrays.fill(TRIM_RGB, NO_TRIM);
+        Arrays.fill(TRIM_GLOW_HALF, false);
 
         if (!buildTrimHalves(player)) {
             return;
@@ -49,21 +63,23 @@ public final class ArmorTrimOverlay {
             int leftRgb = TRIM_RGB[leftIdx];
             int rightRgb = TRIM_RGB[rightIdx];
 
-            if (leftRgb == NO_TRIM && rightRgb == NO_TRIM) {
-                continue;
-            }
+            if (leftRgb == NO_TRIM && rightRgb == NO_TRIM) continue;
+
+            boolean leftGlow  = TRIM_GLOW_HALF[leftIdx];
+            boolean rightGlow = TRIM_GLOW_HALF[rightIdx];
 
             int x = xLeft + slot * 8;
 
             // se entrambi presenti e uguali => FULL
             if (leftRgb != NO_TRIM && leftRgb == rightRgb) {
-                drawTrim(ctx, x, y, U_FULL, leftRgb);
+                // glow solo se anche quello è coerente (stesso materiale trim)
+                drawTrim(ctx, x, y, U_FULL, leftRgb, leftGlow);
                 continue;
             }
 
-            // altrimenti left e right separati (possono avere colori diversi)
-            if (leftRgb != NO_TRIM)  drawTrim(ctx, x, y, U_LEFT, leftRgb);
-            if (rightRgb != NO_TRIM) drawTrim(ctx, x, y, U_RIGHT, rightRgb);
+            // altrimenti left e right separati
+            if (leftRgb != NO_TRIM)  drawTrim(ctx, x, y, U_LEFT,  leftRgb,  leftGlow);
+            if (rightRgb != NO_TRIM) drawTrim(ctx, x, y, U_RIGHT, rightRgb, rightGlow);
         }
 
         // reset importante, sennò si tinta tutto l’HUD dopo
@@ -82,32 +98,46 @@ public final class ArmorTrimOverlay {
             if (trim == null) return;
 
             ArmorTrimMaterial mat = trim.material().value();
-            TRIM_RGB[idx] = rgbForAssetName(mat.assetName());
+
+            String asset = mat.assetName();
+
+            TRIM_RGB[idx] = rgbForAssetName(asset);
+            TRIM_GLOW_HALF[idx] = GLOW_TRIMS.contains(asset);
+
             any[0] = true;
         });
 
         return any[0];
     }
 
-    private static void drawTrim(DrawContext ctx, int x, int y, int u, int rgb) {
+    private static void drawTrim(DrawContext ctx, int x, int y, int u, int rgb, boolean glow) {
         int tint = 0xFF000000 | (rgb & 0x00FFFFFF); // ARGB
 
-        // MASK (tintata)  <-- usa l'overload con 'color'
+        // MASK (tintata)
         ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_MASK, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, tint);
 
         // SHADOW (non tintata)
         ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_SHAD, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, 0xFFFFFFFF);
+
+        // GLOW (sopra tutto, solo se attivo)
+        if (glow) {
+            ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_GLOW_TEX, x, y, u, 0, 9, 9, TEX_W, TEX_H);
+        }
     }
 
-    public static void buildTrimRgb(PlayerEntity player, int[] out) {
-        Arrays.fill(out, NO_TRIM);
+    public static void buildTrimData(PlayerEntity player, int[] outRgb, boolean[] outGlow) {
+        Arrays.fill(outRgb, NO_TRIM);
+        Arrays.fill(outGlow, false);
 
         ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
             ArmorTrim trim = stack.get(DataComponentTypes.TRIM);
             if (trim == null) return;
 
             ArmorTrimMaterial mat = trim.material().value();
-            out[idx] = rgbForAssetName(mat.assetName());
+
+            String asset = mat.assetName();
+            outRgb[idx] = rgbForAssetName(asset);
+            outGlow[idx] = GLOW_TRIMS.contains(asset);
         });
     }
 
