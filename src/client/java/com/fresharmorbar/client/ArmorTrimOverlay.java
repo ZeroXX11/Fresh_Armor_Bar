@@ -5,11 +5,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.item.trim.ArmorTrimMaterial;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
+import java.util.Set;
 
 public final class ArmorTrimOverlay {
 
@@ -20,6 +19,9 @@ public final class ArmorTrimOverlay {
 
     private static final Identifier TRIM_SHAD =
             new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_shad.png");
+
+    private static final Identifier TRIM_GLOW_TEX =
+            new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
 
     private static final int TEX_W = 27;
     private static final int TEX_H = 9;
@@ -33,37 +35,50 @@ public final class ArmorTrimOverlay {
     // per ogni half (20): NO_TRIM se niente, altrimenti 0xRRGGBB
     private static final int[] TRIM_RGB = new int[20];
 
+    // per ogni half (20): true se deve disegnare il glow (solo diamond per ora)
+    private static final boolean[] TRIM_GLOW_HALF = new boolean[20];
+
+    private static final Set<String> GLOW_TRIMS = Set.of(
+            "diamond",
+            "emerald",
+            "gold"
+    );
+
+
     private ArmorTrimOverlay() {}
 
     public static void draw(DrawContext ctx, PlayerEntity player, int xLeft, int y) {
         Arrays.fill(TRIM_RGB, NO_TRIM);
+        Arrays.fill(TRIM_GLOW_HALF, false);
 
         if (!buildTrimHalves(player)) {
             return;
         }
 
         for (int slot = 0; slot < 10; slot++) {
-            int leftIdx = slot * 2;
+            int leftIdx  = slot * 2;
             int rightIdx = leftIdx + 1;
 
-            int leftRgb = TRIM_RGB[leftIdx];
+            int leftRgb  = TRIM_RGB[leftIdx];
             int rightRgb = TRIM_RGB[rightIdx];
 
-            if (leftRgb == NO_TRIM && rightRgb == NO_TRIM) {
-                continue;
-            }
+            if (leftRgb == NO_TRIM && rightRgb == NO_TRIM) continue;
+
+            boolean leftGlow  = TRIM_GLOW_HALF[leftIdx];
+            boolean rightGlow = TRIM_GLOW_HALF[rightIdx];
 
             int x = xLeft + slot * 8;
 
             // se entrambi presenti e uguali => FULL
             if (leftRgb != NO_TRIM && leftRgb == rightRgb) {
-                drawTrim(ctx, x, y, U_FULL, leftRgb);
+                // glow solo se anche quello è coerente (stesso materiale trim)
+                drawTrim(ctx, x, y, U_FULL, leftRgb, leftGlow);
                 continue;
             }
 
-            // altrimenti left e right separati (possono avere colori diversi)
-            if (leftRgb != NO_TRIM)  drawTrim(ctx, x, y, U_LEFT, leftRgb);
-            if (rightRgb != NO_TRIM) drawTrim(ctx, x, y, U_RIGHT, rightRgb);
+            // altrimenti left e right separati
+            if (leftRgb != NO_TRIM)  drawTrim(ctx, x, y, U_LEFT,  leftRgb,  leftGlow);
+            if (rightRgb != NO_TRIM) drawTrim(ctx, x, y, U_RIGHT, rightRgb, rightGlow);
         }
 
         // reset importante, sennò si tinta tutto l’HUD dopo
@@ -85,51 +100,55 @@ public final class ArmorTrimOverlay {
             ArmorTrim trim = opt.get();
             ArmorTrimMaterial mat = trim.getMaterial().value();
 
-            TRIM_RGB[idx] = rgbForAssetName(mat.assetName());
+            String asset = mat.assetName(); // es: "diamond", "emerald", "amethyst"...
+
+            TRIM_RGB[idx] = rgbForAssetName(asset);
+            TRIM_GLOW_HALF[idx] = GLOW_TRIMS.contains(asset);
+
             any[0] = true;
         });
 
         return any[0];
     }
 
-    private static void drawTrim(DrawContext ctx, int x, int y, int u, int rgb) {
+    private static void drawTrim(DrawContext ctx, int x, int y, int u, int rgb, boolean glow) {
         float r = ((rgb >> 16) & 0xFF) / 255f;
         float g = ((rgb >>  8) & 0xFF) / 255f;
         float b = ( rgb        & 0xFF) / 255f;
 
+        // MASK (tintata)
         RenderSystem.setShaderColor(r, g, b, 1f);
         ctx.drawTexture(TRIM_MASK, x, y, u, 0, 9, 9, TEX_W, TEX_H);
 
-        // --- SHADOW (non tintata) ---
+        // SHADOW (non tintata)
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         ctx.drawTexture(TRIM_SHAD, x, y, u, 0, 9, 9, TEX_W, TEX_H);
+
+        // GLOW (sopra tutto, solo se attivo)
+        if (glow) {
+            ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, TEX_W, TEX_H);
+        }
     }
 
-    public static void buildTrimRgb(PlayerEntity player, int[] out) {
-        Arrays.fill(out, NO_TRIM);
+    public static void buildTrimData(PlayerEntity player, int[] outRgb, boolean[] outGlow) {
+        Arrays.fill(outRgb, NO_TRIM);
+        Arrays.fill(outGlow, false);
+
+        var registryManager = player.getWorld().getRegistryManager();
 
         ArmorHalfIterator.forEachHalf(player, (idx, armor, stack) -> {
-            if (stack == null || stack.isEmpty()) return;
+            var opt = ArmorTrim.getTrim(registryManager, stack);
+            if (opt.isEmpty()) return;
 
-            NbtCompound nbt = stack.getNbt();
-            if (nbt == null) return;
+            ArmorTrim trim = opt.get();
+            ArmorTrimMaterial mat = trim.getMaterial().value();
 
-            // Trim data is stored in the "Trim" compound in 1.20.x
-            if (!nbt.contains("Trim", NbtElement.COMPOUND_TYPE)) return;
-            NbtCompound trim = nbt.getCompound("Trim");
+            String asset = mat.assetName();
 
-            // "material" is an id string like "minecraft:emerald"
-            if (!trim.contains("material", NbtElement.STRING_TYPE)) return;
-            String materialId = trim.getString("material");
-
-            // take the path ("emerald") to reuse your rgbForAssetName mapping
-            Identifier id = Identifier.tryParse(materialId);
-            if (id == null) return;
-
-            out[idx] = rgbForAssetName(id.getPath());
+            outRgb[idx] = rgbForAssetName(asset);
+            outGlow[idx] = GLOW_TRIMS.contains(asset);
         });
     }
-
 
     private static int rgbForAssetName(String assetName) {
         return switch (assetName) {

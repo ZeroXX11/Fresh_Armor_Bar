@@ -59,6 +59,7 @@ public class InGameHudMixin {
     @Unique private final Identifier[] fab$halfStrip = new Identifier[20];
 
     @Unique private final int[] fab$halfTrimRgb = new int[20];
+    @Unique private final boolean[] fab$halfTrimGlow = new boolean[20];
 
     /**
      * Blocca SOLO le icone armatura VANILLA (icons.png riga armatura).
@@ -136,7 +137,7 @@ public class InGameHudMixin {
                 fab$halfStrip[idx] = fab$stripForMaterial(armor.getMaterial())
         );
 
-        ArmorTrimOverlay.buildTrimRgb(player, fab$halfTrimRgb);
+        ArmorTrimOverlay.buildTrimData(player, fab$halfTrimRgb, fab$halfTrimGlow);
     }
 
     @Unique
