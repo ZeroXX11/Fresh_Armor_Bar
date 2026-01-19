@@ -39,7 +39,9 @@ public final class ArmorHalfIterator {
 
             int[] prot = {0};
             stack.applyAttributeModifier(AttributeModifierSlot.forEquipmentSlot(slot), (a, m) -> {
-                if (a == EntityAttributes.ARMOR && m.operation() == EntityAttributeModifier.Operation.ADD_VALUE) prot[0] += (int) m.value();
+                if (a == EntityAttributes.ARMOR && m.operation() == EntityAttributeModifier.Operation.ADD_VALUE) {
+                    prot[0] += (int) m.value();
+                }
             });
             int protection = prot[0];
             if (protection <= 0) continue;

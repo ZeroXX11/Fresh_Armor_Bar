@@ -90,17 +90,15 @@ public final class ArmorTrimOverlay {
     }
 
     private static void drawTrim(DrawContext ctx, int x, int y, int u, int rgb) {
-        float r = ((rgb >> 16) & 0xFF) / 255f;
-        float g = ((rgb >>  8) & 0xFF) / 255f;
-        float b = ( rgb        & 0xFF) / 255f;
+        int tint = 0xFF000000 | (rgb & 0x00FFFFFF); // ARGB
 
-        RenderSystem.setShaderColor(r, g, b, 1f);
-        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_MASK, x, y, u, 0f, 9, 9, TEX_W, TEX_H);
+        // MASK (tintata)  <-- usa l'overload con 'color'
+        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_MASK, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, tint);
 
-        // --- SHADOW (non tintata) ---
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_SHAD, x, y, u, 0f, 9, 9, TEX_W, TEX_H);
+        // SHADOW (non tintata)
+        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_SHAD, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, 0xFFFFFFFF);
     }
+
 
     private static int rgbForAssetName(String assetName) {
         return switch (assetName) {
