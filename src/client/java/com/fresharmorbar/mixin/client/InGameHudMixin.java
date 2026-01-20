@@ -111,14 +111,12 @@ public class InGameHudMixin {
                 GL11.GL_ONE,
                 GL11.GL_ONE_MINUS_SRC_ALPHA
         );
-        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         // 1) Empty row sempre
         fab$drawEmptyRow(ctx, xLeft, y);
 
         // se armor 0, fine (mostri solo empty)
         if (player.getArmor() <= 0) {
-            //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             GlStateManager._disableBlend();
             return;
         }
@@ -132,14 +130,10 @@ public class InGameHudMixin {
         // 4) Trim overlay
         ArmorTrimOverlay.draw(ctx, player, xLeft, y);
 
-        // Importante: il trim spesso usa setShaderColor -> reset prima dell’enchant
-        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
         // 5) Enchant overlay
         ArmorEnchantOverlay.draw(ctx, player, xLeft, y);
 
         // lascia lo stato pulito per il resto dell’HUD
-        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         GlStateManager._disableBlend();
     }
 
