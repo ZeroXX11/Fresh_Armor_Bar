@@ -1,7 +1,8 @@
 package com.fresharmorbar.client;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 
@@ -40,6 +41,9 @@ public final class ArmorEnchantOverlay {
     // Stato
     private static long animStartTime = -1L;      // -1 = non in animazione
     private static long cooldownStartTime = 0L;   // quando è finita l'ultima animazione
+
+    private static final RenderPipeline GUI_PIPELINE = RenderPipelines.GUI_TEXTURED;
+    private static final int WHITE = 0xFFFFFFFF; // ARGB
 
     private ArmorEnchantOverlay() {}
 
@@ -100,7 +104,7 @@ public final class ArmorEnchantOverlay {
             else u = U_RIGHT;
 
             // Base sempre
-            ctx.drawTexture(RenderLayer::getGuiTextured, ENCH_COLOR, iconX, y, u, 0f, 9, 9, TEX_W, COLOR_TEX_H);
+            ctx.drawTexture(GUI_PIPELINE, ENCH_COLOR, iconX, y, u, 0f, 9, 9, TEX_W, COLOR_TEX_H, WHITE);
 
             // Anim sopra (se attiva)
             if (animating) {
@@ -108,7 +112,7 @@ public final class ArmorEnchantOverlay {
                 if (frame >= FRAME_COUNT) frame = FRAME_COUNT - 1;
 
                 int vAnim = frame * FRAME_H;
-                ctx.drawTexture(RenderLayer::getGuiTextured, ENCH_ANIM, iconX, y, u, vAnim, 9, 9, TEX_W, ANIM_TEX_H);
+                ctx.drawTexture(GUI_PIPELINE, ENCH_ANIM, iconX, y, u, vAnim, 9, 9, TEX_W, ANIM_TEX_H, WHITE);
             }
         }
     }

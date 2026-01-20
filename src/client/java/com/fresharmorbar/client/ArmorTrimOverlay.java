@@ -1,8 +1,8 @@
 package com.fresharmorbar.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.render.RenderLayer;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.equipment.trim.ArmorTrim;
@@ -40,6 +40,9 @@ public final class ArmorTrimOverlay {
 
     // per ogni half (20): true se deve disegnare il glow (solo diamond per ora)
     private static final boolean[] TRIM_GLOW_HALF = new boolean[20];
+
+    private static final RenderPipeline GUI_PIPELINE = RenderPipelines.GUI_TEXTURED;
+    private static final int WHITE = 0xFFFFFFFF;
 
     private static final Set<String> GLOW_TRIMS = Set.of(
             "diamond",
@@ -90,7 +93,7 @@ public final class ArmorTrimOverlay {
         }
 
         // reset importante, sennò si tinta tutto l’HUD dopo
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     /**
@@ -119,14 +122,14 @@ public final class ArmorTrimOverlay {
         int tint = 0xFF000000 | (rgb & 0x00FFFFFF); // ARGB
 
         // MASK (tintata)
-        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_MASK, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, tint);
+        ctx.drawTexture(GUI_PIPELINE, TRIM_MASK, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, tint);
 
         // SHADOW (non tintata)
-        ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_SHAD, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, 0xFFFFFFFF);
+        ctx.drawTexture(GUI_PIPELINE, TRIM_SHAD, x, y, (float) u, 0f, 9, 9, TEX_W, TEX_H, WHITE);
 
         // GLOW (sopra tutto, solo se attivo)
         if (glow) {
-            ctx.drawTexture(RenderLayer::getGuiTextured, TRIM_GLOW_TEX, x, y, u, 0, 9, 9, TEX_W, TEX_H);
+            ctx.drawTexture(GUI_PIPELINE, TRIM_GLOW_TEX, x, y, u, 0, 9, 9, TEX_W, TEX_H, WHITE);
         }
     }
 

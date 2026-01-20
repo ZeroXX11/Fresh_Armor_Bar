@@ -4,9 +4,9 @@ import com.fresharmorbar.client.ArmorEnchantOverlay;
 import com.fresharmorbar.client.ArmorTrimOverlay;
 import com.fresharmorbar.client.ArmorHalfIterator;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.equipment.ArmorMaterial;
 import net.minecraft.item.equipment.ArmorMaterials;
@@ -14,7 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -67,6 +67,9 @@ public class InGameHudMixin {
     @Unique
     private final int[] fab$halfTrimRgb = new int[20];
 
+    @Unique private static final RenderPipeline FAB_GUI_PIPELINE = RenderPipelines.GUI_TEXTURED;
+    @Unique private static final int FAB_WHITE = 0xFFFFFFFF; // ARGB (AARRGGBB)
+
     /**
      * Blocca SOLO le icone armatura VANILLA (icons.png riga armatura).
      * Così puoi disegnare il tuo empty+overlay senza doppio rendering.
@@ -108,14 +111,14 @@ public class InGameHudMixin {
                 GL11.GL_ONE,
                 GL11.GL_ONE_MINUS_SRC_ALPHA
         );
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         // 1) Empty row sempre
         fab$drawEmptyRow(ctx, xLeft, y);
 
         // se armor 0, fine (mostri solo empty)
         if (player.getArmor() <= 0) {
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             GlStateManager._disableBlend();
             return;
         }
@@ -130,13 +133,13 @@ public class InGameHudMixin {
         ArmorTrimOverlay.draw(ctx, player, xLeft, y);
 
         // Importante: il trim spesso usa setShaderColor -> reset prima dell’enchant
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         // 5) Enchant overlay
         ArmorEnchantOverlay.draw(ctx, player, xLeft, y);
 
         // lascia lo stato pulito per il resto dell’HUD
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         GlStateManager._disableBlend();
     }
 
@@ -144,7 +147,7 @@ public class InGameHudMixin {
     private void fab$drawEmptyRow(DrawContext ctx, int xLeft, int y) {
         for (int slot = 0; slot < 10; slot++) {
             int iconX = xLeft + slot * 8;
-            ctx.drawTexture(RenderLayer::getGuiTextured, EMPTY_TEX, iconX, y, 0f, 0f, 9, 9, 9, 9);
+            ctx.drawTexture(FAB_GUI_PIPELINE, EMPTY_TEX, iconX, y, 0f, 0f, 9, 9, 9, 9, FAB_WHITE);
         }
     }
 
@@ -210,13 +213,13 @@ public class InGameHudMixin {
 
             // FULL solo se stesso materiale E stesso trim
             if (sameMat && sameTrim) {
-                ctx.drawTexture(RenderLayer::getGuiTextured, left, iconX, y, (float) U_FULL, 0f, 9, 9, 27, 9);
+                ctx.drawTexture(FAB_GUI_PIPELINE, left, iconX, y, (float) U_FULL, 0f, 9, 9, 27, 9, FAB_WHITE);
                 continue;
             }
 
             // split
-            if (left != null)  ctx.drawTexture(RenderLayer::getGuiTextured, left,  iconX, y, (float) U_LEFT,  0f, 9, 9, 27, 9);
-            if (right != null) ctx.drawTexture(RenderLayer::getGuiTextured, right, iconX, y, (float) U_RIGHT, 0f, 9, 9, 27, 9);
+            if (left != null)  ctx.drawTexture(FAB_GUI_PIPELINE, left,  iconX, y, (float) U_LEFT,  0f, 9, 9, 27, 9, FAB_WHITE);
+            if (right != null) ctx.drawTexture(FAB_GUI_PIPELINE, right, iconX, y, (float) U_RIGHT, 0f, 9, 9, 27, 9, FAB_WHITE);
         }
     }
 
