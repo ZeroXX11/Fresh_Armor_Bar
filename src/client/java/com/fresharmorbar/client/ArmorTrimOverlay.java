@@ -91,9 +91,6 @@ public final class ArmorTrimOverlay {
             if (leftRgb != NO_TRIM)  drawTrim(ctx, x, y, U_LEFT,  leftRgb,  leftGlow);
             if (rightRgb != NO_TRIM) drawTrim(ctx, x, y, U_RIGHT, rightRgb, rightGlow);
         }
-
-        // reset importante, sennò si tinta tutto l’HUD dopo
-        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     /**
