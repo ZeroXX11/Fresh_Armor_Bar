@@ -33,6 +33,9 @@ dependencies {
 
     // Fabric API (Consigliata)
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // MixinExtras
+    modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
 }
 
 processResources {

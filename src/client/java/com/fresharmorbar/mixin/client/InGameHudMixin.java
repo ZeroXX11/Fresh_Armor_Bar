@@ -6,12 +6,13 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(InGameHud.class)
@@ -23,19 +24,19 @@ public class InGameHudMixin {
      * Blocca il disegno delle icone armatura originali.
      * Metodo sicuro: intercetta solo il disegno a schermo senza toccare i dati del giocatore.
      */
-    @Redirect(
+    @WrapOperation(
             method = "renderStatusBars",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIIIII)V"
             )
     )
-    private void fab$hideVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h) {
+    private void fab$hideVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h, Operation<Void> original) {
         // Se Minecraft sta cercando di disegnare la riga dell'armatura vanilla (v=9), lo ignoriamo.
         if (tex != null && tex.getPath().contains("icons.png") && v == 9) {
             return; 
         }
-        ctx.drawTexture(tex, x, y, u, v, w, h);
+        original.call(ctx, tex, x, y, u, v, w, h);
     }
 
     @Inject(method = "renderStatusBars", at = @At("TAIL"))
