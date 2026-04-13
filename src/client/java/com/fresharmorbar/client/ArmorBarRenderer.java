@@ -64,7 +64,8 @@ public class ArmorBarRenderer {
     }
 
     public static void render(DrawContext ctx, PlayerEntity player, int xLeft, int y) {
-        int armorValue = player.getArmor();
+        // Calcola direttamente dai pezzi equipaggiati per evitare desync con player.getArmor()
+        int armorValue = calculateEquippedArmor(player);
         if (armorValue <= 0) return;
 
         // Ottimizzazione: aggiorna i dati solo se necessario
@@ -134,11 +135,8 @@ public class ArmorBarRenderer {
                 half++;
             }
         }
-
-        while (half < totalArmor && half < 20) {
-            CACHE[half].materialTex = BASE_STRIP;
-            half++;
-        }
+        // Non serve il fallback BASE_STRIP: il totale è calcolato dai pezzi reali,
+        // quindi half == totalArmor sempre. Nessun ghost slot possibile.
     }
 
     private static void renderMaterialAndTrims(DrawContext ctx, int xLeft, int y) {
@@ -257,5 +255,20 @@ public class ArmorBarRenderer {
             case "lapis" -> 0x1C4C9A;
             default -> 0xFFFFFF;
         };
+    }
+
+    /**
+     * Calcola il valore armatura direttamente dall'equipaggiamento attuale.
+     * Evita di usare player.getArmor() che può essere desincronizzato di un frame.
+     */
+    private static int calculateEquippedArmor(PlayerEntity player) {
+        int total = 0;
+        for (EquipmentSlot slot : ARMOR_ORDER) {
+            ItemStack stack = player.getEquippedStack(slot);
+            if (stack.getItem() instanceof ArmorItem armor) {
+                total += armor.getProtection();
+            }
+        }
+        return total;
     }
 }
