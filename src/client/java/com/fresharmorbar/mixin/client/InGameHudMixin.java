@@ -20,9 +20,8 @@ public class InGameHudMixin {
     @Shadow @Final private MinecraftClient client;
 
     /**
-     * Intercetta il disegno delle icone HUD.
-     * Blocca il disegno delle icone armatura originali (icons.png riga v=9)
-     * per evitare sovrapposizioni con la nuova barra.
+     * Blocca il disegno delle icone armatura originali.
+     * Metodo sicuro: intercetta solo il disegno a schermo senza toccare i dati del giocatore.
      */
     @Redirect(
             method = "renderStatusBars",
@@ -32,26 +31,22 @@ public class InGameHudMixin {
             )
     )
     private void fab$hideVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h) {
-        // Se Minecraft sta cercando di disegnare la riga dell'armatura vanilla, lo ignoriamo.
-        if (tex != null && "textures/gui/icons.png".equals(tex.getPath()) && v == 9) {
+        // Se Minecraft sta cercando di disegnare la riga dell'armatura vanilla (v=9), lo ignoriamo.
+        if (tex != null && tex.getPath().contains("icons.png") && v == 9) {
             return; 
         }
         ctx.drawTexture(tex, x, y, u, v, w, h);
     }
 
-    //Inserisce il rendering della barra personalizzata alla fine del metodo renderStatusBars.
     @Inject(method = "renderStatusBars", at = @At("TAIL"))
     private void fab$renderArmorBar(DrawContext ctx, CallbackInfo ci) {
         if (client == null || client.player == null) return;
 
         PlayerEntity player = client.player;
-
-        // Calcola la posizione orizzontale (standard vanilla)
         int scaledWidth = client.getWindow().getScaledWidth();
         int scaledHeight = client.getWindow().getScaledHeight();
         int xLeft = scaledWidth / 2 - 91;
 
-        // Logica per calcolare l'altezza dinamica (evita sovrapposizione con i cuori se aumentano)
         int o = scaledHeight - 39;
         float maxHealth = player.getMaxHealth();
         int absorption = (int) Math.ceil(player.getAbsorptionAmount());
@@ -59,7 +54,6 @@ public class InGameHudMixin {
         int r = Math.max(10 - (q - 2), 3);
         int y = o - (q - 1) * r - 10;
 
-        // Delega il rendering alla classe dedicata
         ArmorBarRenderer.render(ctx, player, xLeft, y);
     }
 }
