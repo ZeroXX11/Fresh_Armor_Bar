@@ -226,6 +226,7 @@ public class ArmorBarRenderer {
 
     private static final Identifier TURTLE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
     private static final Identifier LEATHER_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/leather.png");
+    private static final Identifier COPPER_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/copper.png");
     private static final Identifier CHAIN_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/chainmail.png");
     private static final Identifier IRON_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/iron.png");
     private static final Identifier GOLD_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/gold.png");
@@ -235,6 +236,7 @@ public class ArmorBarRenderer {
     private static Identifier getMaterialTex(ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
         if (mat == ArmorMaterials.LEATHER) return LEATHER_STRIP;
+        if (mat == ArmorMaterials.COPPER) return COPPER_STRIP;
         if (mat == ArmorMaterials.CHAIN) return CHAIN_STRIP;
         if (mat == ArmorMaterials.IRON) return IRON_STRIP;
         if (mat == ArmorMaterials.GOLD) return GOLD_STRIP;
