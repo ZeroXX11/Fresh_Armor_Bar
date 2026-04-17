@@ -28,10 +28,7 @@ public class InGameHudMixin {
         this.fab$currentArmorSlot = 0;
     }
 
-    /**
-     * Intercetta ogni singola icona armatura e la rimpiazza
-     * rispettando le coordinate X e Y. Questo garantisce la massima compatibilità
-     */
+    //Intercetta ogni singola icona armatura e la rimpiazza rispettando le coordinate X e Y.
     @WrapOperation(
             method = "renderStatusBars",
             at = @At(
