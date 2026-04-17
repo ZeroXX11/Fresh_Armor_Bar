@@ -36,7 +36,6 @@ dependencies {
 
     // MixinExtras
     modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
-    annotationProcessor "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
 }
 
 processResources {
