@@ -13,12 +13,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.util.Set;
 
-/**
- * Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
- */
+// Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
 public class ArmorBarRenderer {
     private static final String MODID = "fresh-armor-bar";
-    
+
     private static final Identifier EMPTY_TEX = new Identifier(MODID, "textures/gui/armorbar/empty.png");
     private static final Identifier BASE_STRIP = new Identifier(MODID, "textures/gui/armorbar/base.png");
     private static final Identifier ENCH_COLOR = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_color.png");
@@ -86,27 +84,64 @@ public class ArmorBarRenderer {
 
         // 3. Incantesimi
         renderSlotEnchantments(ctx, slotIndex, x, y);
-        
+
         // 4. Elytra
-        if (slotIndex == 0 && player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA)) {
-            ctx.drawTexture(ELYTRA_TEX, x, y - 10, 0, 0, 9, 9, 9, 9);
+        if (slotIndex == 0) {
+            boolean hasElytra = player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA);
+            if (!hasElytra) {
+                hasElytra = ModCompat.hasElytraEquipped(player);
+            }
+            if (hasElytra) {
+                ctx.drawTexture(ELYTRA_TEX, x, y - 10, 0, 0, 9, 9, 9, 9);
+            }
         }
-        
+
         RenderSystem.disableBlend();
     }
 
     private static boolean needsUpdate(PlayerEntity player, int currentArmor) {
         if (currentArmor != lastArmorValue) return true;
         for (int i = 0; i < 4; i++) {
-            if (!ItemStack.areEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
+            if (!areVisualsEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
         }
         return false;
+    }
+
+    /**
+     * Confronta solo le proprietà visive dell'armatura ignorando i tag NBT ininfluenti
+     * come Damage, RepairCost e Custom Data di altre mod.
+     */
+    private static boolean areVisualsEqual(ItemStack a, ItemStack b) {
+        if (a == b) return true;
+        if (a.isEmpty() && b.isEmpty()) return true;
+        if (a.isEmpty() || b.isEmpty()) return false;
+
+        // 1. Controlla se l'oggetto base è lo stesso
+        if (a.getItem() != b.getItem()) return false;
+
+        // 2. Controlla se lo stato degli incantesimi è cambiato
+        if (a.hasEnchantments() != b.hasEnchantments()) return false;
+
+        // 3. Controlla i Trim leggendo direttamente il tag NBT (molto più veloce del Registry)
+        net.minecraft.nbt.NbtCompound nbtA = a.getNbt();
+        net.minecraft.nbt.NbtCompound nbtB = b.getNbt();
+
+        net.minecraft.nbt.NbtElement trimA = nbtA != null ? nbtA.get("Trim") : null;
+        net.minecraft.nbt.NbtElement trimB = nbtB != null ? nbtB.get("Trim") : null;
+        if (!java.util.Objects.equals(trimA, trimB)) return false;
+
+        // 4. Controlla il colore per le armature in cuoio/colorabili
+        if (a.getItem() instanceof net.minecraft.item.DyeableArmorItem dyeable) {
+            return dyeable.getColor(a) == dyeable.getColor(b);
+        }
+
+        return true;
     }
 
     private static void updateData(PlayerEntity player, int totalArmor) {
         for (SlotData data : CACHE) data.reset();
         lastArmorValue = totalArmor;
-        
+
         int half = 0;
         var registry = player.getWorld().getRegistryManager();
 
@@ -121,13 +156,13 @@ public class ArmorBarRenderer {
             var trimOpt = ArmorTrim.getTrim(registry, stack);
             int rgb = -1;
             boolean glow = false;
-            
+
             if (trimOpt.isPresent()) {
                 String asset = trimOpt.get().getMaterial().value().assetName();
                 rgb = getTrimRgb(asset);
                 glow = GLOW_TRIMS.contains(asset);
             }
-            
+
             boolean ench = stack.hasEnchantments();
             Identifier tex = getMaterialTex(armor.getMaterial());
 
@@ -185,9 +220,9 @@ public class ArmorBarRenderer {
                 float b = ((matColor & 0xFF) / 255f) * darken;
                 RenderSystem.setShaderColor(r, g, b, 1f);
             }
-            
+
             ctx.drawTexture(matTex, x, y, u, 0, 9, 9, 27, 9);
-            
+
             if (matColor != -1) {
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             }
@@ -195,28 +230,28 @@ public class ArmorBarRenderer {
             float r = ((trimRgb >> 16) & 0xFF) / 255f;
             float g = ((trimRgb >> 8) & 0xFF) / 255f;
             float b = (trimRgb & 0xFF) / 255f;
-            
+
             RenderSystem.setShaderColor(r, g, b, 1f);
             ctx.drawTexture(TRIM_BASE, x, y, u, 0, 9, 9, 27, 9);
-            
+
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            
+
             if (glow) ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
         }
     }
 
     private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
         long now = net.minecraft.util.Util.getMeasuringTimeMs();
-        
+
         // Inizializzazione pulita del cooldown al primo avvio
         if (cooldownStartMs == -1L) cooldownStartMs = now;
-        
+
         long animTotalMs = ENCH_FRAME_COUNT * ENCH_FRAME_MS;
 
         if (animStartMs == -1L && (now - cooldownStartMs >= ENCH_INTERVAL_MS)) {
             animStartMs = now;
         }
-        
+
         boolean animating = animStartMs != -1L;
         if (animating && (now - animStartMs >= animTotalMs)) {
             animStartMs = -1L;
@@ -229,9 +264,9 @@ public class ArmorBarRenderer {
         if (!left.enchanted && !right.enchanted) return;
 
         int u = (left.enchanted && right.enchanted) ? U_FULL : (left.enchanted ? U_LEFT : U_RIGHT);
-        
+
         ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
-        
+
         if (animating) {
             int frame = (int) ((now - animStartMs) / ENCH_FRAME_MS);
             ctx.drawTexture(ENCH_ANIM, x, y, u, Math.min(frame, 19) * 9, 9, 9, 27, 180);

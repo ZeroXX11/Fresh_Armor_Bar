@@ -12,6 +12,14 @@ base {
 
 repositories {
     // I repository essenziali per Minecraft vengono aggiunti automaticamente da Loom.
+    maven {
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/"
+    }
+    maven {
+        name = "Ladysnake Libs"
+        url = "https://maven.ladysnake.org/releases"
+    }
 }
 
 loom {
@@ -36,6 +44,10 @@ dependencies {
 
     // MixinExtras
     modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
+    annotationProcessor "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
+
+    // Trinkets API
+    modCompileOnly "dev.emi:trinkets:3.7.2"
 }
 
 processResources {
