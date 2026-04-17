@@ -92,7 +92,7 @@ public class ArmorBarRenderer {
     private static boolean needsUpdate(PlayerEntity player, int currentArmor) {
         if (currentArmor != lastArmorValue) return true;
         for (int i = 0; i < 4; i++) {
-            if (player.getEquippedStack(ARMOR_ORDER[i]) != LAST_STACKS[i]) return true;
+            if (!ItemStack.areEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
         }
         return false;
     }
@@ -107,7 +107,7 @@ public class ArmorBarRenderer {
         for (int i = 0; i < 4; i++) {
             EquipmentSlot slot = ARMOR_ORDER[i];
             ItemStack stack = player.getEquippedStack(slot);
-            LAST_STACKS[i] = stack; // Aggiorna cache riferimento
+            LAST_STACKS[i] = stack.copy(); // Aggiorna cache con una copia per rilevare modifiche NBT in-place
 
             if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) continue;
 
