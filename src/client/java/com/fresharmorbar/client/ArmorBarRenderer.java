@@ -30,12 +30,12 @@ public class ArmorBarRenderer {
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
     private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
-    private static final int ENCH_INTERVAL_TICKS = 80; // 4 secondi
-    private static final int ENCH_FRAME_TICKS = 1;
+    private static final long ENCH_INTERVAL_MS = 4000L; // 4 secondi
+    private static final long ENCH_FRAME_MS = 50L;
     private static final int ENCH_FRAME_COUNT = 20;
 
-    private static long animStartTick = -1L;
-    private static long cooldownStartTick = -1L; // Inizializzato a -1 per il primo avvio
+    private static long animStartMs = -1L;
+    private static long cooldownStartMs = -1L; // Inizializzato a -1 per il primo avvio
 
     // Cache per evitare ricalcoli inutili ad ogni frame
     private static final SlotData[] CACHE = new SlotData[20];
@@ -63,7 +63,7 @@ public class ArmorBarRenderer {
         }
     }
 
-    public static void render(DrawContext ctx, PlayerEntity player, int xLeft, int y) {
+    public static void renderSlot(DrawContext ctx, PlayerEntity player, int slotIndex, int x, int y) {
         // Calcola direttamente dai pezzi equipaggiati per evitare desync con player.getArmor()
         int armorValue = calculateEquippedArmor(player);
         if (armorValue <= 0) return;
@@ -78,15 +78,13 @@ public class ArmorBarRenderer {
         RenderSystem.defaultBlendFunc();
 
         // 1. Sfondo
-        for (int i = 0; i < 10; i++) {
-            ctx.drawTexture(EMPTY_TEX, xLeft + i * 8, y, 0, 0, 9, 9, 9, 9);
-        }
+        ctx.drawTexture(EMPTY_TEX, x, y, 0, 0, 9, 9, 9, 9);
 
         // 2. Materiali e Trim
-        renderMaterialAndTrims(ctx, xLeft, y);
+        renderSlotMaterialAndTrims(ctx, slotIndex, x, y);
 
         // 3. Incantesimi
-        renderEnchantments(ctx, xLeft, y, player);
+        renderSlotEnchantments(ctx, slotIndex, x, y);
         
         RenderSystem.disableBlend();
     }
@@ -145,26 +143,23 @@ public class ArmorBarRenderer {
         // quindi half == totalArmor sempre. Nessun ghost slot possibile.
     }
 
-    private static void renderMaterialAndTrims(DrawContext ctx, int xLeft, int y) {
-        for (int slot = 0; slot < 10; slot++) {
-            int x = xLeft + slot * 8;
-            SlotData left = CACHE[slot * 2];
-            SlotData right = CACHE[slot * 2 + 1];
+    private static void renderSlotMaterialAndTrims(DrawContext ctx, int slot, int x, int y) {
+        SlotData left = CACHE[slot * 2];
+        SlotData right = CACHE[slot * 2 + 1];
 
-            if (left.materialTex == null && right.materialTex == null) continue;
+        if (left.materialTex == null && right.materialTex == null) return;
 
-            if (isSame(left, right)) {
-                drawPart(ctx, left.materialTex, x, y, U_FULL, -1, false, left.armorColor);
-                if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_FULL, left.trimRgb, left.trimGlow, -1);
-            } else {
-                if (left.materialTex != null) {
-                    drawPart(ctx, left.materialTex, x, y, U_LEFT, -1, false, left.armorColor);
-                    if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_LEFT, left.trimRgb, left.trimGlow, -1);
-                }
-                if (right.materialTex != null) {
-                    drawPart(ctx, right.materialTex, x, y, U_RIGHT, -1, false, right.armorColor);
-                    if (right.trimRgb != -1) drawPart(ctx, null, x, y, U_RIGHT, right.trimRgb, right.trimGlow, -1);
-                }
+        if (isSame(left, right)) {
+            drawPart(ctx, left.materialTex, x, y, U_FULL, -1, false, left.armorColor);
+            if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_FULL, left.trimRgb, left.trimGlow, -1);
+        } else {
+            if (left.materialTex != null) {
+                drawPart(ctx, left.materialTex, x, y, U_LEFT, -1, false, left.armorColor);
+                if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_LEFT, left.trimRgb, left.trimGlow, -1);
+            }
+            if (right.materialTex != null) {
+                drawPart(ctx, right.materialTex, x, y, U_RIGHT, -1, false, right.armorColor);
+                if (right.trimRgb != -1) drawPart(ctx, null, x, y, U_RIGHT, right.trimRgb, right.trimGlow, -1);
             }
         }
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
@@ -204,39 +199,36 @@ public class ArmorBarRenderer {
         }
     }
 
-    private static void renderEnchantments(DrawContext ctx, int xLeft, int y, PlayerEntity player) {
-        long now = player.age;
+    private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
+        long now = net.minecraft.util.Util.getMeasuringTimeMs();
         
         // Inizializzazione pulita del cooldown al primo avvio
-        if (cooldownStartTick == -1L) cooldownStartTick = now;
+        if (cooldownStartMs == -1L) cooldownStartMs = now;
         
-        long animTotalTicks = ENCH_FRAME_COUNT * ENCH_FRAME_TICKS;
+        long animTotalMs = ENCH_FRAME_COUNT * ENCH_FRAME_MS;
 
-        if (animStartTick == -1L && (now - cooldownStartTick >= ENCH_INTERVAL_TICKS)) {
-            animStartTick = now;
+        if (animStartMs == -1L && (now - cooldownStartMs >= ENCH_INTERVAL_MS)) {
+            animStartMs = now;
         }
         
-        boolean animating = animStartTick != -1L;
-        if (animating && (now - animStartTick >= animTotalTicks)) {
-            animStartTick = -1L;
-            cooldownStartTick = now;
+        boolean animating = animStartMs != -1L;
+        if (animating && (now - animStartMs >= animTotalMs)) {
+            animStartMs = -1L;
+            cooldownStartMs = now;
             animating = false;
         }
 
-        for (int slot = 0; slot < 10; slot++) {
-            SlotData left = CACHE[slot * 2];
-            SlotData right = CACHE[slot * 2 + 1];
-            if (!left.enchanted && !right.enchanted) continue;
+        SlotData left = CACHE[slot * 2];
+        SlotData right = CACHE[slot * 2 + 1];
+        if (!left.enchanted && !right.enchanted) return;
 
-            int u = (left.enchanted && right.enchanted) ? U_FULL : (left.enchanted ? U_LEFT : U_RIGHT);
-            int x = xLeft + slot * 8;
-            
-            ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
-            
-            if (animating) {
-                int frame = (int) (now - animStartTick);
-                ctx.drawTexture(ENCH_ANIM, x, y, u, Math.min(frame, 19) * 9, 9, 9, 27, 180);
-            }
+        int u = (left.enchanted && right.enchanted) ? U_FULL : (left.enchanted ? U_LEFT : U_RIGHT);
+        
+        ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
+        
+        if (animating) {
+            int frame = (int) ((now - animStartMs) / ENCH_FRAME_MS);
+            ctx.drawTexture(ENCH_ANIM, x, y, u, Math.min(frame, 19) * 9, 9, 9, 27, 180);
         }
     }
 
