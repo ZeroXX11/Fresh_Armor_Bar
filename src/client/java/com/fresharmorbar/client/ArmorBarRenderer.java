@@ -15,7 +15,6 @@ import java.util.Set;
 
 /**
  * Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
- * Revisione finale: Caching dei dati e sicurezza del rendering.
  */
 public class ArmorBarRenderer {
     private static final String MODID = "fresh-armor-bar";
