@@ -98,40 +98,9 @@ public class ArmorBarRenderer {
     private static boolean needsUpdate(PlayerEntity player, int currentArmor) {
         if (currentArmor != lastArmorValue) return true;
         for (int i = 0; i < 4; i++) {
-            if (!areVisualsEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
+            if (!ItemStack.areEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
         }
         return false;
-    }
-
-    /**
-     * Confronta solo le proprietà visive dell'armatura ignorando i tag NBT ininfluenti
-     * come Damage, RepairCost e Custom Data di altre mod.
-     */
-    private static boolean areVisualsEqual(ItemStack a, ItemStack b) {
-        if (a == b) return true;
-        if (a.isEmpty() && b.isEmpty()) return true;
-        if (a.isEmpty() || b.isEmpty()) return false;
-        
-        // 1. Controlla se l'oggetto base è lo stesso
-        if (a.getItem() != b.getItem()) return false;
-        
-        // 2. Controlla se lo stato degli incantesimi è cambiato
-        if (a.hasEnchantments() != b.hasEnchantments()) return false;
-
-        // 3. Controlla i Trim leggendo direttamente il tag NBT (molto più veloce del Registry)
-        net.minecraft.nbt.NbtCompound nbtA = a.getNbt();
-        net.minecraft.nbt.NbtCompound nbtB = b.getNbt();
-        
-        net.minecraft.nbt.NbtElement trimA = nbtA != null ? nbtA.get("Trim") : null;
-        net.minecraft.nbt.NbtElement trimB = nbtB != null ? nbtB.get("Trim") : null;
-        if (!java.util.Objects.equals(trimA, trimB)) return false;
-
-        // 4. Controlla il colore per le armature in cuoio/colorabili
-        if (a.getItem() instanceof net.minecraft.item.DyeableArmorItem dyeable) {
-            return dyeable.getColor(a) == dyeable.getColor(b);
-        }
-
-        return true;
     }
 
     private static void updateData(PlayerEntity player, int totalArmor) {
