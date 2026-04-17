@@ -23,8 +23,7 @@ public class ArmorBarRenderer {
     private static final Identifier BASE_STRIP = new Identifier(MODID, "textures/gui/armorbar/base.png");
     private static final Identifier ENCH_COLOR = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_color.png");
     private static final Identifier ENCH_ANIM = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_anim.png");
-    private static final Identifier TRIM_MASK = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_mask.png");
-    private static final Identifier TRIM_SHAD = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_shad.png");
+    private static final Identifier TRIM_BASE = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_base.png");
     private static final Identifier TRIM_GLOW_TEX = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
@@ -197,10 +196,9 @@ public class ArmorBarRenderer {
             float b = (trimRgb & 0xFF) / 255f;
             
             RenderSystem.setShaderColor(r, g, b, 1f);
-            ctx.drawTexture(TRIM_MASK, x, y, u, 0, 9, 9, 27, 9);
+            ctx.drawTexture(TRIM_BASE, x, y, u, 0, 9, 9, 27, 9);
             
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            ctx.drawTexture(TRIM_SHAD, x, y, u, 0, 9, 9, 27, 9);
             
             if (glow) ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
         }
