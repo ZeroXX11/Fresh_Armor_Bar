@@ -53,12 +53,14 @@ public class ArmorBarRenderer {
         int trimRgb = -1;
         boolean trimGlow = false;
         boolean enchanted = false;
+        int armorColor = -1;
 
         void reset() {
             materialTex = null;
             trimRgb = -1;
             trimGlow = false;
             enchanted = false;
+            armorColor = -1;
         }
     }
 
@@ -126,11 +128,17 @@ public class ArmorBarRenderer {
             boolean ench = stack.hasEnchantments();
             Identifier tex = getMaterialTex(armor.getMaterial());
 
+            int color = -1;
+            if (armor instanceof net.minecraft.item.DyeableArmorItem dyeable) {
+                color = dyeable.getColor(stack);
+            }
+
             for (int j = 0; j < protection && half < 20; j++) {
                 CACHE[half].materialTex = tex;
                 CACHE[half].trimRgb = rgb;
                 CACHE[half].trimGlow = glow;
                 CACHE[half].enchanted = ench;
+                CACHE[half].armorColor = color;
                 half++;
             }
         }
@@ -147,16 +155,16 @@ public class ArmorBarRenderer {
             if (left.materialTex == null && right.materialTex == null) continue;
 
             if (isSame(left, right)) {
-                drawPart(ctx, left.materialTex, x, y, U_FULL, -1, false);
-                if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_FULL, left.trimRgb, left.trimGlow);
+                drawPart(ctx, left.materialTex, x, y, U_FULL, -1, false, left.armorColor);
+                if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_FULL, left.trimRgb, left.trimGlow, -1);
             } else {
                 if (left.materialTex != null) {
-                    drawPart(ctx, left.materialTex, x, y, U_LEFT, -1, false);
-                    if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_LEFT, left.trimRgb, left.trimGlow);
+                    drawPart(ctx, left.materialTex, x, y, U_LEFT, -1, false, left.armorColor);
+                    if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_LEFT, left.trimRgb, left.trimGlow, -1);
                 }
                 if (right.materialTex != null) {
-                    drawPart(ctx, right.materialTex, x, y, U_RIGHT, -1, false);
-                    if (right.trimRgb != -1) drawPart(ctx, null, x, y, U_RIGHT, right.trimRgb, right.trimGlow);
+                    drawPart(ctx, right.materialTex, x, y, U_RIGHT, -1, false, right.armorColor);
+                    if (right.trimRgb != -1) drawPart(ctx, null, x, y, U_RIGHT, right.trimRgb, right.trimGlow, -1);
                 }
             }
         }
@@ -164,12 +172,25 @@ public class ArmorBarRenderer {
     }
 
     private static boolean isSame(SlotData a, SlotData b) {
-        return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow;
+        return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor;
     }
 
-    private static void drawPart(DrawContext ctx, Identifier matTex, int x, int y, int u, int trimRgb, boolean glow) {
+    private static void drawPart(DrawContext ctx, Identifier matTex, int x, int y, int u, int trimRgb, boolean glow, int matColor) {
         if (matTex != null) {
+            if (matColor != -1) {
+                // Rendi il colore leggermente più scuro (85% della luminosità originale)
+                float darken = 0.8f;
+                float r = (((matColor >> 16) & 0xFF) / 255f) * darken;
+                float g = (((matColor >> 8) & 0xFF) / 255f) * darken;
+                float b = ((matColor & 0xFF) / 255f) * darken;
+                RenderSystem.setShaderColor(r, g, b, 1f);
+            }
+            
             ctx.drawTexture(matTex, x, y, u, 0, 9, 9, 27, 9);
+            
+            if (matColor != -1) {
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            }
         } else if (trimRgb != -1) {
             float r = ((trimRgb >> 16) & 0xFF) / 255f;
             float g = ((trimRgb >> 8) & 0xFF) / 255f;
