@@ -25,6 +25,7 @@ public class ArmorBarRenderer {
     private static final Identifier ENCH_ANIM = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_anim.png");
     private static final Identifier TRIM_BASE = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_base.png");
     private static final Identifier TRIM_GLOW_TEX = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
+    private static final Identifier ELYTRA_TEX = new Identifier(MODID, "textures/gui/armorbar/elytra.png");
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
@@ -85,6 +86,11 @@ public class ArmorBarRenderer {
 
         // 3. Incantesimi
         renderSlotEnchantments(ctx, slotIndex, x, y);
+        
+        // 4. Elytra
+        if (slotIndex == 0 && player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA)) {
+            ctx.drawTexture(ELYTRA_TEX, x, y - 10, 0, 0, 9, 9, 9, 9);
+        }
         
         RenderSystem.disableBlend();
     }
