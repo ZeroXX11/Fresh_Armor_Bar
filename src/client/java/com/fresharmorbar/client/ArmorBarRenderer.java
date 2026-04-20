@@ -67,10 +67,16 @@ public class ArmorBarRenderer {
     public static void renderSlot(DrawContext ctx, PlayerEntity player, int slotIndex, int x, int y) {
         // Calcola direttamente dai pezzi equipaggiati per evitare desync con player.getArmor()
         int armorValue = calculateEquippedArmor(player);
-        if (armorValue <= 0) return;
+        
+        boolean hasElytra = player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA);
+        if (!hasElytra) {
+            hasElytra = ModCompat.hasElytraEquipped(player);
+        }
+
+        if (armorValue <= 0 && !hasElytra) return;
 
         // Ottimizzazione: aggiorna i dati solo se necessario
-        if (needsUpdate(player, armorValue)) {
+        if (armorValue > 0 && needsUpdate(player, armorValue)) {
             updateData(player, armorValue);
         }
 
@@ -78,24 +84,21 @@ public class ArmorBarRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        // 1. Sfondo
-        ctx.drawTexture(EMPTY_TEX, x, y, 0, 0, 9, 9, 9, 9);
+        if (armorValue > 0) {
+            // 1. Sfondo
+            ctx.drawTexture(EMPTY_TEX, x, y, 0, 0, 9, 9, 9, 9);
 
-        // 2. Materiali e Trim
-        renderSlotMaterialAndTrims(ctx, slotIndex, x, y);
+            // 2. Materiali e Trim
+            renderSlotMaterialAndTrims(ctx, slotIndex, x, y);
 
-        // 3. Incantesimi
-        renderSlotEnchantments(ctx, slotIndex, x, y);
+            // 3. Incantesimi
+            renderSlotEnchantments(ctx, slotIndex, x, y);
+        }
 
         // 4. Elytra
-        if (slotIndex == 0) {
-            boolean hasElytra = player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA);
-            if (!hasElytra) {
-                hasElytra = ModCompat.hasElytraEquipped(player);
-            }
-            if (hasElytra) {
-                ctx.drawTexture(ELYTRA_TEX, x, y - 10, 0, 0, 9, 9, 9, 9);
-            }
+        if (slotIndex == 0 && hasElytra) {
+            int elytraY = armorValue > 0 ? y - 10 : y;
+            ctx.drawTexture(ELYTRA_TEX, x, elytraY, 0, 0, 9, 9, 9, 9);
         }
 
         RenderSystem.disableBlend();

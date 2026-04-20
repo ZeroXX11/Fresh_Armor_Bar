@@ -1,9 +1,12 @@
 package com.fresharmorbar.mixin.client;
 
 import com.fresharmorbar.client.ArmorBarRenderer;
+import com.fresharmorbar.client.ModCompat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -27,6 +30,27 @@ public class InGameHudMixin {
     private void fab$resetArmorSlot(DrawContext ctx, CallbackInfo ci) {
         this.fab$currentArmorSlot = 0;
         ArmorBarRenderer.updateAnim();
+    }
+
+    @WrapOperation(
+            method = "renderStatusBars",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/entity/player/PlayerEntity;getArmor()I"
+            )
+    )
+    private int fab$forceArmorRenderForElytra(PlayerEntity player, Operation<Integer> original) {
+        int armor = original.call(player);
+        if (armor == 0) {
+            boolean hasElytra = player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA);
+            if (!hasElytra) {
+                hasElytra = ModCompat.hasElytraEquipped(player);
+            }
+            if (hasElytra) {
+                return 1;
+            }
+        }
+        return armor;
     }
 
     // Intercetta ogni singola icona armatura e la rimpiazza rispettando le coordinate X e Y.
