@@ -35,6 +35,8 @@ public class ArmorBarRenderer {
 
     private static long animStartMs = -1L;
     private static long cooldownStartMs = -1L; // Inizializzato a -1 per il primo avvio
+    private static boolean currentAnimating = false;
+    private static int currentEnchFrame = 0;
 
     // Cache per evitare ricalcoli inutili ad ogni frame
     private static final SlotData[] CACHE = new SlotData[20];
@@ -240,7 +242,7 @@ public class ArmorBarRenderer {
         }
     }
 
-    private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
+    public static void updateAnim() {
         long now = net.minecraft.util.Util.getMeasuringTimeMs();
 
         // Inizializzazione pulita del cooldown al primo avvio
@@ -252,13 +254,19 @@ public class ArmorBarRenderer {
             animStartMs = now;
         }
 
-        boolean animating = animStartMs != -1L;
-        if (animating && (now - animStartMs >= animTotalMs)) {
-            animStartMs = -1L;
-            cooldownStartMs = now;
-            animating = false;
+        currentAnimating = animStartMs != -1L;
+        if (currentAnimating) {
+            if (now - animStartMs >= animTotalMs) {
+                animStartMs = -1L;
+                cooldownStartMs = now;
+                currentAnimating = false;
+            } else {
+                currentEnchFrame = (int) ((now - animStartMs) / ENCH_FRAME_MS);
+            }
         }
+    }
 
+    private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
         SlotData left = CACHE[slot * 2];
         SlotData right = CACHE[slot * 2 + 1];
         if (!left.enchanted && !right.enchanted) return;
@@ -267,9 +275,8 @@ public class ArmorBarRenderer {
 
         ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
 
-        if (animating) {
-            int frame = (int) ((now - animStartMs) / ENCH_FRAME_MS);
-            ctx.drawTexture(ENCH_ANIM, x, y, u, Math.min(frame, 19) * 9, 9, 9, 27, 180);
+        if (currentAnimating) {
+            ctx.drawTexture(ENCH_ANIM, x, y, u, Math.min(currentEnchFrame, 19) * 9, 9, 9, 27, 180);
         }
     }
 

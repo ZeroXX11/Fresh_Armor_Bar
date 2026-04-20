@@ -26,6 +26,7 @@ public class InGameHudMixin {
     @Inject(method = "renderStatusBars", at = @At("HEAD"))
     private void fab$resetArmorSlot(DrawContext ctx, CallbackInfo ci) {
         this.fab$currentArmorSlot = 0;
+        ArmorBarRenderer.updateAnim();
     }
 
     // Intercetta ogni singola icona armatura e la rimpiazza rispettando le coordinate X e Y.
