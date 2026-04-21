@@ -17,9 +17,13 @@ public class ModCompat {
     // Integrazioni Mod (Devono essere classi separate per evitare crash)
     private static class Trinkets {
         static boolean hasElytra(PlayerEntity player) {
-            return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
-                    .map(component -> component.isEquipped(Items.ELYTRA))
-                    .orElse(false);
+            try {
+                return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
+                        .map(component -> component.isEquipped(Items.ELYTRA))
+                        .orElse(false);
+            } catch (Exception e) {
+                return false;
+            }
         }
     }
 }

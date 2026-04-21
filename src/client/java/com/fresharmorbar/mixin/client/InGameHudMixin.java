@@ -7,7 +7,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Final;
@@ -76,15 +75,8 @@ public class InGameHudMixin {
         if (VANILLA_ICONS.equals(tex) && v == 9) {
             // Disegniamo la nostra icona esattamente nelle coordinate richieste dal gioco.
             if (this.client.player != null && this.fab$currentArmorSlot < 10) {
-                if (this.fab$currentArmorSlot == 0) {
-                    RenderSystem.enableBlend();
-                    RenderSystem.defaultBlendFunc();
-                }
                 ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$cachedArmorValue, this.fab$cachedHasElytra);
                 this.fab$currentArmorSlot++;
-                if (this.fab$currentArmorSlot == 10) {
-                    RenderSystem.disableBlend();
-                }
             }
             return; // Blocca il rendering dell'icona vanilla
         }

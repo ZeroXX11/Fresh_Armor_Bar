@@ -39,8 +39,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Fabric API (Consigliata)
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    // Fabric API
+    modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     // MixinExtras
     modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"

@@ -69,7 +69,7 @@ public class ArmorBarRenderer {
     }
 
     public static void updateIfNeeded(PlayerEntity player, int armorValue) {
-        if (armorValue > 0 && needsUpdate(player, armorValue)) {
+        if (needsUpdate(player, armorValue)) {
             updateData(player, armorValue);
         }
     }
@@ -250,7 +250,7 @@ public class ArmorBarRenderer {
                 cooldownStartMs = now;
                 currentAnimating = false;
             } else {
-                currentEnchFrame = (int) ((now - animStartMs) / ENCH_FRAME_MS);
+                currentEnchFrame = (int) Math.min((now - animStartMs) / ENCH_FRAME_MS, ENCH_FRAME_COUNT - 1);
             }
         }
     }
@@ -265,7 +265,7 @@ public class ArmorBarRenderer {
         ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
 
         if (currentAnimating) {
-            ctx.drawTexture(ENCH_ANIM, x, y, u, Math.min(currentEnchFrame, 19) * 9, 9, 9, 27, 180);
+            ctx.drawTexture(ENCH_ANIM, x, y, u, currentEnchFrame * 9, 9, 9, 27, 180);
         }
     }
 
