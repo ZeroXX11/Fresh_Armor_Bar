@@ -11,8 +11,7 @@ public class ModCompat {
 
     // Metodo principale
     public static boolean hasElytraEquipped(PlayerEntity player) {
-        if (player.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA)) return true;
-        return (TRINKETS_LOADED && Trinkets.hasElytra(player));
+        return player.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA) || (TRINKETS_LOADED && Trinkets.hasElytra(player));
     }
 
     // Integrazioni Mod (Devono essere classi separate per evitare crash)

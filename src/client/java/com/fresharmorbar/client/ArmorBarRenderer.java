@@ -60,24 +60,22 @@ public class ArmorBarRenderer {
         void reset() {
             materialTex = null;
             trimRgb = -1;
+            trimR = 1f; trimG = 1f; trimB = 1f;
             trimGlow = false;
             enchanted = false;
             armorColor = -1;
+            matR = 1f; matG = 1f; matB = 1f;
         }
     }
 
-    public static void renderSlot(DrawContext ctx, PlayerEntity player, int slotIndex, int x, int y) {
-        // Calcola direttamente dai pezzi equipaggiati per evitare desync con player.getArmor()
-        int armorValue = calculateEquippedArmor(player);
-        
-        boolean hasElytra = ModCompat.hasElytraEquipped(player);
-
-        if (armorValue <= 0 && !hasElytra) return;
-
-        // Ottimizzazione: aggiorna i dati solo se necessario
+    public static void updateIfNeeded(PlayerEntity player, int armorValue) {
         if (armorValue > 0 && needsUpdate(player, armorValue)) {
             updateData(player, armorValue);
         }
+    }
+
+    public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra) {
+        if (armorValue <= 0 && !hasElytra) return;
 
         // Sicurezza: assicura che il blending sia attivo per le texture trasparenti
         RenderSystem.enableBlend();
@@ -316,7 +314,7 @@ public class ArmorBarRenderer {
      * Calcola il valore armatura direttamente dall'equipaggiamento attuale.
      * Evita di usare player.getArmor() che può essere desincronizzato di un frame.
      */
-    private static int calculateEquippedArmor(PlayerEntity player) {
+    public static int calculateEquippedArmor(PlayerEntity player) {
         int total = 0;
         for (EquipmentSlot slot : ARMOR_ORDER) {
             ItemStack stack = player.getEquippedStack(slot);

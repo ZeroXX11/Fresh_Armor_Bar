@@ -24,10 +24,26 @@ public class InGameHudMixin {
 
     @Unique
     private int fab$currentArmorSlot = 0;
+    
+    @Unique
+    private int fab$cachedArmorValue = 0;
+
+    @Unique
+    private boolean fab$cachedHasElytra = false;
 
     @Inject(method = "renderStatusBars", at = @At("HEAD"))
     private void fab$resetArmorSlot(DrawContext ctx, CallbackInfo ci) {
         this.fab$currentArmorSlot = 0;
+        
+        if (this.client.player != null) {
+            this.fab$cachedArmorValue = ArmorBarRenderer.calculateEquippedArmor(this.client.player);
+            this.fab$cachedHasElytra = ModCompat.hasElytraEquipped(this.client.player);
+            ArmorBarRenderer.updateIfNeeded(this.client.player, this.fab$cachedArmorValue);
+        } else {
+            this.fab$cachedArmorValue = 0;
+            this.fab$cachedHasElytra = false;
+        }
+        
         ArmorBarRenderer.updateAnim();
     }
 
@@ -40,7 +56,7 @@ public class InGameHudMixin {
     )
     private int fab$forceArmorRenderForElytra(PlayerEntity player, Operation<Integer> original) {
         int armor = original.call(player);
-        return (armor == 0 && ModCompat.hasElytraEquipped(player)) ? 1 : armor;
+        return (armor == 0 && this.fab$cachedHasElytra) ? 1 : armor;
     }
 
     // Intercetta ogni singola icona armatura e la rimpiazza rispettando le coordinate X e Y.
@@ -56,7 +72,7 @@ public class InGameHudMixin {
         if (tex != null && tex.getPath().contains("icons.png") && v == 9) {
             // Disegniamo la nostra icona esattamente nelle coordinate richieste dal gioco.
             if (this.client.player != null && this.fab$currentArmorSlot < 10) {
-                ArmorBarRenderer.renderSlot(ctx, this.client.player, this.fab$currentArmorSlot, x, y);
+                ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$cachedArmorValue, this.fab$cachedHasElytra);
                 this.fab$currentArmorSlot++;
             }
             return; // Blocca il rendering dell'icona vanilla
