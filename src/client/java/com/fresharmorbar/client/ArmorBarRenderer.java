@@ -77,10 +77,6 @@ public class ArmorBarRenderer {
     public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra) {
         if (armorValue <= 0 && !hasElytra) return;
 
-        // Sicurezza: assicura che il blending sia attivo per le texture trasparenti
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
         if (armorValue > 0) {
             // 1. Sfondo
             ctx.drawTexture(EMPTY_TEX, x, y, 0, 0, 9, 9, 9, 9);
@@ -97,8 +93,6 @@ public class ArmorBarRenderer {
             int elytraY = armorValue > 0 ? y - 10 : y;
             ctx.drawTexture(ELYTRA_TEX, x, elytraY, 0, 0, 9, 9, 9, 9);
         }
-
-        RenderSystem.disableBlend();
     }
 
     private static boolean needsUpdate(PlayerEntity player, int currentArmor) {

@@ -7,6 +7,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Final;
@@ -30,6 +31,9 @@ public class InGameHudMixin {
 
     @Unique
     private boolean fab$cachedHasElytra = false;
+
+    @Unique
+    private static final Identifier VANILLA_ICONS = new Identifier("minecraft", "textures/gui/icons.png");
 
     @Inject(method = "renderStatusBars", at = @At("HEAD"))
     private void fab$resetArmorSlot(DrawContext ctx, CallbackInfo ci) {
@@ -69,11 +73,18 @@ public class InGameHudMixin {
     )
     private void fab$replaceVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h, Operation<Void> original) {
         // Se Minecraft sta cercando di disegnare la riga dell'armatura vanilla (v=9).
-        if (tex != null && tex.getPath().contains("icons.png") && v == 9) {
+        if (VANILLA_ICONS.equals(tex) && v == 9) {
             // Disegniamo la nostra icona esattamente nelle coordinate richieste dal gioco.
             if (this.client.player != null && this.fab$currentArmorSlot < 10) {
+                if (this.fab$currentArmorSlot == 0) {
+                    RenderSystem.enableBlend();
+                    RenderSystem.defaultBlendFunc();
+                }
                 ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$cachedArmorValue, this.fab$cachedHasElytra);
                 this.fab$currentArmorSlot++;
+                if (this.fab$currentArmorSlot == 10) {
+                    RenderSystem.disableBlend();
+                }
             }
             return; // Blocca il rendering dell'icona vanilla
         }
