@@ -5,7 +5,6 @@ import com.fresharmorbar.client.ModCompat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -41,16 +40,7 @@ public class InGameHudMixin {
     )
     private int fab$forceArmorRenderForElytra(PlayerEntity player, Operation<Integer> original) {
         int armor = original.call(player);
-        if (armor == 0) {
-            boolean hasElytra = player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA);
-            if (!hasElytra) {
-                hasElytra = ModCompat.hasElytraEquipped(player);
-            }
-            if (hasElytra) {
-                return 1;
-            }
-        }
-        return armor;
+        return (armor == 0 && ModCompat.hasElytraEquipped(player)) ? 1 : armor;
     }
 
     // Intercetta ogni singola icona armatura e la rimpiazza rispettando le coordinate X e Y.

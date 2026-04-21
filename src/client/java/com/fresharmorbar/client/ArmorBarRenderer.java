@@ -68,10 +68,7 @@ public class ArmorBarRenderer {
         // Calcola direttamente dai pezzi equipaggiati per evitare desync con player.getArmor()
         int armorValue = calculateEquippedArmor(player);
         
-        boolean hasElytra = player.getEquippedStack(EquipmentSlot.CHEST).isOf(net.minecraft.item.Items.ELYTRA);
-        if (!hasElytra) {
-            hasElytra = ModCompat.hasElytraEquipped(player);
-        }
+        boolean hasElytra = ModCompat.hasElytraEquipped(player);
 
         if (armorValue <= 0 && !hasElytra) return;
 
@@ -189,6 +186,13 @@ public class ArmorBarRenderer {
         // quindi half == totalArmor sempre. Nessun ghost slot possibile.
     }
 
+    private static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u) {
+        if (side.materialTex != null) {
+            drawPart(ctx, side.materialTex, x, y, u, -1, false, side.armorColor);
+            if (side.trimRgb != -1) drawPart(ctx, null, x, y, u, side.trimRgb, side.trimGlow, -1);
+        }
+    }
+
     private static void renderSlotMaterialAndTrims(DrawContext ctx, int slot, int x, int y) {
         SlotData left = CACHE[slot * 2];
         SlotData right = CACHE[slot * 2 + 1];
@@ -196,17 +200,10 @@ public class ArmorBarRenderer {
         if (left.materialTex == null && right.materialTex == null) return;
 
         if (isSame(left, right)) {
-            drawPart(ctx, left.materialTex, x, y, U_FULL, -1, false, left.armorColor);
-            if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_FULL, left.trimRgb, left.trimGlow, -1);
+            drawSide(ctx, left, x, y, U_FULL);
         } else {
-            if (left.materialTex != null) {
-                drawPart(ctx, left.materialTex, x, y, U_LEFT, -1, false, left.armorColor);
-                if (left.trimRgb != -1) drawPart(ctx, null, x, y, U_LEFT, left.trimRgb, left.trimGlow, -1);
-            }
-            if (right.materialTex != null) {
-                drawPart(ctx, right.materialTex, x, y, U_RIGHT, -1, false, right.armorColor);
-                if (right.trimRgb != -1) drawPart(ctx, null, x, y, U_RIGHT, right.trimRgb, right.trimGlow, -1);
-            }
+            drawSide(ctx, left, x, y, U_LEFT);
+            drawSide(ctx, right, x, y, U_RIGHT);
         }
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
