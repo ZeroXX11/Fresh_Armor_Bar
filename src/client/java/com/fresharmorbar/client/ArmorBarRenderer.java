@@ -51,9 +51,11 @@ public class ArmorBarRenderer {
     private static class SlotData {
         Identifier materialTex;
         int trimRgb = -1;
+        float trimR = 1f, trimG = 1f, trimB = 1f;
         boolean trimGlow = false;
         boolean enchanted = false;
         int armorColor = -1;
+        float matR = 1f, matG = 1f, matB = 1f;
 
         void reset() {
             materialTex = null;
@@ -157,11 +159,15 @@ public class ArmorBarRenderer {
             int protection = armor.getProtection();
             var trimOpt = ArmorTrim.getTrim(registry, stack);
             int rgb = -1;
+            float tr = 1f, tg = 1f, tb = 1f;
             boolean glow = false;
 
             if (trimOpt.isPresent()) {
                 String asset = trimOpt.get().getMaterial().value().assetName();
                 rgb = getTrimRgb(asset);
+                tr = ((rgb >> 16) & 0xFF) / 255f;
+                tg = ((rgb >> 8) & 0xFF) / 255f;
+                tb = (rgb & 0xFF) / 255f;
                 glow = GLOW_TRIMS.contains(asset);
             }
 
@@ -169,16 +175,27 @@ public class ArmorBarRenderer {
             Identifier tex = getMaterialTex(armor.getMaterial());
 
             int color = -1;
+            float mr = 1f, mg = 1f, mb = 1f;
             if (armor instanceof net.minecraft.item.DyeableArmorItem dyeable) {
                 color = dyeable.getColor(stack);
+                float darken = 0.8f;
+                mr = (((color >> 16) & 0xFF) / 255f) * darken;
+                mg = (((color >> 8) & 0xFF) / 255f) * darken;
+                mb = ((color & 0xFF) / 255f) * darken;
             }
 
             for (int j = 0; j < protection && half < 20; j++) {
                 CACHE[half].materialTex = tex;
                 CACHE[half].trimRgb = rgb;
+                CACHE[half].trimR = tr;
+                CACHE[half].trimG = tg;
+                CACHE[half].trimB = tb;
                 CACHE[half].trimGlow = glow;
                 CACHE[half].enchanted = ench;
                 CACHE[half].armorColor = color;
+                CACHE[half].matR = mr;
+                CACHE[half].matG = mg;
+                CACHE[half].matB = mb;
                 half++;
             }
         }
@@ -188,8 +205,10 @@ public class ArmorBarRenderer {
 
     private static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u) {
         if (side.materialTex != null) {
-            drawPart(ctx, side.materialTex, x, y, u, -1, false, side.armorColor);
-            if (side.trimRgb != -1) drawPart(ctx, null, x, y, u, side.trimRgb, side.trimGlow, -1);
+            drawPart(ctx, side.materialTex, x, y, u, side.armorColor != -1, side.matR, side.matG, side.matB, false);
+            if (side.trimRgb != -1) {
+                drawPart(ctx, TRIM_BASE, x, y, u, true, side.trimR, side.trimG, side.trimB, side.trimGlow);
+            }
         }
     }
 
@@ -212,34 +231,12 @@ public class ArmorBarRenderer {
         return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor;
     }
 
-    private static void drawPart(DrawContext ctx, Identifier matTex, int x, int y, int u, int trimRgb, boolean glow, int matColor) {
-        if (matTex != null) {
-            if (matColor != -1) {
-                // Rendi il colore leggermente più scuro (85% della luminosità originale)
-                float darken = 0.8f;
-                float r = (((matColor >> 16) & 0xFF) / 255f) * darken;
-                float g = (((matColor >> 8) & 0xFF) / 255f) * darken;
-                float b = ((matColor & 0xFF) / 255f) * darken;
-                RenderSystem.setShaderColor(r, g, b, 1f);
-            }
-
-            ctx.drawTexture(matTex, x, y, u, 0, 9, 9, 27, 9);
-
-            if (matColor != -1) {
-                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            }
-        } else if (trimRgb != -1) {
-            float r = ((trimRgb >> 16) & 0xFF) / 255f;
-            float g = ((trimRgb >> 8) & 0xFF) / 255f;
-            float b = (trimRgb & 0xFF) / 255f;
-
-            RenderSystem.setShaderColor(r, g, b, 1f);
-            ctx.drawTexture(TRIM_BASE, x, y, u, 0, 9, 9, 27, 9);
-
-            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
-            if (glow) ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
-        }
+    private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
+        if (hasColor) RenderSystem.setShaderColor(r, g, b, 1f);
+        ctx.drawTexture(tex, x, y, u, 0, 9, 9, 27, 9);
+        if (hasColor) RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        
+        if (glow) ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
     }
 
     public static void updateAnim() {
