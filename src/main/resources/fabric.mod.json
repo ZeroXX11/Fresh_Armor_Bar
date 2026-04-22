@@ -1,27 +1,28 @@
 {
-	"schemaVersion": 1,
-	"id": "fresh-armor-bar",
-	"version": "${version}",
-	"name": "${mod_name}",
-	"description": "Replaces the vanilla armor bar with a custom texture-based HUD!",
-	"authors": [
-		"ZeroXXII"
-	],
-	"contact": {
-		"sources": "https://github.com/ZeroXX11/Fresh_Armor_Bar"
-	},
-	"license": "MIT",
-	"icon": "icon.png",
-	"environment": "client",
-	"mixins": [
-		"fresh-armor-bar.client.mixins.json"
-	],
-	"depends": {
-		"fabricloader": ">=${loader_version}",
-		"minecraft": "~${minecraft_version}",
-		"java": ">=17"
-	},
-	"suggests": {
-		"fabric-api": "*"
-	}
+  "schemaVersion": 1,
+  "id": "fresh-armor-bar",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "Replaces the vanilla armor bar with a custom texture-based HUD!",
+  "authors": [
+    "ZeroXXII"
+  ],
+  "contact": {
+    "sources": "https://github.com/ZeroXX11/Fresh_Armor_Bar"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "client",
+  "entrypoints": {},
+  "mixins": [
+    "fresh-armor-bar.client.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=17"
+  },
+  "suggests": {
+    "fabric-api": "*"
+  }
 }
