@@ -13,8 +13,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
 public class ArmorBarRenderer {
+    private static final Logger LOGGER = LoggerFactory.getLogger("fresh-armor-bar");
     private static final String MODID = "fresh-armor-bar";
 
     private static final Identifier EMPTY_TEX = new Identifier(MODID, "textures/gui/armorbar/empty.png");
@@ -289,7 +293,7 @@ public class ArmorBarRenderer {
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
 
         if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
-            System.out.println("[Fresh Armor Bar] WARN: Unknown armor material '" + mat.getName() + "'. Falling back to base texture.");
+            LOGGER.warn("Unknown armor material '{}'. Falling back to base texture.", mat.getName());
         }
         return BASE_STRIP;
     }
