@@ -13,9 +13,8 @@
 	"license": "MIT",
 	"icon": "icon.png",
 	"environment": "client",
-	"entrypoints": {},
 	"mixins": [
-      "fresh-armor-bar.client.mixins.json"
+		"fresh-armor-bar.client.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=${loader_version}",

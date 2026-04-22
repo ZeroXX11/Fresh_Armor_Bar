@@ -21,7 +21,7 @@ public class ModCompat {
                 return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
                         .map(component -> component.isEquipped(Items.ELYTRA))
                         .orElse(false);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 return false;
             }
         }

@@ -170,7 +170,7 @@ public class ArmorBarRenderer {
             float mr = 1f, mg = 1f, mb = 1f;
             if (armor instanceof net.minecraft.item.DyeableArmorItem dyeable) {
                 color = dyeable.getColor(stack);
-                float darken = 0.8f;
+                float darken = 0.8f; // Riduce la saturazione per un look più naturale
                 mr = (((color >> 16) & 0xFF) / 255f) * darken;
                 mg = (((color >> 8) & 0xFF) / 255f) * darken;
                 mb = ((color & 0xFF) / 255f) * darken;
@@ -277,6 +277,8 @@ public class ArmorBarRenderer {
     private static final Identifier DIAMOND_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/diamond.png");
     private static final Identifier NETHERITE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/netherite.png");
 
+    private static final Set<ArmorMaterial> UNKNOWN_MATERIALS_LOGGED = new java.util.HashSet<>();
+
     private static Identifier getMaterialTex(ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
         if (mat == ArmorMaterials.LEATHER) return LEATHER_STRIP;
@@ -285,6 +287,10 @@ public class ArmorBarRenderer {
         if (mat == ArmorMaterials.GOLD) return GOLD_STRIP;
         if (mat == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
+
+        if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+            System.out.println("[Fresh Armor Bar] WARN: Unknown armor material '" + mat.getName() + "'. Falling back to base texture.");
+        }
         return BASE_STRIP;
     }
 
