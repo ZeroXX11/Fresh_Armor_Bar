@@ -233,6 +233,10 @@ public class ArmorBarRenderer {
         SlotData right = CACHE[slot * 2 + 1];
         if (!left.enchanted && !right.enchanted) return;
 
+        // Abbassa l'intensità del colore per renderlo meno "forte" e meno "viola acceso"
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, 1.0f);
+
         // Usa il layer nativo getGlint() per le strisce animate
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
@@ -250,9 +254,7 @@ public class ArmorBarRenderer {
         float x1 = x + (left.enchanted ? 0 : 4.5f);
         float x2 = x + (right.enchanted ? 9 : 4.5f);
 
-        // Disegniamo il glint 2 volte (invece di 4) con un "offset" (spostamento)
-        // delle coordinate UV. Questo raddoppia i fasci di luce senza sovrapporli
-        // troppe volte, evitando così che il colore diventi un viola troppo forte!
+        // Disegna il glint 2 volte con un "offset" delle coordinate UV
         for (int i = 0; i < 2; i++) {
             float offset = i * 0.5f; // Sposta i fasci del 50%
             float minU = baseMinU + offset;
@@ -268,6 +270,10 @@ public class ArmorBarRenderer {
 
         // Svuota il buffer per disegnare tutti i fasci di luce accumulati
         ctx.draw();
+
+        // Ripristina il colore standard per la GUI
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
     private static final Identifier TURTLE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
