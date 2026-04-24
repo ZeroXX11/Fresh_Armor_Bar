@@ -236,16 +236,26 @@ public class ArmorBarRenderer {
 
         int u = (left.enchanted && right.enchanted) ? U_FULL : (left.enchanted ? U_LEFT : U_RIGHT);
 
+        // Abilitiamo il blend e impostiamo l'opacità al 40% SOLO per il colore base (il viola che copre l'armatura)
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.4f);
+        
         ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
+        
+        // Svuotiamo il buffer così ENCH_COLOR viene effettivamente disegnato con la trasparenza del 40%
+        ctx.draw();
 
-        // Usa il layer nativo getGlint() (che utilizza VertexFormats.POSITION_TEXTURE)
+        // Ripristiniamo subito il colore e l'opacità per non influenzare né i fasci di luce né la GUI
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+
+        // Usa il layer nativo getGlint() per le strisce animate (che utilizza VertexFormats.POSITION_TEXTURE)
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
-        // Riduce ancora di più la scala UV (da 0.1f a 0.02f).
-        // Questo prenderà una porzione microscopica della texture di animazione e la dilaterà
-        // enormemente, rendendo le strisce di luce dell'aura spesse e grandissime!
-        float scale = 0.02f;
+        // Aumentiamo la scala (rispetto a 0.02f) per far comparire PIU' fasci di luce
+        // e farli sembrare leggermente più lenti.
+        float scale = 0.009f;
         
         // Regola le UV orizzontali in base alla porzione incantata
         float minU = (left.enchanted ? 0.0f : scale * 0.5f);
@@ -263,6 +273,7 @@ public class ArmorBarRenderer {
         vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, minV).next();
         vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, minV).next();
 
+        // Svuotiamo il buffer per disegnare i fasci di luce
         ctx.draw();
     }
 
