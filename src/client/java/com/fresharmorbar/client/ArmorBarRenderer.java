@@ -238,26 +238,26 @@ public class ArmorBarRenderer {
 
         ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
 
-        // Usiamo il layer nativo getGlint() (che utilizza VertexFormats.POSITION_TEXTURE)
+        // Usa il layer nativo getGlint() (che utilizza VertexFormats.POSITION_TEXTURE)
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
-        // Riduciamo ancora di più la scala UV (da 0.1f a 0.02f).
+        // Riduce ancora di più la scala UV (da 0.1f a 0.02f).
         // Questo prenderà una porzione microscopica della texture di animazione e la dilaterà
         // enormemente, rendendo le strisce di luce dell'aura spesse e grandissime!
         float scale = 0.02f;
         
-        // Regoliamo le UV orizzontali in base alla porzione incantata
+        // Regola le UV orizzontali in base alla porzione incantata
         float minU = (left.enchanted ? 0.0f : scale * 0.5f);
         float maxU = (right.enchanted ? scale : scale * 0.5f);
         float minV = 0.0f;
         float maxV = scale;
 
-        // Selezioniamo quali pixel del quad coprire col glint, per non sbavare sul lato vuoto
+        // Seleziona quali pixel del quad coprire col glint, per non sbavare sul lato vuoto
         float x1 = x + (left.enchanted ? 0 : 4.5f);
         float x2 = x + (right.enchanted ? 9 : 4.5f);
 
-        // Passiamo solo Position e Texture al VertexConsumer, come si aspetta getGlint()
+        // Passa solo Position e Texture al VertexConsumer, come si aspetta getGlint()
         vertexConsumer.vertex(matrix, x1, y + 9, 0).texture(minU, maxV).next();
         vertexConsumer.vertex(matrix, x2, y + 9, 0).texture(maxU, maxV).next();
         vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, minV).next();
