@@ -26,7 +26,6 @@ public class ArmorBarRenderer {
 
     private static final Identifier EMPTY_TEX = new Identifier(MODID, "textures/gui/armorbar/empty.png");
     private static final Identifier BASE_STRIP = new Identifier(MODID, "textures/gui/armorbar/base.png");
-    private static final Identifier ENCH_COLOR = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_color.png");
     private static final Identifier TRIM_BASE = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_base.png");
     private static final Identifier TRIM_GLOW_TEX = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
     private static final Identifier ELYTRA_TEX = new Identifier(MODID, "textures/gui/armorbar/elytra.png");
@@ -234,46 +233,40 @@ public class ArmorBarRenderer {
         SlotData right = CACHE[slot * 2 + 1];
         if (!left.enchanted && !right.enchanted) return;
 
-        int u = (left.enchanted && right.enchanted) ? U_FULL : (left.enchanted ? U_LEFT : U_RIGHT);
-
-        // Abilitiamo il blend e impostiamo l'opacità al 40% SOLO per il colore base (il viola che copre l'armatura)
-        RenderSystem.enableBlend();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.4f);
-        
-        ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
-        
-        // Svuotiamo il buffer così ENCH_COLOR viene effettivamente disegnato con la trasparenza del 40%
-        ctx.draw();
-
-        // Ripristiniamo subito il colore e l'opacità per non influenzare né i fasci di luce né la GUI
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableBlend();
-
-        // Usa il layer nativo getGlint() per le strisce animate (che utilizza VertexFormats.POSITION_TEXTURE)
+        // Usa il layer nativo getGlint() per le strisce animate
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
-        // Aumentiamo la scala (rispetto a 0.02f) per far comparire PIU' fasci di luce
-        // e farli sembrare leggermente più lenti.
-        float scale = 0.009f;
+        // Scala dei fasci di luce animati
+        float scale = 0.03f;
         
-        // Regola le UV orizzontali in base alla porzione incantata
-        float minU = (left.enchanted ? 0.0f : scale * 0.5f);
-        float maxU = (right.enchanted ? scale : scale * 0.5f);
-        float minV = 0.0f;
-        float maxV = scale;
+        // Base UV
+        float baseMinU = (left.enchanted ? 0.0f : scale * 0.5f);
+        float baseMaxU = (right.enchanted ? scale : scale * 0.5f);
+        float baseMinV = 0.0f;
+        float baseMaxV = scale;
 
-        // Seleziona quali pixel del quad coprire col glint, per non sbavare sul lato vuoto
+        // Seleziona quali pixel del quad coprire col glint
         float x1 = x + (left.enchanted ? 0 : 4.5f);
         float x2 = x + (right.enchanted ? 9 : 4.5f);
 
-        // Passa solo Position e Texture al VertexConsumer, come si aspetta getGlint()
-        vertexConsumer.vertex(matrix, x1, y + 9, 0).texture(minU, maxV).next();
-        vertexConsumer.vertex(matrix, x2, y + 9, 0).texture(maxU, maxV).next();
-        vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, minV).next();
-        vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, minV).next();
+        // Disegniamo il glint 2 volte (invece di 4) con un "offset" (spostamento)
+        // delle coordinate UV. Questo raddoppia i fasci di luce senza sovrapporli
+        // troppe volte, evitando così che il colore diventi un viola troppo forte!
+        for (int i = 0; i < 2; i++) {
+            float offset = i * 0.5f; // Sposta i fasci del 50%
+            float minU = baseMinU + offset;
+            float maxU = baseMaxU + offset;
+            float minV = baseMinV + offset;
+            float maxV = baseMaxV + offset;
 
-        // Svuotiamo il buffer per disegnare i fasci di luce
+            vertexConsumer.vertex(matrix, x1, y + 9, 0).texture(minU, maxV).next();
+            vertexConsumer.vertex(matrix, x2, y + 9, 0).texture(maxU, maxV).next();
+            vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, minV).next();
+            vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, minV).next();
+        }
+
+        // Svuota il buffer per disegnare tutti i fasci di luce accumulati
         ctx.draw();
     }
 
