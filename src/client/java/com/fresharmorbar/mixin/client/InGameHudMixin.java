@@ -37,7 +37,7 @@ public class InGameHudMixin {
     @Inject(method = "renderStatusBars", at = @At("HEAD"))
     private void fab$resetArmorSlot(DrawContext ctx, CallbackInfo ci) {
         this.fab$currentArmorSlot = 0;
-        
+
         if (this.client.player != null) {
             this.fab$cachedArmorValue = ArmorBarRenderer.calculateEquippedArmor(this.client.player);
             this.fab$cachedHasElytra = ModCompat.hasElytraEquipped(this.client.player);
@@ -46,8 +46,6 @@ public class InGameHudMixin {
             this.fab$cachedArmorValue = 0;
             this.fab$cachedHasElytra = false;
         }
-        
-        ArmorBarRenderer.updateAnim();
     }
 
     @WrapOperation(

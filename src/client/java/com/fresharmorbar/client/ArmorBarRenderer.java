@@ -1,6 +1,8 @@
 package com.fresharmorbar.client;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
@@ -10,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.util.Identifier;
 import com.mojang.blaze3d.systems.RenderSystem;
+import org.joml.Matrix4f;
 
 import java.util.Set;
 
@@ -24,7 +27,6 @@ public class ArmorBarRenderer {
     private static final Identifier EMPTY_TEX = new Identifier(MODID, "textures/gui/armorbar/empty.png");
     private static final Identifier BASE_STRIP = new Identifier(MODID, "textures/gui/armorbar/base.png");
     private static final Identifier ENCH_COLOR = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_color.png");
-    private static final Identifier ENCH_ANIM = new Identifier(MODID, "textures/gui/armorbar/overlays/enchant/ench_anim.png");
     private static final Identifier TRIM_BASE = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_base.png");
     private static final Identifier TRIM_GLOW_TEX = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
     private static final Identifier ELYTRA_TEX = new Identifier(MODID, "textures/gui/armorbar/elytra.png");
@@ -33,14 +35,6 @@ public class ArmorBarRenderer {
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
     private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
-    private static final long ENCH_INTERVAL_MS = 4000L; // 4 secondi
-    private static final long ENCH_FRAME_MS = 50L;
-    private static final int ENCH_FRAME_COUNT = 20;
-
-    private static long animStartMs = -1L;
-    private static long cooldownStartMs = -1L; // Inizializzato a -1 per il primo avvio
-    private static boolean currentAnimating = false;
-    private static int currentEnchFrame = 0;
 
     // Cache per evitare ricalcoli inutili ad ogni frame
     private static final SlotData[] CACHE = new SlotData[20];
@@ -235,30 +229,6 @@ public class ArmorBarRenderer {
         if (glow) ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
     }
 
-    public static void updateAnim() {
-        long now = net.minecraft.util.Util.getMeasuringTimeMs();
-
-        // Inizializzazione pulita del cooldown al primo avvio
-        if (cooldownStartMs == -1L) cooldownStartMs = now;
-
-        long animTotalMs = ENCH_FRAME_COUNT * ENCH_FRAME_MS;
-
-        if (animStartMs == -1L && (now - cooldownStartMs >= ENCH_INTERVAL_MS)) {
-            animStartMs = now;
-        }
-
-        currentAnimating = animStartMs != -1L;
-        if (currentAnimating) {
-            if (now - animStartMs >= animTotalMs) {
-                animStartMs = -1L;
-                cooldownStartMs = now;
-                currentAnimating = false;
-            } else {
-                currentEnchFrame = (int) Math.min((now - animStartMs) / ENCH_FRAME_MS, ENCH_FRAME_COUNT - 1);
-            }
-        }
-    }
-
     private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
         SlotData left = CACHE[slot * 2];
         SlotData right = CACHE[slot * 2 + 1];
@@ -268,9 +238,32 @@ public class ArmorBarRenderer {
 
         ctx.drawTexture(ENCH_COLOR, x, y, u, 0, 9, 9, 27, 9);
 
-        if (currentAnimating) {
-            ctx.drawTexture(ENCH_ANIM, x, y, u, currentEnchFrame * 9, 9, 9, 27, 180);
-        }
+        // Usiamo il layer nativo getGlint() (che utilizza VertexFormats.POSITION_TEXTURE)
+        VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
+        Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
+
+        // Riduciamo ancora di più la scala UV (da 0.1f a 0.02f).
+        // Questo prenderà una porzione microscopica della texture di animazione e la dilaterà
+        // enormemente, rendendo le strisce di luce dell'aura spesse e grandissime!
+        float scale = 0.02f;
+        
+        // Regoliamo le UV orizzontali in base alla porzione incantata
+        float minU = (left.enchanted ? 0.0f : scale * 0.5f);
+        float maxU = (right.enchanted ? scale : scale * 0.5f);
+        float minV = 0.0f;
+        float maxV = scale;
+
+        // Selezioniamo quali pixel del quad coprire col glint, per non sbavare sul lato vuoto
+        float x1 = x + (left.enchanted ? 0 : 4.5f);
+        float x2 = x + (right.enchanted ? 9 : 4.5f);
+
+        // Passiamo solo Position e Texture al VertexConsumer, come si aspetta getGlint()
+        vertexConsumer.vertex(matrix, x1, y + 9, 0).texture(minU, maxV).next();
+        vertexConsumer.vertex(matrix, x2, y + 9, 0).texture(maxU, maxV).next();
+        vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, minV).next();
+        vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, minV).next();
+
+        ctx.draw();
     }
 
     private static final Identifier TURTLE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
