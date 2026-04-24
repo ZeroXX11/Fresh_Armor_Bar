@@ -247,8 +247,6 @@ public class ArmorBarRenderer {
         // Base UV
         float baseMinU = (left.enchanted ? 0.0f : scale * 0.5f);
         float baseMaxU = (right.enchanted ? scale : scale * 0.5f);
-        float baseMinV = 0.0f;
-        float baseMaxV = scale;
 
         // Seleziona quali pixel del quad coprire col glint
         float x1 = x + (left.enchanted ? 0 : 4.5f);
@@ -259,13 +257,12 @@ public class ArmorBarRenderer {
             float offset = i * 0.5f; // Sposta i fasci del 50%
             float minU = baseMinU + offset;
             float maxU = baseMaxU + offset;
-            float minV = baseMinV + offset;
-            float maxV = baseMaxV + offset;
+            float maxV = scale + offset; // scale + offset
 
             vertexConsumer.vertex(matrix, x1, y + 9, 0).texture(minU, maxV).next();
             vertexConsumer.vertex(matrix, x2, y + 9, 0).texture(maxU, maxV).next();
-            vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, minV).next();
-            vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, minV).next();
+            vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, offset).next();
+            vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, offset).next();
         }
 
         // Svuota il buffer per disegnare tutti i fasci di luce accumulati
