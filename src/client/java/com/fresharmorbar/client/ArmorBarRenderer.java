@@ -14,6 +14,7 @@ import net.minecraft.util.Identifier;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.joml.Matrix4f;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -39,10 +40,17 @@ public class ArmorBarRenderer {
     private static final SlotData[] CACHE = new SlotData[20];
     private static final ItemStack[] LAST_STACKS = new ItemStack[4];
     private static int lastArmorValue = -1;
+    private static java.util.UUID lastPlayerUuid = null;
 
     static {
         for (int i = 0; i < 20; i++) CACHE[i] = new SlotData();
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
+    }
+
+    private static void invalidate() {
+        lastArmorValue = -1;
+        for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
+        for (SlotData data : CACHE) data.reset();
     }
 
     private static class SlotData {
@@ -93,6 +101,12 @@ public class ArmorBarRenderer {
     }
 
     private static boolean needsUpdate(PlayerEntity player, int currentArmor) {
+        if (lastPlayerUuid == null || !lastPlayerUuid.equals(player.getUuid())) {
+            invalidate();
+            lastPlayerUuid = player.getUuid();
+            return true;
+        }
+
         if (currentArmor != lastArmorValue) return true;
         for (int i = 0; i < 4; i++) {
             if (!areVisualsEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
@@ -217,7 +231,10 @@ public class ArmorBarRenderer {
     }
 
     private static boolean isSame(SlotData a, SlotData b) {
-        return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor;
+        // matR/G/B sono derivati deterministicamente da armorColor in updateData(),
+        // quindi confrontare armorColor è sufficiente per coprire anche il colore dyeable.
+        return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor
+                && a.matR == b.matR && a.matG == b.matG && a.matB == b.matB;
     }
 
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
@@ -270,7 +287,6 @@ public class ArmorBarRenderer {
 
         // Ripristina il colore standard per la GUI
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableBlend();
     }
 
     private static final Identifier TURTLE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
@@ -281,7 +297,7 @@ public class ArmorBarRenderer {
     private static final Identifier DIAMOND_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/diamond.png");
     private static final Identifier NETHERITE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/netherite.png");
 
-    private static final Set<ArmorMaterial> UNKNOWN_MATERIALS_LOGGED = new java.util.HashSet<>();
+    private static final Set<ArmorMaterial> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
 
     private static Identifier getMaterialTex(ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
