@@ -203,7 +203,7 @@ public class ArmorBarRenderer {
             }
         }
         // Non serve il fallback BASE_STRIP: il totale è calcolato dai pezzi reali,
-        // quindi half == totalArmor sempre. Nessun ghost slot possibile.
+        // quindi half == totalArmor sempre.
     }
 
     private static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u) {
