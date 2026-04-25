@@ -79,7 +79,7 @@ public class ArmorBarRenderer {
         }
     }
 
-    public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra) {
+    public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra, boolean elytraEnchanted) {
         if (armorValue <= 0 && !hasElytra) return;
 
         if (armorValue > 0) {
@@ -90,13 +90,16 @@ public class ArmorBarRenderer {
             renderSlotMaterialAndTrims(ctx, slotIndex, x, y);
 
             // 3. Incantesimi
-            renderSlotEnchantments(ctx, slotIndex, x, y);
+            renderSlotEnchantments(ctx, CACHE[slotIndex * 2].enchanted, CACHE[slotIndex * 2 + 1].enchanted, x, y);
         }
 
         // 4. Elytra
         if (slotIndex == 0 && hasElytra) {
             int elytraY = armorValue > 0 ? y - 10 : y;
             ctx.drawTexture(ELYTRA_TEX, x, elytraY, 0, 0, 9, 9, 9, 9);
+            if (elytraEnchanted) {
+                renderSlotEnchantments(ctx, true, true, x, elytraY);
+            }
         }
     }
 
@@ -251,10 +254,8 @@ public class ArmorBarRenderer {
         }
     }
 
-    private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
-        SlotData left = CACHE[slot * 2];
-        SlotData right = CACHE[slot * 2 + 1];
-        if (!left.enchanted && !right.enchanted) return;
+    private static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
+        if (!leftEnch && !rightEnch) return;
 
         // Abbassa l'intensità del colore per renderlo meno "forte" e meno "viola acceso"
         RenderSystem.enableBlend();
@@ -268,12 +269,12 @@ public class ArmorBarRenderer {
         float scale = 0.025f;
 
         // Base UV
-        float baseMinU = (left.enchanted ? 0.0f : scale * 0.5f);
-        float baseMaxU = (right.enchanted ? scale : scale * 0.5f);
+        float baseMinU = (leftEnch ? 0.0f : scale * 0.5f);
+        float baseMaxU = (rightEnch ? scale : scale * 0.5f);
 
         // Seleziona quali pixel del quad coprire col glint
-        float x1 = x + (left.enchanted ? 0 : 4.5f);
-        float x2 = x + (right.enchanted ? 9 : 4.5f);
+        float x1 = x + (leftEnch ? 0 : 4.5f);
+        float x2 = x + (rightEnch ? 9 : 4.5f);
 
         // Disegna il glint 2 volte con un "offset" delle coordinate UV
         for (int i = 0; i < 2; i++) {

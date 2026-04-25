@@ -32,6 +32,9 @@ public class InGameHudMixin {
     private boolean fab$cachedHasElytra = false;
 
     @Unique
+    private boolean fab$cachedElytraEnchanted = false;
+
+    @Unique
     private static final Identifier VANILLA_ICONS = new Identifier("minecraft", "textures/gui/icons.png");
 
     @Inject(method = "renderStatusBars", at = @At("HEAD"))
@@ -41,10 +44,12 @@ public class InGameHudMixin {
         if (this.client.player != null) {
             this.fab$cachedArmorValue = ArmorBarRenderer.calculateEquippedArmor(this.client.player);
             this.fab$cachedHasElytra = ModCompat.hasElytraEquipped(this.client.player);
+            this.fab$cachedElytraEnchanted = ModCompat.isElytraEnchanted(this.client.player);
             ArmorBarRenderer.updateIfNeeded(this.client.player, this.fab$cachedArmorValue);
         } else {
             this.fab$cachedArmorValue = 0;
             this.fab$cachedHasElytra = false;
+            this.fab$cachedElytraEnchanted = false;
         }
     }
 
@@ -73,7 +78,7 @@ public class InGameHudMixin {
         if (VANILLA_ICONS.equals(tex) && v == 9) {
             // Disegniamo la nostra icona esattamente nelle coordinate richieste dal gioco.
             if (this.client.player != null && this.fab$currentArmorSlot < 10) {
-                ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$cachedArmorValue, this.fab$cachedHasElytra);
+                ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$cachedArmorValue, this.fab$cachedHasElytra, this.fab$cachedElytraEnchanted);
                 this.fab$currentArmorSlot++;
             }
             return; // Blocca il rendering dell'icona vanilla
