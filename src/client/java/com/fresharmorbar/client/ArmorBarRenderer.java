@@ -241,8 +241,14 @@ public class ArmorBarRenderer {
         if (hasColor) RenderSystem.setShaderColor(r, g, b, 1f);
         ctx.drawTexture(tex, x, y, u, 0, 9, 9, 27, 9);
         if (hasColor) RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        
-        if (glow) ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
+
+        if (glow) {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1f, 1f, 1f, 0.875f);
+            ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        }
     }
 
     private static void renderSlotEnchantments(DrawContext ctx, int slot, int x, int y) {
@@ -259,8 +265,8 @@ public class ArmorBarRenderer {
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
         // Scala dei fasci di luce animati
-        float scale = 0.03f;
-        
+        float scale = 0.025f;
+
         // Base UV
         float baseMinU = (left.enchanted ? 0.0f : scale * 0.5f);
         float baseMaxU = (right.enchanted ? scale : scale * 0.5f);

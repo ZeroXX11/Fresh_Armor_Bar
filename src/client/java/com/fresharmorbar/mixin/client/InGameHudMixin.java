@@ -24,7 +24,7 @@ public class InGameHudMixin {
 
     @Unique
     private int fab$currentArmorSlot = 0;
-    
+
     @Unique
     private int fab$cachedArmorValue = 0;
 
