@@ -316,6 +316,8 @@ public class ArmorBarRenderer {
     private static final Identifier NETHERITE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/netherite.png");
 
     private static final Set<ArmorMaterial> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
+    private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
     private static Identifier getMaterialTex(ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
@@ -326,10 +328,43 @@ public class ArmorBarRenderer {
         if (mat == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
 
-        if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
-            LOGGER.warn("Unknown armor material '{}'. Falling back to base texture.", mat.getName());
+        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+        net.minecraft.resource.ResourceManager currentManager = client != null ? client.getResourceManager() : null;
+
+        if (currentManager != null && currentManager != lastResourceManager) {
+            MATERIAL_TEXTURE_CACHE.clear();
+            UNKNOWN_MATERIALS_LOGGED.clear();
+            lastResourceManager = currentManager;
         }
-        return BASE_STRIP;
+
+        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getName(), name -> {
+            Identifier id;
+            try {
+                if (name.contains(":")) {
+                    String[] parts = name.split(":");
+                    id = new Identifier(parts[0], "textures/gui/armorbar/strips/" + parts[1] + ".png");
+                } else {
+                    id = new Identifier(MODID, "textures/gui/armorbar/strips/" + name + ".png");
+                }
+            } catch (Exception e) {
+                if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+                    LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", name);
+                }
+                return BASE_STRIP;
+            }
+
+            if (currentManager != null && currentManager.getResource(id).isPresent()) {
+                if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+                    LOGGER.info("Found custom texture for armor material '{}' at {}", name, id);
+                }
+                return id;
+            } else {
+                if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+                    LOGGER.warn("Unknown armor material '{}' and no custom texture found at {}. Falling back to base texture.", name, id);
+                }
+                return BASE_STRIP;
+            }
+        });
     }
 
     private static int getTrimRgb(String asset) {
