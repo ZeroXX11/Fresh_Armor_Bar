@@ -39,14 +39,14 @@ public class ArmorBarRenderer {
     private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
 
     // Cache per evitare ricalcoli inutili ad ogni frame
-    private static final SlotData[] CACHE = new SlotData[20];
+    private static final SlotData[] CACHE = new SlotData[60];
     private static final ItemStack[] LAST_STACKS = new ItemStack[4];
     private static int lastArmorValue = -1;
     private static UUID lastPlayerUuid = null;
     private static ModCompat.ElytraState lastElytraState = ModCompat.ElytraState.NONE;
 
     static {
-        for (int i = 0; i < 20; i++) CACHE[i] = new SlotData();
+        for (int i = 0; i < 60; i++) CACHE[i] = new SlotData();
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
     }
 
@@ -90,20 +90,33 @@ public class ArmorBarRenderer {
     public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra, boolean elytraEnchanted) {
         if (armorValue <= 0 && !hasElytra) return;
 
-        if (armorValue > 0) {
-            // 1. Sfondo
-            ctx.drawTexture(EMPTY_TEX, x, y, 0, 0, 9, 9, 9, 9);
+        int renderArmorValue = Math.min(armorValue, CACHE.length);
+        int maxRows = renderArmorValue > 0 ? (renderArmorValue + 19) / 20 : 1;
 
-            // 2. Materiali e Trim
-            renderSlotMaterialAndTrims(ctx, slotIndex, x, y);
+        for (int row = 0; row < maxRows; row++) {
+            int currentSlot = slotIndex + (row * 10);
+            int currentY = y - (row * 10);
+            
+            boolean isBaseRow = (row == 0);
+            boolean hasArmorPart = (currentSlot * 2 < renderArmorValue);
 
-            // 3. Incantesimi
-            renderSlotEnchantments(ctx, CACHE[slotIndex * 2].enchanted, CACHE[slotIndex * 2 + 1].enchanted, x, y);
+            if (renderArmorValue > 0 && (isBaseRow || hasArmorPart)) {
+                // 1. Sfondo
+                ctx.drawTexture(EMPTY_TEX, x, currentY, 0, 0, 9, 9, 9, 9);
+            }
+
+            if (hasArmorPart && currentSlot * 2 + 1 < CACHE.length) {
+                // 2. Materiali e Trim
+                renderSlotMaterialAndTrims(ctx, currentSlot, x, currentY);
+
+                // 3. Incantesimi
+                renderSlotEnchantments(ctx, CACHE[currentSlot * 2].enchanted, CACHE[currentSlot * 2 + 1].enchanted, x, currentY);
+            }
         }
 
         // 4. Elytra
         if (slotIndex == 0 && hasElytra) {
-            int elytraY = armorValue > 0 ? y - 10 : y;
+            int elytraY = renderArmorValue > 0 ? y - (maxRows * 10) : y;
             ctx.drawTexture(ELYTRA_TEX, x, elytraY, 0, 0, 9, 9, 9, 9);
             if (elytraEnchanted) {
                 renderFullIconEnchantment(ctx, x, elytraY);
@@ -200,7 +213,7 @@ public class ArmorBarRenderer {
                 mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }
 
-            for (int j = 0; j < protection && half < 20; j++, half++)
+            for (int j = 0; j < protection && half < CACHE.length; j++, half++)
                 CACHE[half].fill(tex, rgb, tr, tg, tb, glow, ench, color, mr, mg, mb);
         }
         // Non serve il fallback BASE_STRIP: il totale è calcolato dai pezzi reali,
