@@ -1,5 +1,6 @@
 package com.fresharmorbar.client;
 
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -15,7 +16,7 @@ public class ModCompat {
     }
 
     public static ElytraState getElytraState(PlayerEntity player) {
-        ItemStack chest = player.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST);
+        ItemStack chest = player.getEquippedStack(EquipmentSlot.CHEST);
         if (chest.isOf(Items.ELYTRA)) {
             return new ElytraState(true, chest.hasEnchantments());
         }
@@ -33,13 +34,7 @@ public class ModCompat {
                         .map(component -> {
                             java.util.List<net.minecraft.util.Pair<dev.emi.trinkets.api.SlotReference, ItemStack>> equipped = component.getEquipped(Items.ELYTRA);
                             if (equipped.isEmpty()) return ElytraState.NONE;
-                            boolean enchanted = false;
-                            for (net.minecraft.util.Pair<dev.emi.trinkets.api.SlotReference, ItemStack> pair : equipped) {
-                                if (pair.getRight().hasEnchantments()) {
-                                    enchanted = true;
-                                    break;
-                                }
-                            }
+                            boolean enchanted = equipped.stream().anyMatch(p -> p.getRight().hasEnchantments());
                             return new ElytraState(true, enchanted);
                         })
                         .orElse(ElytraState.NONE);

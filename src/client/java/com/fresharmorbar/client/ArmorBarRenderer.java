@@ -8,6 +8,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
+import net.minecraft.item.DyeableArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.trim.ArmorTrim;
 import net.minecraft.util.Identifier;
@@ -16,6 +17,7 @@ import org.joml.Matrix4f;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +42,7 @@ public class ArmorBarRenderer {
     private static final SlotData[] CACHE = new SlotData[20];
     private static final ItemStack[] LAST_STACKS = new ItemStack[4];
     private static int lastArmorValue = -1;
-    private static java.util.UUID lastPlayerUuid = null;
+    private static UUID lastPlayerUuid = null;
     private static ModCompat.ElytraState lastElytraState = ModCompat.ElytraState.NONE;
 
     static {
@@ -49,8 +51,7 @@ public class ArmorBarRenderer {
     }
 
     private static void invalidate() {
-        lastArmorValue = -1;
-        lastElytraState = ModCompat.ElytraState.NONE;
+        lastArmorValue = -1; lastElytraState = ModCompat.ElytraState.NONE;
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
         for (SlotData data : CACHE) data.reset();
     }
@@ -63,6 +64,11 @@ public class ArmorBarRenderer {
         boolean enchanted = false;
         int armorColor = -1;
         float matR = 1f, matG = 1f, matB = 1f;
+
+        void fill(Identifier tex, int rgb, float tr, float tg, float tb, boolean glow, boolean ench, int color, float mr, float mg, float mb) {
+            materialTex = tex; trimRgb = rgb; trimR = tr; trimG = tg; trimB = tb;
+            trimGlow = glow; enchanted = ench; armorColor = color; matR = mr; matG = mg; matB = mb;
+        }
 
         void reset() {
             materialTex = null;
@@ -140,20 +146,20 @@ public class ArmorBarRenderer {
         if (a.hasEnchantments() != b.hasEnchantments()) return false;
 
         // 3. Controlla i Trim leggendo direttamente il tag NBT (molto più veloce del Registry)
-        net.minecraft.nbt.NbtCompound nbtA = a.getNbt();
-        net.minecraft.nbt.NbtCompound nbtB = b.getNbt();
-
-        net.minecraft.nbt.NbtElement trimA = nbtA != null ? nbtA.get("Trim") : null;
-        net.minecraft.nbt.NbtElement trimB = nbtB != null ? nbtB.get("Trim") : null;
+        var nbtA = a.getNbt(); var nbtB = b.getNbt();
+        var trimA = nbtA != null ? nbtA.get("Trim") : null;
+        var trimB = nbtB != null ? nbtB.get("Trim") : null;
         if (!java.util.Objects.equals(trimA, trimB)) return false;
 
         // 4. Controlla il colore per le armature in cuoio/colorabili
-        if (a.getItem() instanceof net.minecraft.item.DyeableArmorItem dyeable) {
+        if (a.getItem() instanceof DyeableArmorItem dyeable) {
             return dyeable.getColor(a) == dyeable.getColor(b);
         }
 
         return true;
     }
+
+    private static float ch(int rgb, int shift) { return ((rgb >> shift) & 0xFF) / 255f; }
 
     private static void updateData(PlayerEntity player, int totalArmor, ModCompat.ElytraState elytraState) {
         for (SlotData data : CACHE) data.reset();
@@ -179,9 +185,7 @@ public class ArmorBarRenderer {
             if (trimOpt.isPresent()) {
                 String asset = trimOpt.get().getMaterial().value().assetName();
                 rgb = getTrimRgb(asset);
-                tr = ((rgb >> 16) & 0xFF) / 255f;
-                tg = ((rgb >> 8) & 0xFF) / 255f;
-                tb = (rgb & 0xFF) / 255f;
+                tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
                 glow = GLOW_TRIMS.contains(asset);
             }
 
@@ -190,28 +194,14 @@ public class ArmorBarRenderer {
 
             int color = -1;
             float mr = 1f, mg = 1f, mb = 1f;
-            if (armor instanceof net.minecraft.item.DyeableArmorItem dyeable) {
+            if (armor instanceof DyeableArmorItem dyeable) {
                 color = dyeable.getColor(stack);
                 float darken = 0.8f; // Riduce la saturazione per un look più naturale
-                mr = (((color >> 16) & 0xFF) / 255f) * darken;
-                mg = (((color >> 8) & 0xFF) / 255f) * darken;
-                mb = ((color & 0xFF) / 255f) * darken;
+                mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }
 
-            for (int j = 0; j < protection && half < 20; j++) {
-                CACHE[half].materialTex = tex;
-                CACHE[half].trimRgb = rgb;
-                CACHE[half].trimR = tr;
-                CACHE[half].trimG = tg;
-                CACHE[half].trimB = tb;
-                CACHE[half].trimGlow = glow;
-                CACHE[half].enchanted = ench;
-                CACHE[half].armorColor = color;
-                CACHE[half].matR = mr;
-                CACHE[half].matG = mg;
-                CACHE[half].matB = mb;
-                half++;
-            }
+            for (int j = 0; j < protection && half < 20; j++, half++)
+                CACHE[half].fill(tex, rgb, tr, tg, tb, glow, ench, color, mr, mg, mb);
         }
         // Non serve il fallback BASE_STRIP: il totale è calcolato dai pezzi reali,
         // quindi half == totalArmor sempre.
@@ -245,7 +235,7 @@ public class ArmorBarRenderer {
         // matR/G/B sono derivati deterministicamente da armorColor in updateData(),
         // quindi confrontare armorColor è sufficiente per coprire anche il colore dyeable.
         return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor
-                && a.matR == b.matR && a.matG == b.matG && a.matB == b.matB;
+                && a.enchanted == b.enchanted && a.matR == b.matR && a.matG == b.matG && a.matB == b.matB;
     }
 
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
