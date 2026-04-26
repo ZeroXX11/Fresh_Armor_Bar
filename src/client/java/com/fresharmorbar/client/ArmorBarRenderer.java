@@ -41,6 +41,7 @@ public class ArmorBarRenderer {
     private static final ItemStack[] LAST_STACKS = new ItemStack[4];
     private static int lastArmorValue = -1;
     private static java.util.UUID lastPlayerUuid = null;
+    private static ModCompat.ElytraState lastElytraState = ModCompat.ElytraState.NONE;
 
     static {
         for (int i = 0; i < 20; i++) CACHE[i] = new SlotData();
@@ -49,6 +50,7 @@ public class ArmorBarRenderer {
 
     private static void invalidate() {
         lastArmorValue = -1;
+        lastElytraState = ModCompat.ElytraState.NONE;
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
         for (SlotData data : CACHE) data.reset();
     }
@@ -73,9 +75,9 @@ public class ArmorBarRenderer {
         }
     }
 
-    public static void updateIfNeeded(PlayerEntity player, int armorValue) {
-        if (needsUpdate(player, armorValue)) {
-            updateData(player, armorValue);
+    public static void updateIfNeeded(PlayerEntity player, int armorValue, ModCompat.ElytraState elytraState) {
+        if (needsUpdate(player, armorValue, elytraState)) {
+            updateData(player, armorValue, elytraState);
         }
     }
 
@@ -98,12 +100,16 @@ public class ArmorBarRenderer {
             int elytraY = armorValue > 0 ? y - 10 : y;
             ctx.drawTexture(ELYTRA_TEX, x, elytraY, 0, 0, 9, 9, 9, 9);
             if (elytraEnchanted) {
-                renderSlotEnchantments(ctx, true, true, x, elytraY);
+                renderFullIconEnchantment(ctx, x, elytraY);
             }
         }
     }
 
-    private static boolean needsUpdate(PlayerEntity player, int currentArmor) {
+    private static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
+        renderSlotEnchantments(ctx, true, true, x, y);
+    }
+
+    private static boolean needsUpdate(PlayerEntity player, int currentArmor, ModCompat.ElytraState elytraState) {
         if (lastPlayerUuid == null || !lastPlayerUuid.equals(player.getUuid())) {
             invalidate();
             lastPlayerUuid = player.getUuid();
@@ -111,6 +117,7 @@ public class ArmorBarRenderer {
         }
 
         if (currentArmor != lastArmorValue) return true;
+        if (!java.util.Objects.equals(lastElytraState, elytraState)) return true;
         for (int i = 0; i < 4; i++) {
             if (!areVisualsEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
         }
@@ -148,9 +155,10 @@ public class ArmorBarRenderer {
         return true;
     }
 
-    private static void updateData(PlayerEntity player, int totalArmor) {
+    private static void updateData(PlayerEntity player, int totalArmor, ModCompat.ElytraState elytraState) {
         for (SlotData data : CACHE) data.reset();
         lastArmorValue = totalArmor;
+        lastElytraState = elytraState;
 
         int half = 0;
         var registry = player.getWorld().getRegistryManager();

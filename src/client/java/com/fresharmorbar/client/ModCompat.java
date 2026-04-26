@@ -10,47 +10,41 @@ public class ModCompat {
     // Helper per mantenere in cache lo stato delle mod (più performante di isModLoaded ogni frame)
     private static final boolean TRINKETS_LOADED = FabricLoader.getInstance().isModLoaded("trinkets");
 
-    // Metodo principale
-    public static boolean hasElytraEquipped(PlayerEntity player) {
-        return player.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST).isOf(Items.ELYTRA) || (TRINKETS_LOADED && Trinkets.hasElytra(player));
+    public record ElytraState(boolean equipped, boolean enchanted) {
+        public static final ElytraState NONE = new ElytraState(false, false);
     }
 
-    public static boolean isElytraEnchanted(PlayerEntity player) {
+    public static ElytraState getElytraState(PlayerEntity player) {
         ItemStack chest = player.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST);
         if (chest.isOf(Items.ELYTRA)) {
-            return chest.hasEnchantments();
+            return new ElytraState(true, chest.hasEnchantments());
         }
         if (TRINKETS_LOADED) {
-            return Trinkets.isElytraEnchanted(player);
+            return Trinkets.getElytraState(player);
         }
-        return false;
+        return ElytraState.NONE;
     }
 
     // Integrazioni Mod (Devono essere classi separate per evitare crash)
     private static class Trinkets {
-        static boolean hasElytra(PlayerEntity player) {
-            try {
-                return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
-                        .map(component -> component.isEquipped(Items.ELYTRA))
-                        .orElse(false);
-            } catch (Throwable e) {
-                return false;
-            }
-        }
-
-        static boolean isElytraEnchanted(PlayerEntity player) {
+        static ElytraState getElytraState(PlayerEntity player) {
             try {
                 return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
                         .map(component -> {
                             java.util.List<net.minecraft.util.Pair<dev.emi.trinkets.api.SlotReference, ItemStack>> equipped = component.getEquipped(Items.ELYTRA);
+                            if (equipped.isEmpty()) return ElytraState.NONE;
+                            boolean enchanted = false;
                             for (net.minecraft.util.Pair<dev.emi.trinkets.api.SlotReference, ItemStack> pair : equipped) {
-                                if (pair.getRight().hasEnchantments()) return true;
+                                if (pair.getRight().hasEnchantments()) {
+                                    enchanted = true;
+                                    break;
+                                }
                             }
-                            return false;
+                            return new ElytraState(true, enchanted);
                         })
-                        .orElse(false);
+                        .orElse(ElytraState.NONE);
             } catch (Throwable e) {
-                return false;
+                return ElytraState.NONE;
             }
         }
     }

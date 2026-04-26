@@ -23,10 +23,10 @@ public class InGameHudMixin {
     @Shadow @Final private MinecraftClient client;
 
     @Unique
-    private int fab$currentArmorSlot = 0;
+    private int fab$totalArmorValue = 0;
 
     @Unique
-    private int fab$cachedArmorValue = 0;
+    private int fab$currentArmorSlot = 0;
 
     @Unique
     private boolean fab$cachedHasElytra = false;
@@ -42,12 +42,15 @@ public class InGameHudMixin {
         this.fab$currentArmorSlot = 0;
 
         if (this.client.player != null) {
-            this.fab$cachedArmorValue = ArmorBarRenderer.calculateEquippedArmor(this.client.player);
-            this.fab$cachedHasElytra = ModCompat.hasElytraEquipped(this.client.player);
-            this.fab$cachedElytraEnchanted = ModCompat.isElytraEnchanted(this.client.player);
-            ArmorBarRenderer.updateIfNeeded(this.client.player, this.fab$cachedArmorValue);
+            this.fab$totalArmorValue = ArmorBarRenderer.calculateEquippedArmor(this.client.player);
+
+            ModCompat.ElytraState es = ModCompat.getElytraState(this.client.player);
+            this.fab$cachedHasElytra = es.equipped();
+            this.fab$cachedElytraEnchanted = es.enchanted();
+
+            ArmorBarRenderer.updateIfNeeded(this.client.player, this.fab$totalArmorValue, es);
         } else {
-            this.fab$cachedArmorValue = 0;
+            this.fab$totalArmorValue = 0;
             this.fab$cachedHasElytra = false;
             this.fab$cachedElytraEnchanted = false;
         }
@@ -78,7 +81,7 @@ public class InGameHudMixin {
         if (VANILLA_ICONS.equals(tex) && v == 9) {
             // Disegniamo la nostra icona esattamente nelle coordinate richieste dal gioco.
             if (this.client.player != null && this.fab$currentArmorSlot < 10) {
-                ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$cachedArmorValue, this.fab$cachedHasElytra, this.fab$cachedElytraEnchanted);
+                ArmorBarRenderer.renderSlot(ctx, this.fab$currentArmorSlot, x, y, this.fab$totalArmorValue, this.fab$cachedHasElytra, this.fab$cachedElytraEnchanted);
                 this.fab$currentArmorSlot++;
             }
             return; // Blocca il rendering dell'icona vanilla
