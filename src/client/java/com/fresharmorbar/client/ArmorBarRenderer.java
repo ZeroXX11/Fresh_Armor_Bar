@@ -8,9 +8,14 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
+//? if >=1.21 {
+/*import net.minecraft.component.DataComponentTypes;
+import net.minecraft.registry.entry.RegistryEntry;
+*///?} else {
 import net.minecraft.item.DyeableArmorItem;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.trim.ArmorTrim;
+//?}
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.joml.Matrix4f;
@@ -27,11 +32,11 @@ public class ArmorBarRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger("fresh-armor-bar");
     private static final String MODID = "fresh-armor-bar";
 
-    private static final Identifier EMPTY_TEX = new Identifier(MODID, "textures/gui/armorbar/empty.png");
-    private static final Identifier BASE_STRIP = new Identifier(MODID, "textures/gui/armorbar/base.png");
-    private static final Identifier TRIM_BASE = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_base.png");
-    private static final Identifier TRIM_GLOW_TEX = new Identifier(MODID, "textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
-    private static final Identifier ELYTRA_TEX = new Identifier(MODID, "textures/gui/armorbar/elytra.png");
+    private static final Identifier EMPTY_TEX = id("textures/gui/armorbar/empty.png");
+    private static final Identifier BASE_STRIP = id("textures/gui/armorbar/base.png");
+    private static final Identifier TRIM_BASE = id("textures/gui/armorbar/overlays/trim/trim_base.png");
+    private static final Identifier TRIM_GLOW_TEX = id("textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
+    private static final Identifier ELYTRA_TEX = id("textures/gui/armorbar/elytra.png");
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
@@ -48,6 +53,22 @@ public class ArmorBarRenderer {
     static {
         for (int i = 0; i < 60; i++) CACHE[i] = new SlotData();
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
+    }
+
+    private static Identifier id(String path) {
+        //? if >=1.21 {
+        /*return Identifier.of(MODID, path);
+        *///?} else {
+        return new Identifier(MODID, path);
+        //?}
+    }
+
+    private static Identifier id(String namespace, String path) {
+        //? if >=1.21 {
+        /*return Identifier.of(namespace, path);
+        *///?} else {
+        return new Identifier(namespace, path);
+        //?}
     }
 
     private static void invalidate() {
@@ -159,6 +180,15 @@ public class ArmorBarRenderer {
         if (a.hasEnchantments() != b.hasEnchantments()) return false;
 
         // 3. Controlla i Trim leggendo direttamente il tag NBT (molto più veloce del Registry)
+        //? if >=1.21 {
+        /*var trimA = a.get(DataComponentTypes.TRIM);
+        var trimB = b.get(DataComponentTypes.TRIM);
+        if (!java.util.Objects.equals(trimA, trimB)) return false;
+
+        var colorA = a.get(DataComponentTypes.DYED_COLOR);
+        var colorB = b.get(DataComponentTypes.DYED_COLOR);
+        return java.util.Objects.equals(colorA, colorB);
+        *///?} else {
         var nbtA = a.getNbt(); var nbtB = b.getNbt();
         var trimA = nbtA != null ? nbtA.get("Trim") : null;
         var trimB = nbtB != null ? nbtB.get("Trim") : null;
@@ -170,6 +200,7 @@ public class ArmorBarRenderer {
         }
 
         return true;
+        //?}
     }
 
     private static float ch(int rgb, int shift) { return ((rgb >> shift) & 0xFF) / 255f; }
@@ -180,6 +211,7 @@ public class ArmorBarRenderer {
         lastElytraState = elytraState;
 
         int half = 0;
+        //? if <1.21
         var registry = player.getWorld().getRegistryManager();
 
         for (int i = 0; i < 4; i++) {
@@ -190,28 +222,50 @@ public class ArmorBarRenderer {
             if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) continue;
 
             int protection = armor.getProtection();
+            //? if >=1.21 {
+            /*var trimOpt = stack.get(DataComponentTypes.TRIM);
+            *///?} else {
             var trimOpt = ArmorTrim.getTrim(registry, stack);
+            //?}
             int rgb = -1;
             float tr = 1f, tg = 1f, tb = 1f;
             boolean glow = false;
 
+            //? if >=1.21 {
+            /*if (trimOpt != null) {
+                String asset = trimOpt.getMaterial().value().assetName();
+                rgb = getTrimRgb(asset);
+                tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
+                glow = GLOW_TRIMS.contains(asset);
+            }
+            *///?} else {
             if (trimOpt.isPresent()) {
                 String asset = trimOpt.get().getMaterial().value().assetName();
                 rgb = getTrimRgb(asset);
                 tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
                 glow = GLOW_TRIMS.contains(asset);
             }
+            //?}
 
             boolean ench = stack.hasEnchantments();
             Identifier tex = getMaterialTex(armor.getMaterial());
 
             int color = -1;
             float mr = 1f, mg = 1f, mb = 1f;
+            //? if >=1.21 {
+            /*var dyedColor = stack.get(DataComponentTypes.DYED_COLOR);
+            if (dyedColor != null) {
+                color = dyedColor.rgb();
+                float darken = 0.8f;
+                mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
+            }
+            *///?} else {
             if (armor instanceof DyeableArmorItem dyeable) {
                 color = dyeable.getColor(stack);
                 float darken = 0.8f; // Riduce la saturazione per un look più naturale
                 mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }
+            //?}
 
             for (int j = 0; j < protection && half < CACHE.length; j++, half++)
                 CACHE[half].fill(tex, rgb, tr, tg, tb, glow, ench, color, mr, mg, mb);
@@ -294,10 +348,10 @@ public class ArmorBarRenderer {
             float maxU = baseMaxU + offset;
             float maxV = scale + offset; // scale + offset
 
-            vertexConsumer.vertex(matrix, x1, y + 9, 0).texture(minU, maxV).next();
-            vertexConsumer.vertex(matrix, x2, y + 9, 0).texture(maxU, maxV).next();
-            vertexConsumer.vertex(matrix, x2, y, 0).texture(maxU, offset).next();
-            vertexConsumer.vertex(matrix, x1, y, 0).texture(minU, offset).next();
+            addGlintVertex(vertexConsumer, matrix, x1, y + 9, minU, maxV);
+            addGlintVertex(vertexConsumer, matrix, x2, y + 9, maxU, maxV);
+            addGlintVertex(vertexConsumer, matrix, x2, y, maxU, offset);
+            addGlintVertex(vertexConsumer, matrix, x1, y, minU, offset);
         }
 
         // Svuota il buffer per disegnare tutti i fasci di luce accumulati
@@ -307,18 +361,40 @@ public class ArmorBarRenderer {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    private static final Identifier TURTLE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/turtle.png");
-    private static final Identifier LEATHER_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/leather.png");
-    private static final Identifier CHAIN_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/chainmail.png");
-    private static final Identifier IRON_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/iron.png");
-    private static final Identifier GOLD_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/gold.png");
-    private static final Identifier DIAMOND_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/diamond.png");
-    private static final Identifier NETHERITE_STRIP = new Identifier(MODID, "textures/gui/armorbar/strips/netherite.png");
+    private static void addGlintVertex(VertexConsumer vertexConsumer, Matrix4f matrix, float x, float y, float u, float v) {
+        //? if >=1.21 {
+        /*vertexConsumer.vertex(matrix, x, y, 0).texture(u, v);
+        *///?} else {
+        vertexConsumer.vertex(matrix, x, y, 0).texture(u, v).next();
+        //?}
+    }
 
+    private static final Identifier TURTLE_STRIP = id("textures/gui/armorbar/strips/turtle.png");
+    private static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
+    private static final Identifier CHAIN_STRIP = id("textures/gui/armorbar/strips/chainmail.png");
+    private static final Identifier IRON_STRIP = id("textures/gui/armorbar/strips/iron.png");
+    private static final Identifier GOLD_STRIP = id("textures/gui/armorbar/strips/gold.png");
+    private static final Identifier DIAMOND_STRIP = id("textures/gui/armorbar/strips/diamond.png");
+    private static final Identifier NETHERITE_STRIP = id("textures/gui/armorbar/strips/netherite.png");
+
+    //? if >=1.21 {
+    /*private static final Set<RegistryEntry<ArmorMaterial>> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
+    *///?} else {
     private static final Set<ArmorMaterial> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
+    //?}
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
+    //? if >=1.21 {
+    /*private static Identifier getMaterialTex(RegistryEntry<ArmorMaterial> mat) {
+        if (mat.equals(ArmorMaterials.TURTLE)) return TURTLE_STRIP;
+        if (mat.equals(ArmorMaterials.LEATHER)) return LEATHER_STRIP;
+        if (mat.equals(ArmorMaterials.CHAIN)) return CHAIN_STRIP;
+        if (mat.equals(ArmorMaterials.IRON)) return IRON_STRIP;
+        if (mat.equals(ArmorMaterials.GOLD)) return GOLD_STRIP;
+        if (mat.equals(ArmorMaterials.DIAMOND)) return DIAMOND_STRIP;
+        if (mat.equals(ArmorMaterials.NETHERITE)) return NETHERITE_STRIP;
+    *///?} else {
     private static Identifier getMaterialTex(ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
         if (mat == ArmorMaterials.LEATHER) return LEATHER_STRIP;
@@ -327,6 +403,7 @@ public class ArmorBarRenderer {
         if (mat == ArmorMaterials.GOLD) return GOLD_STRIP;
         if (mat == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
+    //?}
 
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         net.minecraft.resource.ResourceManager currentManager = client != null ? client.getResourceManager() : null;
@@ -337,14 +414,18 @@ public class ArmorBarRenderer {
             lastResourceManager = currentManager;
         }
 
+        //? if >=1.21 {
+        /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getIdAsString(), name -> {
+        *///?} else {
         return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getName(), name -> {
+        //?}
             Identifier id;
             try {
                 if (name.contains(":")) {
                     String[] parts = name.split(":");
-                    id = new Identifier(parts[0], "textures/gui/armorbar/strips/" + parts[1] + ".png");
+                    id = id(parts[0], "textures/gui/armorbar/strips/" + parts[1] + ".png");
                 } else {
-                    id = new Identifier(MODID, "textures/gui/armorbar/strips/" + name + ".png");
+                    id = id("textures/gui/armorbar/strips/" + name + ".png");
                 }
             } catch (Exception e) {
                 if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {

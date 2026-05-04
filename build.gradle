@@ -1,14 +1,16 @@
+import org.gradle.api.plugins.BasePluginExtension
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+
 plugins {
-    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'fabric-loom' version '1.16-SNAPSHOT'
     id 'maven-publish'
 }
 
 version = project.mod_version
 group = project.maven_group
 
-base {
-    archivesName = "${project.archives_base_name}-${project.minecraft_version}"
-}
+extensions.getByType(BasePluginExtension).archivesName.set("${project.archives_base_name}-${stonecutter.current.version}")
 
 repositories {
     // I repository essenziali per Minecraft vengono aggiunti automaticamente da Loom.
@@ -33,6 +35,35 @@ loom {
     }
 }
 
+tasks.named("compileJava").configure {
+    dependsOn(tasks.named("stonecutterMerge"))
+}
+
+tasks.named("compileClientJava").configure {
+    dependsOn(tasks.named("stonecutterMergeClient"))
+}
+
+tasks.named("processResources").configure {
+    dependsOn(tasks.named("stonecutterMerge"))
+}
+
+tasks.named("processClientResources").configure {
+    dependsOn(tasks.named("stonecutterMergeClient"))
+}
+
+tasks.named("compileTestJava").configure {
+    dependsOn(tasks.named("stonecutterMergeTest"))
+}
+
+tasks.named("processTestResources").configure {
+    dependsOn(tasks.named("stonecutterMergeTest"))
+}
+
+tasks.matching { it.name == "sourcesJar" }.configureEach {
+    dependsOn(tasks.named("stonecutterMerge"))
+    dependsOn(tasks.named("stonecutterMergeClient"))
+}
+
 dependencies {
     // --- Core Minecraft & Fabric ---
     // Le versioni sono gestite nel file gradle.properties
@@ -46,7 +77,11 @@ dependencies {
 
     // --- Mod Compatibility & APIs ---
     // Trinkets API
-    modCompileOnly "dev.emi:trinkets:3.7.2"
+    modCompileOnly "dev.emi:trinkets:${project.trinkets_version}"
+
+    if (stonecutter.eval(stonecutter.current.version, ">=1.21")) {
+        compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+    }
 
     // --- Libraries & Utilities ---
     // MixinExtras
@@ -58,8 +93,9 @@ processResources {
     def expandProps = [
             "version": project.version,
             "mod_name": project.mod_name,
-            "minecraft_version": project.minecraft_version,
-            "loader_version": project.loader_version
+            "minecraft_version": stonecutter.current.version,
+            "loader_version": project.loader_version,
+            "java_version": stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
     ]
     
     inputs.properties(expandProps)
@@ -70,7 +106,7 @@ processResources {
 }
 
 // Configurazione Java (Metodo moderno con Toolchain)
-def targetJavaVersion = 17
+def targetJavaVersion = stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
 java {
     withSourcesJar()
     toolchain {
@@ -89,14 +125,12 @@ jar {
     }
 }
 
+extensions.getByType(PublishingExtension).publications.register("mavenJava", MavenPublication) { publication ->
+    publication.artifactId = project.archives_base_name
+    publication.from(components.java)
+}
+
 publishing {
-    publications {
-        create("mavenJava", MavenPublication) {
-            artifactId = project.archives_base_name
-            from(components.java)
-        }
-    }
-    
     repositories {
         // Repository Maven per la pubblicazione (opzionale)
     }
