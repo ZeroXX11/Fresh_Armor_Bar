@@ -64,6 +64,18 @@ tasks.matching { it.name == "sourcesJar" }.configureEach {
     dependsOn(tasks.named("stonecutterMergeClient"))
 }
 
+tasks.named("stonecutterGenerate").configure {
+    dependsOn(tasks.named("stonecutterMerge"))
+}
+
+tasks.named("stonecutterGenerateClient").configure {
+    dependsOn(tasks.named("stonecutterMergeClient"))
+}
+
+tasks.named("stonecutterGenerateTest").configure {
+    dependsOn(tasks.named("stonecutterMergeTest"))
+}
+
 dependencies {
     // --- Core Minecraft & Fabric ---
     // Le versioni sono gestite nel file gradle.properties
@@ -89,6 +101,9 @@ dependencies {
     annotationProcessor "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
 }
 
+def runtimeJavaVersion = 21
+def targetJavaVersion = stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
+
 processResources {
     def expandProps = [
             "version": project.version,
@@ -106,11 +121,10 @@ processResources {
 }
 
 // Configurazione Java (Metodo moderno con Toolchain)
-def targetJavaVersion = stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
 java {
     withSourcesJar()
     toolchain {
-        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+        languageVersion = JavaLanguageVersion.of(runtimeJavaVersion)
     }
 }
 

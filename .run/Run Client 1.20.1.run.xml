@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Client 1.20.1" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="Run Client 1.20.1" type="GradleRunConfiguration" factoryName="Gradle" folderName="Stonecutter">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":1.20.1:runClient" />
+          <option value="client1_20_1" />
         </list>
       </option>
       <option name="vmOptions" />
