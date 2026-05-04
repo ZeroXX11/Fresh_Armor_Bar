@@ -135,30 +135,6 @@ Unknown armor materials fall back to a base texture. Resource packs or integrati
 textures/gui/armorbar/strips/<material>.png
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome. Please keep the project focused and maintainable:
-
-- Keep the mod Fabric-only.
-- Prefer shared code in `src/`.
-- Do not duplicate the full mod tree for a new Minecraft version.
-- Use small Stonecutter conditionals only where APIs actually differ.
-- Keep generated files and build output out of commits.
-- Test the relevant Stonecutter targets before opening a pull request.
-
-Useful checks:
-
-```powershell
-.\gradlew.bat tasks --no-daemon
-.\gradlew.bat build --no-daemon
-```
-
-Return the working tree to the VCS/base Stonecutter target after testing:
-
-```powershell
-.\gradlew.bat stonecutterSwitchTo<version> --no-daemon
-```
-
 ## 📄 License
 
 Fresh Armor Bar is licensed under the MIT License.

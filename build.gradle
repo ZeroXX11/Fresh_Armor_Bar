@@ -11,7 +11,7 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-extensions.getByType(BasePluginExtension).archivesName.set("${project.archives_base_name}-${stonecutter.current.version}")
+extensions.getByType(BasePluginExtension).archivesName.set(project.archives_base_name)
 
 repositories {
     // I repository essenziali per Minecraft vengono aggiunti automaticamente da Loom.
