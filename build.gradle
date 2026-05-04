@@ -1,6 +1,7 @@
 import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.language.jvm.tasks.ProcessResources
 
 plugins {
     id 'fabric-loom' version '1.16-SNAPSHOT'
@@ -34,6 +35,8 @@ loom {
         }
     }
 }
+
+sourceSets.main.resources.exclude("fabric.mod.json")
 
 tasks.named("compileJava").configure {
     dependsOn(tasks.named("stonecutterMerge"))
@@ -103,20 +106,42 @@ dependencies {
 
 def runtimeJavaVersion = 21
 def targetJavaVersion = stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
+def fabricModJsonTemplate = rootProject.layout.projectDirectory.file("src/main/resources/fabric.mod.json")
+def generatedFabricModJsonDir = layout.buildDirectory.dir("generated/resources/fabricModJson")
+def fabricModJsonProps = [
+        "version": project.version,
+        "mod_name": project.mod_name,
+        "minecraft_version": stonecutter.current.version,
+        "loader_version": project.loader_version,
+        "java_version": stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
+]
 
-processResources {
-    def expandProps = [
-            "version": project.version,
-            "mod_name": project.mod_name,
-            "minecraft_version": stonecutter.current.version,
-            "loader_version": project.loader_version,
-            "java_version": stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
-    ]
-    
-    inputs.properties(expandProps)
+tasks.register("generateFabricModJson") {
+    dependsOn(tasks.named("stonecutterMerge"))
 
-    filesMatching("fabric.mod.json") {
-        expand(expandProps)
+    inputs.file(fabricModJsonTemplate)
+    inputs.properties(fabricModJsonProps)
+    outputs.file(generatedFabricModJsonDir.map { it.file("fabric.mod.json") })
+
+    doLast {
+        def outputFile = generatedFabricModJsonDir.get().file("fabric.mod.json").asFile
+        outputFile.parentFile.mkdirs()
+
+        def contents = fabricModJsonTemplate.asFile.getText("UTF-8")
+        fabricModJsonProps.each { key, value ->
+            contents = contents.replace("\${${key}}", value.toString())
+        }
+
+        outputFile.setText(contents, "UTF-8")
+    }
+}
+
+tasks.named("processResources", ProcessResources).configure {
+    dependsOn(tasks.named("generateFabricModJson"))
+    inputs.properties(fabricModJsonProps)
+
+    from(generatedFabricModJsonDir) {
+        include("fabric.mod.json")
     }
 }
 

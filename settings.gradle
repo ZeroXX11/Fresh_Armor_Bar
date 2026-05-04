@@ -22,15 +22,51 @@ plugins {
 	id 'dev.kikugie.stonecutter' version '0.9'
 }
 
+def stonecutterVersions = ['1.20.1', '1.21.1']
+def stonecutterVcsVersion = '1.20.1'
+
 stonecutter.create(getRootProject()) {
-	versions '1.20.1', '1.21.1'
-	vcsVersion = '1.20.1'
+	versions(*stonecutterVersions)
+	vcsVersion = stonecutterVcsVersion
 }
 
 rootProject.name = 'Fresh_Armor_Bar'
 
 gradle.rootProject { root ->
 	gradle.projectsEvaluated {
+		def stonecutterSourceTaskPairs = [
+				['stonecutterPrepare', 'stonecutterGenerate', 'stonecutterMerge'],
+				['stonecutterPrepareClient', 'stonecutterGenerateClient', 'stonecutterMergeClient'],
+				['stonecutterPrepareTest', 'stonecutterGenerateTest', 'stonecutterMergeTest']
+		]
+
+		def nonVcsStonecutterVersions = stonecutterVersions.findAll { it != stonecutterVcsVersion }
+		def stonecutterTask = { String projectPath, String taskName ->
+			def targetProject = root.project(projectPath)
+			targetProject.tasks.names.contains(taskName) ? targetProject.tasks.named(taskName) : null
+		}
+
+		nonVcsStonecutterVersions.each { nonVcsVersion ->
+			stonecutterSourceTaskPairs.each { taskNames ->
+				def nonVcsPrepareTask = stonecutterTask(":${nonVcsVersion}", taskNames[0])
+				def vcsGenerateTask = stonecutterTask(":${stonecutterVcsVersion}", taskNames[1])
+				def vcsMergeTask = stonecutterTask(":${stonecutterVcsVersion}", taskNames[2])
+				def nonVcsMergeTask = stonecutterTask(":${nonVcsVersion}", taskNames[2])
+
+				if (nonVcsPrepareTask != null && vcsMergeTask != null) {
+					nonVcsPrepareTask.configure {
+						mustRunAfter(vcsMergeTask)
+					}
+				}
+
+				if (vcsGenerateTask != null && nonVcsMergeTask != null) {
+					vcsGenerateTask.configure {
+						mustRunAfter(nonVcsMergeTask)
+					}
+				}
+			}
+		}
+
 		def registerClientLauncher = { String taskName, String minecraftVersion ->
 			def switchTask = root.tasks.named("stonecutterSwitchTo${minecraftVersion}")
 			def runClientTask = root.project(":${minecraftVersion}").tasks.named('runClient')
