@@ -213,9 +213,16 @@ public class ArmorBarRenderer {
 
     private static float ch(int rgb, int shift) { return ((rgb >> shift) & 0xFF) / 255f; }
 
+    //? if >=1.21.2 {
+    /*private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth, int argb) {
+        ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, u, 0, 9, 9, texWidth, 9, argb);
+    }
+    *///?}
+
+    @SuppressWarnings("SameParameterValue")
     private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth) {
         //? if >=1.21.2 {
-        /*ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, u, 0, 9, 9, texWidth, 9);
+        /*drawTexture(ctx, tex, x, y, u, texWidth, 0xFFFFFFFF);
         *///?} else {
         ctx.drawTexture(tex, x, y, u, 0, 9, 9, texWidth, 9);
         //?}
@@ -355,6 +362,22 @@ public class ArmorBarRenderer {
     }
 
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
+        //? if >=1.21.2 {
+        /*int color = 0xFFFFFFFF;
+        if (hasColor) {
+            int ir = (int)(r * 255.0F);
+            int ig = (int)(g * 255.0F);
+            int ib = (int)(b * 255.0F);
+            color = 0xFF000000 | (ir << 16) | (ig << 8) | ib;
+        }
+        drawTexture(ctx, tex, x, y, u, 27, color);
+
+        if (glow) {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            drawTexture(ctx, TRIM_GLOW_TEX, x, y, u, 27, 0xDFFFFFFF); // 0.875 * 255 = 223 (0xDF)
+        }
+        *///?} else {
         if (hasColor) RenderSystem.setShaderColor(r, g, b, 1f);
         drawTexture(ctx, tex, x, y, u, 27);
         if (hasColor) RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
@@ -366,6 +389,7 @@ public class ArmorBarRenderer {
             drawTexture(ctx, TRIM_GLOW_TEX, x, y, u, 27);
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         }
+        //?}
     }
 
     private static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
