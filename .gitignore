@@ -31,6 +31,12 @@ bin/
 # fabric
 
 run/
+versions/*/run/
+
+# stonecutter / loom generated output
+
+versions/*/.gradle/
+versions/*/build/
 
 # java
 

@@ -85,17 +85,23 @@ Build one target:
 ./gradlew :1.21.4:build --no-daemon
 ```
 
-Build and collect all supported targets:
+Build all supported targets:
 
 ```bash
-./gradlew buildAndCollect --no-daemon
+./gradlew buildAllVersions --no-daemon
 ```
 
 On Windows:
 
 ```powershell
-.\gradlew.bat buildAndCollect --no-daemon
+.\gradlew.bat buildAllVersions --no-daemon
 ```
+
+Final jars are written directly to the root `build/libs` folder. Per-version
+`versions/<minecraft-version>/build` folders are Gradle/Loom working output, not
+the distribution location.
+
+`buildAndCollect` is kept as a compatibility alias.
 
 ## Multi-Version System
 
@@ -120,7 +126,7 @@ Fresh_Armor_Bar/
 |- src/                  Shared client-side mod source and resources
 |- versions/             Per-version Gradle properties
 |- .run/                 IntelliJ Gradle run configurations
-|- build.gradle          Fabric Loom, dependencies, Java, resources
+|- build.gradle          Fabric Loom, dependencies, Java, resources, output layout
 |- settings.gradle       Stonecutter setup
 |- stonecutter.gradle    Active Stonecutter version marker
 `- MULTIVERSION.md       Developer notes for the version workflow

@@ -46,6 +46,16 @@ Use the Stonecutter Dev plugin in IntelliJ IDEA, or the official Stonecutter Gra
 
 The VCS/default active version is `1.20.1`.
 
+Stonecutter's generated IntelliJ switch actions are disabled with:
+
+```properties
+dev.kikugie.stonecutter.generate_switch_actions=false
+```
+
+This keeps the IDE run dropdown focused on the single Gradle `Minecraft Client`
+configuration. The underlying Stonecutter Gradle switch tasks still exist because
+they are part of Stonecutter itself.
+
 ## Running The Client
 
 In IntelliJ IDEA:
@@ -89,17 +99,30 @@ Build one target:
 .\gradlew.bat :1.21.4:build --no-daemon
 ```
 
-Build and collect all configured Stonecutter targets:
+Build all configured Stonecutter targets:
 
 ```powershell
-.\gradlew.bat buildAndCollect --no-daemon
+.\gradlew.bat buildAllVersions --no-daemon
 ```
 
 On Unix-like shells:
 
 ```bash
-./gradlew buildAndCollect --no-daemon
+./gradlew buildAllVersions --no-daemon
 ```
+
+`buildAndCollect` is kept as a compatibility alias for older workflows.
+
+The final remapped jars and sources jars are written directly to:
+
+```text
+build/libs
+```
+
+The project intentionally does not use `versions/<minecraft-version>/build/libs`
+as a distribution location. Those version folders are Gradle/Loom working
+directories. If Loom creates `versions/<minecraft-version>/build/devlibs`, treat
+those jars as development/intermediate artifacts, not release jars.
 
 ## Adding A New Version
 

@@ -119,19 +119,30 @@ tasks.named("sourcesJar").configure {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+tasks.named("remapJar").configure {
+    destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+}
+
+tasks.named("remapSourcesJar").configure {
+    destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+}
+
 jar {
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}"}
     }
 }
 
-tasks.register("buildAndCollect", Copy) {
+tasks.register("buildAllVersions") {
     group = "build"
-    description = "Builds this version and collects the remapped jar and sources jar in the root build/libs folder."
+    description = "Builds this version and writes the remapped jars to the root build/libs folder."
     dependsOn(tasks.named("build"))
-    from(tasks.named("remapJar").map { it.archiveFile })
-    from(tasks.named("remapSourcesJar").map { it.archiveFile })
-    into(rootProject.layout.buildDirectory.dir("libs/${project.mod_version}"))
+}
+
+tasks.register("buildAndCollect") {
+    group = "build"
+    description = "Compatibility alias for buildAllVersions."
+    dependsOn(tasks.named("buildAllVersions"))
 }
 
 publishing {
