@@ -1,5 +1,3 @@
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
 import groovy.text.SimpleTemplateEngine
 
 plugins {
@@ -96,18 +94,11 @@ tasks.register("generateFabricModJson") {
     }
 }
 
+sourceSets.main.resources.setSrcDirs([generatedFabricModJson, rootProject.file("src/main/resources")])
+
 tasks.named("processResources").configure {
     dependsOn(tasks.named("generateFabricModJson"))
-
-    from(generatedFabricModJson) {
-        include("fabric.mod.json")
-    }
-
-    eachFile { file ->
-        if (file.name == "fabric.mod.json" && !file.file.toPath().startsWith(generatedFabricModJson.get().asFile.toPath())) {
-            file.exclude()
-        }
-    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 // Configurazione Java (Metodo moderno con Toolchain)
@@ -121,6 +112,11 @@ java {
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
     it.options.release.set(targetJavaVersion)
+}
+
+tasks.named("sourcesJar").configure {
+    dependsOn(tasks.named("generateFabricModJson"))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 jar {
@@ -138,12 +134,14 @@ tasks.register("buildAndCollect", Copy) {
     into(rootProject.layout.buildDirectory.dir("libs/${project.mod_version}"))
 }
 
-extensions.getByType(PublishingExtension).publications.register("mavenJava", MavenPublication) { publication ->
-    publication.artifactId = project.archives_base_name
-    publication.from(components.java)
-}
-
 publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.archives_base_name
+            from(components.java)
+        }
+    }
+
     repositories {
         // Repository Maven per la pubblicazione (opzionale)
     }
