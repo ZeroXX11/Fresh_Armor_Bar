@@ -3,13 +3,21 @@ package com.fresharmorbar.client;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
+//? if >=1.21.2 {
+/*import net.minecraft.entity.attribute.EntityAttributes;
+*///?}
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
+//? if >=1.21.2 {
+/*import net.minecraft.item.equipment.ArmorMaterials;
+*///?} else {
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
+//?}
 //? if >=1.21 {
 /*import net.minecraft.component.DataComponentTypes;
+//? if <1.21.2
 import net.minecraft.registry.entry.RegistryEntry;
 *///?} else {
 import net.minecraft.item.DyeableArmorItem;
@@ -123,7 +131,7 @@ public class ArmorBarRenderer {
 
             if (renderArmorValue > 0 && (isBaseRow || hasArmorPart)) {
                 // 1. Sfondo
-                ctx.drawTexture(EMPTY_TEX, x, currentY, 0, 0, 9, 9, 9, 9);
+                drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
             }
 
             if (hasArmorPart && currentSlot * 2 + 1 < CACHE.length) {
@@ -138,7 +146,7 @@ public class ArmorBarRenderer {
         // 4. Elytra
         if (slotIndex == 0 && hasElytra) {
             int elytraY = renderArmorValue > 0 ? y - (maxRows * 10) : y;
-            ctx.drawTexture(ELYTRA_TEX, x, elytraY, 0, 0, 9, 9, 9, 9);
+            drawTexture(ctx, ELYTRA_TEX, x, elytraY, 0, 9);
             if (elytraEnchanted) {
                 renderFullIconEnchantment(ctx, x, elytraY);
             }
@@ -205,6 +213,33 @@ public class ArmorBarRenderer {
 
     private static float ch(int rgb, int shift) { return ((rgb >> shift) & 0xFF) / 255f; }
 
+    private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth) {
+        //? if >=1.21.2 {
+        /*ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, u, 0, 9, 9, texWidth, 9);
+        *///?} else {
+        ctx.drawTexture(tex, x, y, u, 0, 9, 9, texWidth, 9);
+        //?}
+    }
+
+    //? if >=1.21.2 {
+    /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
+        var modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return 0;
+
+        final int[] protection = {0};
+        modifiers.applyModifiers(slot, (attribute, modifier) -> {
+            if (attribute.equals(EntityAttributes.ARMOR)) {
+                protection[0] += (int) Math.round(modifier.value());
+            }
+        });
+        return protection[0];
+    }
+    *///?} else {
+    private static int getProtection(ArmorItem armor) {
+        return armor.getProtection();
+    }
+    //?}
+
     private static void updateData(PlayerEntity player, int totalArmor, ModCompat.ElytraState elytraState) {
         for (SlotData data : CACHE) data.reset();
         lastArmorValue = totalArmor;
@@ -219,9 +254,15 @@ public class ArmorBarRenderer {
             ItemStack stack = player.getEquippedStack(slot);
             LAST_STACKS[i] = stack.copy(); // Aggiorna cache con una copia per rilevare modifiche NBT in-place
 
+            //? if >=1.21.2 {
+            /*if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem)) continue;
+
+            int protection = getProtection(stack, slot);
+            *///?} else {
             if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) continue;
 
-            int protection = armor.getProtection();
+            int protection = getProtection(armor);
+            //?}
             //? if >=1.21 {
             /*var trimOpt = stack.get(DataComponentTypes.TRIM);
             *///?} else {
@@ -233,7 +274,11 @@ public class ArmorBarRenderer {
 
             //? if >=1.21 {
             /*if (trimOpt != null) {
+                //? if >=1.21.2 {
+                /^String asset = trimOpt.material().value().assetName();
+                ^///?} else {
                 String asset = trimOpt.getMaterial().value().assetName();
+                //?}
                 rgb = getTrimRgb(asset);
                 tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
                 glow = GLOW_TRIMS.contains(asset);
@@ -248,7 +293,11 @@ public class ArmorBarRenderer {
             //?}
 
             boolean ench = stack.hasEnchantments();
+            //? if >=1.21.2 {
+            /*Identifier tex = getMaterialTex(stack);
+            *///?} else {
             Identifier tex = getMaterialTex(armor.getMaterial());
+            //?}
 
             int color = -1;
             float mr = 1f, mg = 1f, mb = 1f;
@@ -307,14 +356,14 @@ public class ArmorBarRenderer {
 
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
         if (hasColor) RenderSystem.setShaderColor(r, g, b, 1f);
-        ctx.drawTexture(tex, x, y, u, 0, 9, 9, 27, 9);
+        drawTexture(ctx, tex, x, y, u, 27);
         if (hasColor) RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         if (glow) {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(1f, 1f, 1f, 0.875f);
-            ctx.drawTexture(TRIM_GLOW_TEX, x, y, u, 0, 9, 9, 27, 9);
+            drawTexture(ctx, TRIM_GLOW_TEX, x, y, u, 27);
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         }
     }
@@ -327,7 +376,13 @@ public class ArmorBarRenderer {
         RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, 1.0f);
 
         // Usa il layer nativo getGlint() per le strisce animate
+        //? if >=1.21.2 {
+        /*ctx.draw(vertexConsumers -> {
+        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getGlint());
+        *///?} else {
+        
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
+        //?}
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
         // Scala dei fasci di luce animati
@@ -354,8 +409,12 @@ public class ArmorBarRenderer {
             addGlintVertex(vertexConsumer, matrix, x1, y, minU, offset);
         }
 
+        //? if >=1.21.2 {
+        /*});
+        *///?} else {
         // Svuota il buffer per disegnare tutti i fasci di luce accumulati
         ctx.draw();
+        //?}
 
         // Ripristina il colore standard per la GUI
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -377,15 +436,38 @@ public class ArmorBarRenderer {
     private static final Identifier DIAMOND_STRIP = id("textures/gui/armorbar/strips/diamond.png");
     private static final Identifier NETHERITE_STRIP = id("textures/gui/armorbar/strips/netherite.png");
 
-    //? if >=1.21 {
-    /*private static final Set<RegistryEntry<ArmorMaterial>> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
-    *///?} else {
-    private static final Set<ArmorMaterial> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
-    //?}
+    private static final Set<Object> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
-    //? if >=1.21 {
+    //? if >=1.21.2 {
+    /*private static Identifier getMaterialTex(ItemStack stack) {
+        var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
+        //? if >=1.21.4 {
+        /^var asset = equippable != null ? equippable.assetId().orElse(null) : null;
+        if (asset == null) return BASE_STRIP;
+
+        if (asset.equals(ArmorMaterials.TURTLE_SCUTE.assetId())) return TURTLE_STRIP;
+        if (asset.equals(ArmorMaterials.LEATHER.assetId())) return LEATHER_STRIP;
+        if (asset.equals(ArmorMaterials.CHAIN.assetId())) return CHAIN_STRIP;
+        if (asset.equals(ArmorMaterials.IRON.assetId())) return IRON_STRIP;
+        if (asset.equals(ArmorMaterials.GOLD.assetId())) return GOLD_STRIP;
+        if (asset.equals(ArmorMaterials.DIAMOND.assetId())) return DIAMOND_STRIP;
+        if (asset.equals(ArmorMaterials.NETHERITE.assetId())) return NETHERITE_STRIP;
+        Identifier model = asset.getValue();
+        ^///?} else {
+        Identifier model = equippable != null ? equippable.model().orElse(null) : null;
+        if (model == null) return BASE_STRIP;
+
+        if (model.equals(ArmorMaterials.TURTLE_SCUTE.modelId())) return TURTLE_STRIP;
+        if (model.equals(ArmorMaterials.LEATHER.modelId())) return LEATHER_STRIP;
+        if (model.equals(ArmorMaterials.CHAIN.modelId())) return CHAIN_STRIP;
+        if (model.equals(ArmorMaterials.IRON.modelId())) return IRON_STRIP;
+        if (model.equals(ArmorMaterials.GOLD.modelId())) return GOLD_STRIP;
+        if (model.equals(ArmorMaterials.DIAMOND.modelId())) return DIAMOND_STRIP;
+        if (model.equals(ArmorMaterials.NETHERITE.modelId())) return NETHERITE_STRIP;
+        //?}
+    *///?} else if >=1.21 {
     /*private static Identifier getMaterialTex(RegistryEntry<ArmorMaterial> mat) {
         if (mat.equals(ArmorMaterials.TURTLE)) return TURTLE_STRIP;
         if (mat.equals(ArmorMaterials.LEATHER)) return LEATHER_STRIP;
@@ -414,7 +496,9 @@ public class ArmorBarRenderer {
             lastResourceManager = currentManager;
         }
 
-        //? if >=1.21 {
+        //? if >=1.21.2 {
+        /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
+        *///?} else if >=1.21 {
         /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getIdAsString(), name -> {
         *///?} else {
         return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getName(), name -> {
@@ -428,19 +512,34 @@ public class ArmorBarRenderer {
                     id = id("textures/gui/armorbar/strips/" + name + ".png");
                 }
             } catch (Exception e) {
-                if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+                //? if >=1.21.2 {
+                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
+                *///?} else {
+                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
+                //?}
+                if (shouldLog) {
                     LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", name);
                 }
                 return BASE_STRIP;
             }
 
             if (currentManager != null && currentManager.getResource(id).isPresent()) {
-                if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+                //? if >=1.21.2 {
+                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
+                *///?} else {
+                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
+                //?}
+                if (shouldLog) {
                     LOGGER.info("Found custom texture for armor material '{}' at {}", name, id);
                 }
                 return id;
             } else {
-                if (UNKNOWN_MATERIALS_LOGGED.add(mat)) {
+                //? if >=1.21.2 {
+                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
+                *///?} else {
+                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
+                //?}
+                if (shouldLog) {
                     LOGGER.warn("Unknown armor material '{}' and no custom texture found at {}. Falling back to base texture.", name, id);
                 }
                 return BASE_STRIP;
@@ -472,9 +571,15 @@ public class ArmorBarRenderer {
         int total = 0;
         for (EquipmentSlot slot : ARMOR_ORDER) {
             ItemStack stack = player.getEquippedStack(slot);
-            if (stack.getItem() instanceof ArmorItem armor) {
-                total += armor.getProtection();
+            //? if >=1.21.2 {
+            /*if (stack.getItem() instanceof ArmorItem) {
+                total += getProtection(stack, slot);
             }
+            *///?} else {
+            if (stack.getItem() instanceof ArmorItem armor) {
+                total += getProtection(armor);
+            }
+            //?}
         }
         return total;
     }

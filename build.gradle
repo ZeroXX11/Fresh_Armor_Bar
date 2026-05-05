@@ -1,17 +1,18 @@
-import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.language.jvm.tasks.ProcessResources
+import groovy.text.SimpleTemplateEngine
 
 plugins {
-    id 'fabric-loom' version '1.16-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom-remap'
     id 'maven-publish'
 }
 
 version = project.mod_version
 group = project.maven_group
 
-extensions.getByType(BasePluginExtension).archivesName.set(project.archives_base_name)
+base {
+    archivesName = project.archives_base_name
+}
 
 repositories {
     // I repository essenziali per Minecraft vengono aggiunti automaticamente da Loom.
@@ -26,57 +27,18 @@ repositories {
 }
 
 loom {
-    splitEnvironmentSourceSets()
+    fabricModJsonPath = rootProject.file("src/main/resources/fabric.mod.json")
 
     mods {
         "fresh-armor-bar" {
             sourceSet(sourceSets.main)
-            sourceSet(sourceSets.client)
         }
     }
-}
 
-sourceSets.main.resources.exclude("fabric.mod.json")
-
-tasks.named("compileJava").configure {
-    dependsOn(tasks.named("stonecutterMerge"))
-}
-
-tasks.named("compileClientJava").configure {
-    dependsOn(tasks.named("stonecutterMergeClient"))
-}
-
-tasks.named("processResources").configure {
-    dependsOn(tasks.named("stonecutterMerge"))
-}
-
-tasks.named("processClientResources").configure {
-    dependsOn(tasks.named("stonecutterMergeClient"))
-}
-
-tasks.named("compileTestJava").configure {
-    dependsOn(tasks.named("stonecutterMergeTest"))
-}
-
-tasks.named("processTestResources").configure {
-    dependsOn(tasks.named("stonecutterMergeTest"))
-}
-
-tasks.matching { it.name == "sourcesJar" }.configureEach {
-    dependsOn(tasks.named("stonecutterMerge"))
-    dependsOn(tasks.named("stonecutterMergeClient"))
-}
-
-tasks.named("stonecutterGenerate").configure {
-    dependsOn(tasks.named("stonecutterMerge"))
-}
-
-tasks.named("stonecutterGenerateClient").configure {
-    dependsOn(tasks.named("stonecutterMergeClient"))
-}
-
-tasks.named("stonecutterGenerateTest").configure {
-    dependsOn(tasks.named("stonecutterMergeTest"))
+    runConfigs.configureEach {
+        ideConfigGenerated = false
+        runDir = "../../run"
+    }
 }
 
 dependencies {
@@ -106,8 +68,6 @@ dependencies {
 
 def runtimeJavaVersion = 21
 def targetJavaVersion = stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
-def fabricModJsonTemplate = rootProject.layout.projectDirectory.file("src/main/resources/fabric.mod.json")
-def generatedFabricModJsonDir = layout.buildDirectory.dir("generated/resources/fabricModJson")
 def fabricModJsonProps = [
         "version": project.version,
         "mod_name": project.mod_name,
@@ -116,32 +76,37 @@ def fabricModJsonProps = [
         "java_version": stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
 ]
 
+def generatedFabricModJson = layout.buildDirectory.dir("generated/resources/fabricModJson")
+def generatedFabricModJsonFile = generatedFabricModJson.map { it.file("fabric.mod.json") }
+
 tasks.register("generateFabricModJson") {
-    dependsOn(tasks.named("stonecutterMerge"))
+    def fabricModJsonTemplate = rootProject.file("src/main/resources/fabric.mod.json")
 
     inputs.file(fabricModJsonTemplate)
     inputs.properties(fabricModJsonProps)
-    outputs.file(generatedFabricModJsonDir.map { it.file("fabric.mod.json") })
+    outputs.file(generatedFabricModJsonFile)
 
     doLast {
-        def outputFile = generatedFabricModJsonDir.get().file("fabric.mod.json").asFile
+        def outputFile = generatedFabricModJsonFile.get().asFile
         outputFile.parentFile.mkdirs()
-
-        def contents = fabricModJsonTemplate.asFile.getText("UTF-8")
-        fabricModJsonProps.each { key, value ->
-            contents = contents.replace("\${${key}}", value.toString())
-        }
-
-        outputFile.setText(contents, "UTF-8")
+        outputFile.text = new SimpleTemplateEngine()
+                .createTemplate(fabricModJsonTemplate)
+                .make(fabricModJsonProps)
+                .toString()
     }
 }
 
-tasks.named("processResources", ProcessResources).configure {
+tasks.named("processResources").configure {
     dependsOn(tasks.named("generateFabricModJson"))
-    inputs.properties(fabricModJsonProps)
 
-    from(generatedFabricModJsonDir) {
+    from(generatedFabricModJson) {
         include("fabric.mod.json")
+    }
+
+    eachFile { file ->
+        if (file.name == "fabric.mod.json" && !file.file.toPath().startsWith(generatedFabricModJson.get().asFile.toPath())) {
+            file.exclude()
+        }
     }
 }
 
@@ -162,6 +127,15 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}"}
     }
+}
+
+tasks.register("buildAndCollect", Copy) {
+    group = "build"
+    description = "Builds this version and collects the remapped jar and sources jar in the root build/libs folder."
+    dependsOn(tasks.named("build"))
+    from(tasks.named("remapJar").map { it.archiveFile })
+    from(tasks.named("remapSourcesJar").map { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir("libs/${project.mod_version}"))
 }
 
 extensions.getByType(PublishingExtension).publications.register("mavenJava", MavenPublication) { publication ->

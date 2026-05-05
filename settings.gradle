@@ -1,19 +1,16 @@
 pluginManagement {
 	repositories {
+		mavenLocal()
+		mavenCentral()
 		gradlePluginPortal()
 		maven {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
 		maven {
-			name = 'KikuGie Releases'
-			url = 'https://maven.kikugie.dev/releases'
-		}
-		maven {
 			name = 'KikuGie Snapshots'
 			url = 'https://maven.kikugie.dev/snapshots'
 		}
-		mavenCentral()
 	}
 }
 
@@ -22,7 +19,7 @@ plugins {
 	id 'dev.kikugie.stonecutter' version '0.9.3'
 }
 
-def stonecutterVersions = ['1.20.1', '1.21.1']
+def stonecutterVersions = ['1.20.1', '1.21.1', '1.21.2', '1.21.3', '1.21.4']
 def stonecutterVcsVersion = '1.20.1'
 
 stonecutter.create(getRootProject()) {
@@ -34,55 +31,12 @@ rootProject.name = 'Fresh_Armor_Bar'
 
 gradle.rootProject { root ->
 	gradle.projectsEvaluated {
-		def nonVcsStonecutterVersions = stonecutterVersions.findAll { it != stonecutterVcsVersion }
-		def sharedSourceTaskPairs = [
-				['stonecutterPrepare', 'stonecutterGenerate', 'stonecutterMerge'],
-				['stonecutterPrepareClient', 'stonecutterGenerateClient', 'stonecutterMergeClient'],
-				['stonecutterPrepareTest', 'stonecutterGenerateTest', 'stonecutterMergeTest']
-		]
-		def stonecutterTask = { String projectPath, String taskName ->
-			def targetProject = root.project(projectPath)
-			targetProject.tasks.names.contains(taskName) ? targetProject.tasks.named(taskName) : null
+		def activeMinecraftVersion = stonecutter.current.version
+
+		root.tasks.register('minecraftClient') {
+			group = 'Minecraft Client'
+			description = "Runs the Fabric client for the active Stonecutter version (${activeMinecraftVersion})."
+			dependsOn(root.project(":${activeMinecraftVersion}").tasks.named('runClient'))
 		}
-
-		nonVcsStonecutterVersions.each { nonVcsVersion ->
-			sharedSourceTaskPairs.each { taskNames ->
-				def nonVcsPrepareTask = stonecutterTask(":${nonVcsVersion}", taskNames[0])
-				def vcsGenerateTask = stonecutterTask(":${stonecutterVcsVersion}", taskNames[1])
-				def vcsMergeTask = stonecutterTask(":${stonecutterVcsVersion}", taskNames[2])
-				def nonVcsMergeTask = stonecutterTask(":${nonVcsVersion}", taskNames[2])
-
-				if (nonVcsPrepareTask != null && vcsMergeTask != null) {
-					nonVcsPrepareTask.configure {
-						mustRunAfter(vcsMergeTask)
-					}
-				}
-
-				if (vcsGenerateTask != null && nonVcsMergeTask != null) {
-					vcsGenerateTask.configure {
-						mustRunAfter(nonVcsMergeTask)
-					}
-				}
-			}
-		}
-
-		def registerClientLauncher = { String taskName, String minecraftVersion ->
-			def switchTask = root.tasks.named("stonecutterSwitchTo${minecraftVersion}")
-			def runClientTask = root.project(":${minecraftVersion}").tasks.named('runClient')
-
-			runClientTask.configure {
-				mustRunAfter(switchTask)
-			}
-
-			root.tasks.register(taskName) {
-				group = 'Minecraft Client'
-				description = "Switches Stonecutter to Minecraft ${minecraftVersion}, then runs the Fabric client."
-				dependsOn(switchTask)
-				dependsOn(runClientTask)
-			}
-		}
-
-		registerClientLauncher('client1_20_1', '1.20.1')
-		registerClientLauncher('client1_21_1', '1.21.1')
 	}
 }

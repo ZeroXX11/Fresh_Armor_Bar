@@ -1,49 +1,75 @@
 # Fresh Armor Bar Multiversion
 
-Fresh Armor Bar is a Fabric-only multiversion project managed with Stonecutter. The repository keeps one main source tree and generates/builds version targets from it; Stonecutter is only a build-time tool and is not required by the final jar.
+Fresh Armor Bar is a Fabric-only multiversion project managed with Stonecutter. The repository keeps one shared source tree and builds version targets from it; Stonecutter is only a development/build-time tool and is not required by the final jar.
 
 ## Common Code
 
-The shared source lives in the normal Fabric layout:
+The shared source lives in the normal Fabric main source set:
 
-- `src/client/java/com/fresharmorbar/client/ModCompat.java`
-- `src/client/java/com/fresharmorbar/client/ArmorBarRenderer.java`
-- `src/client/java/com/fresharmorbar/mixin/client/InGameHudMixin.java`
-- `src/client/resources/fresh-armor-bar.client.mixins.json`
+- `src/main/java/com/fresharmorbar/client/ModCompat.java`
+- `src/main/java/com/fresharmorbar/client/ArmorBarRenderer.java`
+- `src/main/java/com/fresharmorbar/mixin/client/InGameHudMixin.java`
+- `src/main/resources/fresh-armor-bar.client.mixins.json`
 - `src/main/resources/fabric.mod.json`
 - `src/main/resources/assets/**`
 - `src/main/resources/icon.png`
 
-Assets, the mixin configuration, metadata, mod id, package names, renderer flow, elytra compatibility, trim color table and texture lookup cache are shared.
+This is still a client-only mod. `fabric.mod.json` declares `"environment": "client"` and loads only `fresh-armor-bar.client.mixins.json`; that mixin config uses the `client` mixin section for `InGameHudMixin`. There is no main or server entrypoint, so the HUD/rendering classes are not exposed as a generic server/common initializer.
+
+Assets, metadata, mod id, package names, renderer flow, elytra compatibility, trim color table and texture lookup cache are shared.
 
 ## Version-Specific Code
 
 Only Minecraft/Fabric API differences are guarded with Stonecutter comments:
 
-- Minecraft 1.20.1 uses `new Identifier(...)`; Minecraft 1.21.1 uses `Identifier.of(...)`.
-- Minecraft 1.20.1 reads armor trims from NBT/registry APIs; Minecraft 1.21.1 reads trim and dyed color from data components.
+- Minecraft 1.20.1 uses `new Identifier(...)`; Minecraft 1.21.x uses `Identifier.of(...)`.
+- Minecraft 1.20.1 reads armor trims from NBT/registry APIs; Minecraft 1.21.x reads trim and dyed color from data components.
 - Minecraft 1.20.1 uses `ArmorMaterial` directly; Minecraft 1.21.1 uses `RegistryEntry<ArmorMaterial>`.
-- Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.1 does not.
-- Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.1 hooks the extracted static `InGameHud.renderArmor`.
+- Minecraft 1.21.2+ moved armor material classes to `net.minecraft.item.equipment`.
+- Minecraft 1.21.2+ reads armor value from the item attribute component because `ArmorItem#getProtection()` is no longer exposed.
+- Minecraft 1.21.2+ uses `DrawContext` texture overloads that require a GUI `RenderLayer` factory.
+- Minecraft 1.21.2 and 1.21.3 use `EquippableComponent#model()` for equipment assets; Minecraft 1.21.4 uses `EquippableComponent#assetId()`.
+- Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
+- Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
 
 The per-version Gradle properties live in:
 
 - `versions/1.20.1/gradle.properties`
 - `versions/1.21.1/gradle.properties`
+- `versions/1.21.2/gradle.properties`
+- `versions/1.21.3/gradle.properties`
+- `versions/1.21.4/gradle.properties`
 
-## Adding A New Version
+## Changing Version
 
-1. Add a new entry to `settings.gradle` under `stonecutter { create(...) { versions ... } }`.
-2. Create `versions/<minecraft-version>/gradle.properties` with the matching Minecraft, Yarn, Fabric API, Trinkets, MixinExtras and mod version values.
-3. Run `./gradlew stonecutterSwitchTo<minecraft-version>` and compile.
-4. If the new version only changes a method, import or type, add a small Stonecutter conditional in the existing shared file.
-5. If the new version changes a whole behavior area, extract a tiny adapter and keep the rest of the renderer/mixin shared.
+Use the Stonecutter Dev plugin in IntelliJ IDEA, or the official Stonecutter Gradle tasks, to change the active version. Do not use custom switch-only IntelliJ run configurations.
 
-Do not duplicate the whole mod tree for a new version.
+The VCS/default active version is `1.20.1`.
+
+## Running The Client
+
+In IntelliJ IDEA:
+
+1. Select the active Minecraft version with the Stonecutter Dev plugin.
+2. Run `Minecraft Client`.
+
+The `.run` folder intentionally contains only this one client configuration. It calls the root `minecraftClient` task, which resolves to `runClient` for `stonecutter.current.version`.
+
+It does not run `stonecutterSwitchTo...` and it does not call custom per-version `client1_*` launcher tasks.
+
+From the terminal:
+
+```powershell
+.\gradlew.bat minecraftClient
+```
+
+On Unix-like shells:
+
+```bash
+./gradlew minecraftClient
+```
 
 ## Building
-
-## Java And Gradle JVM
 
 This project requires Gradle itself to run on Java 21 or newer because the build plugins used by the multiversion setup, including modern Fabric Loom/Stonecutter dependencies, may be compiled for Java 21.
 
@@ -52,51 +78,35 @@ The Gradle Daemon JVM is pinned with the versioned file `gradle/gradle-daemon-jv
 Compilation also uses a Java 21 toolchain. The emitted bytecode is still version-specific:
 
 - Minecraft 1.20.1: Java 17 bytecode, because that Minecraft version targets Java 17.
-- Minecraft 1.21.1: Java 21 bytecode.
+- Minecraft 1.21.x: Java 21 bytecode.
 
 In IntelliJ IDEA, reload the Gradle project after checkout. If IDEA asks for a Gradle JVM, choose a Java 21 JDK or the Gradle wrapper/daemon JVM option; do not choose a Java 17 Gradle JVM.
 
-Build Minecraft 1.20.1:
+Build one target:
 
 ```powershell
-.\gradlew.bat stonecutterSwitchTo1.20.1 :1.20.1:build --no-daemon
+.\gradlew.bat :1.20.1:build --no-daemon
+.\gradlew.bat :1.21.4:build --no-daemon
 ```
 
-Build Minecraft 1.21.1:
+Build and collect all configured Stonecutter targets:
 
 ```powershell
-.\gradlew.bat stonecutterSwitchTo1.21.1 :1.21.1:build --no-daemon
+.\gradlew.bat buildAndCollect --no-daemon
 ```
 
-## Running The Client
+On Unix-like shells:
 
-Use the root launcher tasks when you want to switch Stonecutter and start Minecraft in one command. They are defined in `settings.gradle` so they appear at the root of the Gradle project.
-
-Run Minecraft 1.20.1:
-
-```powershell
-.\gradlew.bat client1_20_1
+```bash
+./gradlew buildAndCollect --no-daemon
 ```
 
-The task internally runs the Stonecutter switch first, then `:1.20.1:runClient`.
+## Adding A New Version
 
-Run Minecraft 1.21.1:
+1. Add a new entry to `settings.gradle` under `stonecutter { create(...) { versions ... } }`.
+2. Create `versions/<minecraft-version>/gradle.properties` with the matching Minecraft, Yarn, Fabric API, Trinkets, MixinExtras and mod version values.
+3. Switch to the new version with the Stonecutter Dev plugin or an official Stonecutter task, then compile `:<minecraft-version>:build`.
+4. If the new version only changes a method, import or type, add a small Stonecutter conditional in the existing shared file.
+5. If the new version changes a whole behavior area, extract a tiny adapter and keep the rest of the renderer/mixin shared.
 
-```powershell
-.\gradlew.bat client1_21_1
-```
-
-The task internally runs the Stonecutter switch first, then `:1.21.1:runClient`.
-
-In IntelliJ IDEA, use only these versioned run configurations from `.run`:
-
-- `Stonecutter -> Run Client 1.20.1`
-- `Stonecutter -> Run Client 1.21.1`
-
-Those configurations call only the root launcher tasks (`client1_20_1` and `client1_21_1`), so switch-only IntelliJ configurations are not needed and should not be used.
-
-To return the working tree to the VCS version after testing another target:
-
-```powershell
-.\gradlew.bat stonecutterSwitchTo1.20.1 --no-daemon
-```
+Do not duplicate the whole mod tree for a new version.
