@@ -1,32 +1,57 @@
 package com.fresharmorbar.client;
 
+//? if >=1.21.6 {
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.gl.UniformType;
+import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.gui.render.state.SimpleGuiElementRenderState;
+import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.item.ItemRenderer;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.TextureSetup;
+import net.minecraft.resource.ResourceManager;
+import org.joml.Matrix3x2f;
+//?} else {
+/*import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
-//? if >=1.21.2 {
-/*import net.minecraft.entity.attribute.EntityAttributes;
 *///?}
+//? if >=1.21.2 {
+import net.minecraft.entity.attribute.EntityAttributes;
+//?}
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ArmorItem;
+//? if <1.21.5
+//import net.minecraft.item.ArmorItem;
 //? if >=1.21.2 {
-/*import net.minecraft.item.equipment.ArmorMaterials;
-*///?} else {
-import net.minecraft.item.ArmorMaterial;
+import net.minecraft.item.equipment.ArmorMaterials;
+//?} else {
+/*import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
-//?}
+*///?}
 //? if >=1.21 {
-/*import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.DataComponentTypes;
 //? if <1.21.2
-import net.minecraft.registry.entry.RegistryEntry;
-*///?} else {
-import net.minecraft.item.DyeableArmorItem;
+//import net.minecraft.registry.entry.RegistryEntry;
+//?} else {
+/*import net.minecraft.item.DyeableArmorItem;
 import net.minecraft.item.trim.ArmorTrim;
-//?}
+*///?}
 import net.minecraft.item.ItemStack;
+//? if >=1.21.6
+import net.minecraft.util.Util;
 import net.minecraft.util.Identifier;
-import com.mojang.blaze3d.systems.RenderSystem;
-import org.joml.Matrix4f;
+//? if <1.21.6
+//import com.mojang.blaze3d.systems.RenderSystem;
+//? if <1.21.6
+//import org.joml.Matrix4f;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +59,17 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+//? if >=1.21.6
+import java.io.InputStream;
+//? if >=1.21.6
+import java.io.IOException;
+//? if >=1.21.6
+import java.lang.reflect.Field;
+//? if >=1.21.6
+import java.util.Map;
+//? if >=1.21.6
+import java.util.concurrent.ConcurrentHashMap;
 
 // Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
 public class ArmorBarRenderer {
@@ -45,6 +81,28 @@ public class ArmorBarRenderer {
     private static final Identifier TRIM_BASE = id("textures/gui/armorbar/overlays/trim/trim_base.png");
     private static final Identifier TRIM_GLOW_TEX = id("textures/gui/armorbar/overlays/trim/trim_glow_tex.png");
     private static final Identifier ELYTRA_TEX = id("textures/gui/armorbar/elytra.png");
+    //? if >=1.21.6 {
+    private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
+            .withLocation(id(MODID, "pipeline/gui_glint"))
+            .withVertexShader("core/position_tex_color")
+            .withFragmentShader("core/position_tex_color")
+            .withSampler("Sampler0")
+            .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+            .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+            .withBlend(BlendFunction.GLINT)
+            .withCull(false)
+            .withDepthWrite(false)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS)
+            .build();
+    private static final float GLINT_UV_SCALE = 0.025f;
+    private static final float GLINT_TEXTURE_SCALE = 8.0f;
+    private static final float GLINT_ROTATION = 0.17453292f;
+    private static final float GLINT_COLOR_MULTIPLIER = 0.85f;
+    private static final Field DRAW_CONTEXT_STATE_FIELD = findDrawContextStateField();
+    private static final Map<GlintMaskKey, IconMask> GLINT_MASK_CACHE = new ConcurrentHashMap<>();
+    private static ResourceManager lastGlintMaskResourceManager = null;
+    //?}
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
@@ -65,18 +123,18 @@ public class ArmorBarRenderer {
 
     private static Identifier id(String path) {
         //? if >=1.21 {
-        /*return Identifier.of(MODID, path);
-        *///?} else {
-        return new Identifier(MODID, path);
-        //?}
+        return Identifier.of(MODID, path);
+        //?} else {
+        /*return new Identifier(MODID, path);
+        *///?}
     }
 
     private static Identifier id(String namespace, String path) {
         //? if >=1.21 {
-        /*return Identifier.of(namespace, path);
-        *///?} else {
-        return new Identifier(namespace, path);
-        //?}
+        return Identifier.of(namespace, path);
+        //?} else {
+        /*return new Identifier(namespace, path);
+        *///?}
     }
 
     private static void invalidate() {
@@ -139,7 +197,11 @@ public class ArmorBarRenderer {
                 renderSlotMaterialAndTrims(ctx, currentSlot, x, currentY);
 
                 // 3. Incantesimi
-                renderSlotEnchantments(ctx, CACHE[currentSlot * 2].enchanted, CACHE[currentSlot * 2 + 1].enchanted, x, currentY);
+                //? if >=1.21.6 {
+                renderSlotEnchantments(ctx, CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1], x, currentY);
+                //?} else {
+                /*renderSlotEnchantments(ctx, CACHE[currentSlot * 2].enchanted, CACHE[currentSlot * 2 + 1].enchanted, x, currentY);
+                *///?}
             }
         }
 
@@ -154,7 +216,12 @@ public class ArmorBarRenderer {
     }
 
     private static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
+        //? if >=1.21.6 {
+        renderGuiGlint(ctx, x, y, ELYTRA_TEX, 0, 0, 9, 0.0f, 9.0f, 0.0f, GLINT_UV_SCALE);
+        //?} else {
+        /*
         renderSlotEnchantments(ctx, true, true, x, y);
+        *///?}
     }
 
     private static boolean needsUpdate(PlayerEntity player, int currentArmor, ModCompat.ElytraState elytraState) {
@@ -189,15 +256,15 @@ public class ArmorBarRenderer {
 
         // 3. Controlla i Trim leggendo direttamente il tag NBT (molto più veloce del Registry)
         //? if >=1.21 {
-        /*var trimA = a.get(DataComponentTypes.TRIM);
+        var trimA = a.get(DataComponentTypes.TRIM);
         var trimB = b.get(DataComponentTypes.TRIM);
         if (!java.util.Objects.equals(trimA, trimB)) return false;
 
         var colorA = a.get(DataComponentTypes.DYED_COLOR);
         var colorB = b.get(DataComponentTypes.DYED_COLOR);
         return java.util.Objects.equals(colorA, colorB);
-        *///?} else {
-        var nbtA = a.getNbt(); var nbtB = b.getNbt();
+        //?} else {
+        /*var nbtA = a.getNbt(); var nbtB = b.getNbt();
         var trimA = nbtA != null ? nbtA.get("Trim") : null;
         var trimB = nbtB != null ? nbtB.get("Trim") : null;
         if (!java.util.Objects.equals(trimA, trimB)) return false;
@@ -208,28 +275,32 @@ public class ArmorBarRenderer {
         }
 
         return true;
-        //?}
+        *///?}
     }
 
     private static float ch(int rgb, int shift) { return ((rgb >> shift) & 0xFF) / 255f; }
 
     //? if >=1.21.2 {
-    /*private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth, int argb) {
-        ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, u, 0, 9, 9, texWidth, 9, argb);
+    private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth, int argb) {
+        //? if >=1.21.6 {
+        ctx.drawTexture(RenderPipelines.GUI_TEXTURED, tex, x, y, u, 0, 9, 9, texWidth, 9, argb);
+        //?} else {
+        /*ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, u, 0, 9, 9, texWidth, 9, argb);
+        *///?}
     }
-    *///?}
+    //?}
 
     @SuppressWarnings("SameParameterValue")
     private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth) {
         //? if >=1.21.2 {
-        /*drawTexture(ctx, tex, x, y, u, texWidth, 0xFFFFFFFF);
-        *///?} else {
-        ctx.drawTexture(tex, x, y, u, 0, 9, 9, texWidth, 9);
-        //?}
+        drawTexture(ctx, tex, x, y, u, texWidth, 0xFFFFFFFF);
+        //?} else {
+        /*ctx.drawTexture(tex, x, y, u, 0, 9, 9, texWidth, 9);
+        *///?}
     }
 
     //? if >=1.21.2 {
-    /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
+    private static int getProtection(ItemStack stack, EquipmentSlot slot) {
         var modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers == null) return 0;
 
@@ -241,11 +312,11 @@ public class ArmorBarRenderer {
         });
         return protection[0];
     }
-    *///?} else {
-    private static int getProtection(ArmorItem armor) {
+    //?} else {
+    /*private static int getProtection(ArmorItem armor) {
         return armor.getProtection();
     }
-    //?}
+    *///?}
 
     private static void updateData(PlayerEntity player, int totalArmor, ModCompat.ElytraState elytraState) {
         for (SlotData data : CACHE) data.reset();
@@ -254,74 +325,83 @@ public class ArmorBarRenderer {
 
         int half = 0;
         //? if <1.21
-        var registry = player.getWorld().getRegistryManager();
+        //var registry = player.getWorld().getRegistryManager();
 
         for (int i = 0; i < 4; i++) {
             EquipmentSlot slot = ARMOR_ORDER[i];
             ItemStack stack = player.getEquippedStack(slot);
             LAST_STACKS[i] = stack.copy(); // Aggiorna cache con una copia per rilevare modifiche NBT in-place
 
-            //? if >=1.21.2 {
+            //? if >=1.21.5 {
+            if (stack.isEmpty()) continue;
+
+            int protection = getProtection(stack, slot);
+            if (protection <= 0) continue;
+            //?} else if >=1.21.2 {
             /*if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem)) continue;
 
             int protection = getProtection(stack, slot);
             *///?} else {
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) continue;
+            /*if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) continue;
 
             int protection = getProtection(armor);
-            //?}
+            *///?}
             //? if >=1.21 {
-            /*var trimOpt = stack.get(DataComponentTypes.TRIM);
-            *///?} else {
-            var trimOpt = ArmorTrim.getTrim(registry, stack);
-            //?}
+            var trimOpt = stack.get(DataComponentTypes.TRIM);
+            //?} else {
+            /*var trimOpt = ArmorTrim.getTrim(registry, stack);
+            *///?}
             int rgb = -1;
             float tr = 1f, tg = 1f, tb = 1f;
             boolean glow = false;
 
             //? if >=1.21 {
-            /*if (trimOpt != null) {
-                //? if >=1.21.2 {
-                /^String asset = trimOpt.material().value().assetName();
-                ^///?} else {
-                String asset = trimOpt.getMaterial().value().assetName();
-                //?}
+            if (trimOpt != null) {
+                //? if >=1.21.5 {
+                String asset = trimOpt.material().value().assets().base().suffix();
+                //?} else {
+                /*//? if >=1.21.2 {
+                String asset = trimOpt.material().value().assetName();
+                //?} else {
+                /^String asset = trimOpt.getMaterial().value().assetName();
+                ^///?}
+                *///?}
                 rgb = getTrimRgb(asset);
                 tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
                 glow = GLOW_TRIMS.contains(asset);
             }
-            *///?} else {
-            if (trimOpt.isPresent()) {
+            //?} else {
+            /*if (trimOpt.isPresent()) {
                 String asset = trimOpt.get().getMaterial().value().assetName();
                 rgb = getTrimRgb(asset);
                 tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
                 glow = GLOW_TRIMS.contains(asset);
             }
-            //?}
+            *///?}
 
             boolean ench = stack.hasEnchantments();
             //? if >=1.21.2 {
-            /*Identifier tex = getMaterialTex(stack);
-            *///?} else {
-            Identifier tex = getMaterialTex(armor.getMaterial());
-            //?}
+            Identifier tex = getMaterialTex(stack);
+            //?} else {
+            /*Identifier tex = getMaterialTex(armor.getMaterial());
+            *///?}
 
             int color = -1;
             float mr = 1f, mg = 1f, mb = 1f;
             //? if >=1.21 {
-            /*var dyedColor = stack.get(DataComponentTypes.DYED_COLOR);
+            var dyedColor = stack.get(DataComponentTypes.DYED_COLOR);
             if (dyedColor != null) {
                 color = dyedColor.rgb();
                 float darken = 0.8f;
                 mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }
-            *///?} else {
-            if (armor instanceof DyeableArmorItem dyeable) {
+            //?} else {
+            /*if (armor instanceof DyeableArmorItem dyeable) {
                 color = dyeable.getColor(stack);
                 float darken = 0.8f; // Riduce la saturazione per un look più naturale
                 mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }
-            //?}
+            *///?}
 
             for (int j = 0; j < protection && half < CACHE.length; j++, half++)
                 CACHE[half].fill(tex, rgb, tr, tg, tb, glow, ench, color, mr, mg, mb);
@@ -351,7 +431,8 @@ public class ArmorBarRenderer {
             drawSide(ctx, left, x, y, U_LEFT);
             drawSide(ctx, right, x, y, U_RIGHT);
         }
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        //? if <1.21.6
+        //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     private static boolean isSame(SlotData a, SlotData b) {
@@ -363,7 +444,7 @@ public class ArmorBarRenderer {
 
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
         //? if >=1.21.2 {
-        /*int color = 0xFFFFFFFF;
+        int color = 0xFFFFFFFF;
         if (hasColor) {
             int ir = (int)(r * 255.0F);
             int ig = (int)(g * 255.0F);
@@ -373,12 +454,14 @@ public class ArmorBarRenderer {
         drawTexture(ctx, tex, x, y, u, 27, color);
 
         if (glow) {
-            RenderSystem.enableBlend();
+            //? if <1.21.5 {
+            /*RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
+            *///?}
             drawTexture(ctx, TRIM_GLOW_TEX, x, y, u, 27, 0xDFFFFFFF); // 0.875 * 255 = 223 (0xDF)
         }
-        *///?} else {
-        if (hasColor) RenderSystem.setShaderColor(r, g, b, 1f);
+        //?} else {
+        /*if (hasColor) RenderSystem.setShaderColor(r, g, b, 1f);
         drawTexture(ctx, tex, x, y, u, 27);
         if (hasColor) RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
@@ -389,24 +472,26 @@ public class ArmorBarRenderer {
             drawTexture(ctx, TRIM_GLOW_TEX, x, y, u, 27);
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         }
-        //?}
+        *///?}
     }
 
-    private static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
+    //? if <1.21.6 {
+    /*private static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
         if (!leftEnch && !rightEnch) return;
 
         // Abbassa l'intensità del colore per renderlo meno "forte" e meno "viola acceso"
-        RenderSystem.enableBlend();
+        //? if <1.21.5
+        //RenderSystem.enableBlend();
         RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, 1.0f);
 
         // Usa il layer nativo getGlint() per le strisce animate
         //? if >=1.21.2 {
-        /*ctx.draw(vertexConsumers -> {
+        ctx.draw(vertexConsumers -> {
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getGlint());
-        *///?} else {
+        //?} else {
         
-        VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
-        //?}
+        /^VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
+        ^///?}
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
         // Scala dei fasci di luce animati
@@ -434,23 +519,249 @@ public class ArmorBarRenderer {
         }
 
         //? if >=1.21.2 {
-        /*});
-        *///?} else {
-        // Svuota il buffer per disegnare tutti i fasci di luce accumulati
+        });
+        //?} else {
+        /^// Svuota il buffer per disegnare tutti i fasci di luce accumulati
         ctx.draw();
-        //?}
+        ^///?}
 
         // Ripristina il colore standard per la GUI
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
+    *///?}
 
-    private static void addGlintVertex(VertexConsumer vertexConsumer, Matrix4f matrix, float x, float y, float u, float v) {
-        //? if >=1.21 {
-        /*vertexConsumer.vertex(matrix, x, y, 0).texture(u, v);
-        *///?} else {
-        vertexConsumer.vertex(matrix, x, y, 0).texture(u, v).next();
-        //?}
+    //? if >=1.21.6 {
+    private static void renderSlotEnchantments(DrawContext ctx, SlotData left, SlotData right, int x, int y) {
+        if (!left.enchanted && !right.enchanted) return;
+
+        if (isSame(left, right)) {
+            renderGuiGlint(ctx, x, y, left.materialTex, U_FULL, 0, 9, 0.0f, 9.0f, 0.0f, GLINT_UV_SCALE);
+        } else {
+            if (left.enchanted && left.materialTex != null) {
+                renderGuiGlint(ctx, x, y, left.materialTex, U_LEFT, 0, 5, 0.0f, 4.5f, 0.0f, GLINT_UV_SCALE * 0.5f);
+            }
+            if (right.enchanted && right.materialTex != null) {
+                renderGuiGlint(ctx, x, y, right.materialTex, U_RIGHT, 4, 9, 4.5f, 9.0f, GLINT_UV_SCALE * 0.5f, GLINT_UV_SCALE);
+            }
+        }
     }
+
+    private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier maskTexture, int maskU, int minPixelX, int maxPixelX, float xStart, float xEnd, float baseMinU, float baseMaxU) {
+        if (maskTexture == null) return;
+
+        GlintTextureTransform transform = getGlintTextureTransform();
+        IconMask mask = getIconMask(maskTexture, maskU);
+        for (int i = 0; i < 2; i++) {
+            float offset = i * 0.5f;
+            float minU = baseMinU + offset;
+            float maxU = baseMaxU + offset;
+            float maxV = GLINT_UV_SCALE + offset;
+            drawGuiGlintMask(ctx, x, y, minPixelX, maxPixelX, xStart, xEnd, minU, maxU, offset, maxV, transform, mask);
+        }
+    }
+
+    private static void drawGuiGlintMask(DrawContext ctx, int x, int y, int minPixelX, int maxPixelX, float xStart, float xEnd, float minU, float maxU, float minV, float maxV, GlintTextureTransform transform, IconMask mask) {
+        Matrix3x2f pose = new Matrix3x2f(ctx.getMatrices());
+        ScreenRect bounds = createGlintBounds(x + xStart, x + xEnd, y, pose);
+        GuiRenderState state = getGuiRenderState(ctx);
+        if (state == null) return;
+        state.addSimpleElement(new GlintMaskRenderState(
+                FAB_GUI_GLINT,
+                getGlintTextureSetup(),
+                pose,
+                x,
+                y,
+                minPixelX,
+                maxPixelX,
+                xStart,
+                xEnd,
+                minU,
+                maxU,
+                minV,
+                maxV,
+                transform,
+                mask,
+                getGlintColor(),
+                bounds
+        ));
+    }
+
+    private static TextureSetup getGlintTextureSetup() {
+        var texture = net.minecraft.client.MinecraftClient.getInstance().getTextureManager().getTexture(ItemRenderer.ITEM_ENCHANTMENT_GLINT);
+        return TextureSetup.withoutGlTexture(texture.getGlTextureView());
+    }
+
+    private static Field findDrawContextStateField() {
+        for (Field field : DrawContext.class.getDeclaredFields()) {
+            if (field.getType() == GuiRenderState.class) {
+                field.setAccessible(true);
+                return field;
+            }
+        }
+        LOGGER.error("Unable to find DrawContext GuiRenderState field; enchanted armor glint cannot be rendered on 1.21.6+.");
+        return null;
+    }
+
+    private static GuiRenderState getGuiRenderState(DrawContext ctx) {
+        if (DRAW_CONTEXT_STATE_FIELD == null) return null;
+        try {
+            return (GuiRenderState) DRAW_CONTEXT_STATE_FIELD.get(ctx);
+        } catch (IllegalAccessException e) {
+            LOGGER.error("Unable to access DrawContext GuiRenderState; enchanted armor glint cannot be rendered on 1.21.6+.", e);
+            return null;
+        }
+    }
+
+    private static IconMask getIconMask(Identifier texture, int u) {
+        var client = net.minecraft.client.MinecraftClient.getInstance();
+        ResourceManager currentManager = client != null ? client.getResourceManager() : null;
+        if (currentManager == null) return IconMask.full();
+
+        if (currentManager != lastGlintMaskResourceManager) {
+            GLINT_MASK_CACHE.clear();
+            lastGlintMaskResourceManager = currentManager;
+        }
+
+        return GLINT_MASK_CACHE.computeIfAbsent(new GlintMaskKey(texture, u), key -> loadIconMask(currentManager, key));
+    }
+
+    private static IconMask loadIconMask(ResourceManager manager, GlintMaskKey key) {
+        try {
+            var resource = manager.getResource(key.texture());
+            if (resource.isEmpty()) return IconMask.full();
+
+            try (InputStream stream = resource.get().getInputStream(); NativeImage image = NativeImage.read(stream)) {
+                boolean[] opaque = new boolean[81];
+                for (int py = 0; py < 9; py++) {
+                    for (int px = 0; px < 9; px++) {
+                        int sx = key.u() + px;
+                        opaque[py * 9 + px] = sx < image.getWidth() && py < image.getHeight()
+                                && Byte.toUnsignedInt(image.getOpacity(sx, py)) > 15;
+                    }
+                }
+                return new IconMask(opaque);
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Unable to read armor glint mask '{}'. Falling back to full icon glint mask.", key.texture(), e);
+            return IconMask.full();
+        }
+    }
+
+    private static int getGlintColor() {
+        double strength = net.minecraft.client.MinecraftClient.getInstance().options.getGlintStrength().getValue();
+        int channel = Math.clamp(Math.round(255.0D * GLINT_COLOR_MULTIPLIER * strength), 0, 255);
+        return 0xFF000000 | (channel << 16) | (channel << 8) | channel;
+    }
+
+    private static ScreenRect createGlintBounds(float x1, float x2, int y, Matrix3x2f pose) {
+        int minX = (int)Math.floor(Math.min(x1, x2));
+        int maxX = (int)Math.ceil(Math.max(x1, x2));
+        return new ScreenRect(minX, y, maxX - minX, 9).transformEachVertex(pose);
+    }
+
+    private static GlintTextureTransform getGlintTextureTransform() {
+        double speed = net.minecraft.client.MinecraftClient.getInstance().options.getGlintSpeed().getValue();
+        long time = (long)(Util.getMeasuringTimeMs() * speed * 8.0D);
+        float translateU = -((time % 110000L) / 110000.0f);
+        float translateV = (time % 30000L) / 30000.0f;
+        return new GlintTextureTransform(translateU, translateV, (float)Math.cos(GLINT_ROTATION), (float)Math.sin(GLINT_ROTATION));
+    }
+
+    private record GlintTextureTransform(float translateU, float translateV, float cos, float sin) {
+        float u(float u, float v) {
+            float scaledU = u * GLINT_TEXTURE_SCALE;
+            float scaledV = v * GLINT_TEXTURE_SCALE;
+            return scaledU * cos - scaledV * sin + translateU;
+        }
+
+        float v(float u, float v) {
+            float scaledU = u * GLINT_TEXTURE_SCALE;
+            float scaledV = v * GLINT_TEXTURE_SCALE;
+            return scaledU * sin + scaledV * cos + translateV;
+        }
+    }
+
+    private record GlintMaskKey(Identifier texture, int u) {}
+
+    private record IconMask(boolean[] opaque) {
+        static IconMask full() {
+            boolean[] opaque = new boolean[81];
+            java.util.Arrays.fill(opaque, true);
+            return new IconMask(opaque);
+        }
+
+        boolean isOpaque(int x, int y) {
+            return x >= 0 && x < 9 && y >= 0 && y < 9 && opaque[y * 9 + x];
+        }
+    }
+
+    private record GlintMaskRenderState(
+            RenderPipeline pipeline,
+            TextureSetup textureSetup,
+            Matrix3x2f pose,
+            int x,
+            int y,
+            int minPixelX,
+            int maxPixelX,
+            float xStart,
+            float xEnd,
+            float minU,
+            float maxU,
+            float minV,
+            float maxV,
+            GlintTextureTransform transform,
+            IconMask mask,
+            int color,
+            ScreenRect bounds
+    ) implements SimpleGuiElementRenderState {
+        @Override
+        public void setupVertices(VertexConsumer vertexConsumer, float z) {
+            float uSpan = maxU - minU;
+            float vSpan = maxV - minV;
+            float xSpan = xEnd - xStart;
+
+            for (int py = 0; py < 9; py++) {
+                float topV = minV + (py / 9.0f) * vSpan;
+                float bottomV = minV + ((py + 1) / 9.0f) * vSpan;
+
+                for (int px = minPixelX; px < maxPixelX; px++) {
+                    if (!mask.isOpaque(px, py)) continue;
+
+                    float localX1 = Math.max(px, xStart);
+                    float localX2 = Math.min(px + 1.0f, xEnd);
+                    if (localX2 <= localX1) continue;
+
+                    float leftU = minU + ((localX1 - xStart) / xSpan) * uSpan;
+                    float rightU = minU + ((localX2 - xStart) / xSpan) * uSpan;
+                    float screenX1 = x + localX1;
+                    float screenX2 = x + localX2;
+                    float screenY1 = y + py;
+                    float screenY2 = y + py + 1.0f;
+
+                    vertexConsumer.vertex(pose, screenX1, screenY2, z).texture(transform.u(leftU, bottomV), transform.v(leftU, bottomV)).color(color);
+                    vertexConsumer.vertex(pose, screenX2, screenY2, z).texture(transform.u(rightU, bottomV), transform.v(rightU, bottomV)).color(color);
+                    vertexConsumer.vertex(pose, screenX2, screenY1, z).texture(transform.u(rightU, topV), transform.v(rightU, topV)).color(color);
+                    vertexConsumer.vertex(pose, screenX1, screenY1, z).texture(transform.u(leftU, topV), transform.v(leftU, topV)).color(color);
+                }
+            }
+        }
+
+        @Override
+        public ScreenRect scissorArea() {
+            return null;
+        }
+    }
+    //?}
+
+    //? if <1.21.6 {
+    /*private static void addGlintVertex(VertexConsumer vertexConsumer, Matrix4f matrix, float x, float y, float u, float v) {
+        //? if >=1.21 {
+        vertexConsumer.vertex(matrix, x, y, 0).texture(u, v);
+        //?} else {
+        /^vertexConsumer.vertex(matrix, x, y, 0).texture(u, v).next();
+        ^///?}
+    }
+    *///?}
 
     private static final Identifier TURTLE_STRIP = id("textures/gui/armorbar/strips/turtle.png");
     private static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
@@ -465,10 +776,10 @@ public class ArmorBarRenderer {
     private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
     //? if >=1.21.2 {
-    /*private static Identifier getMaterialTex(ItemStack stack) {
+    private static Identifier getMaterialTex(ItemStack stack) {
         var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
         //? if >=1.21.4 {
-        /^var asset = equippable != null ? equippable.assetId().orElse(null) : null;
+        var asset = equippable != null ? equippable.assetId().orElse(null) : null;
         if (asset == null) return BASE_STRIP;
 
         if (asset.equals(ArmorMaterials.TURTLE_SCUTE.assetId())) return TURTLE_STRIP;
@@ -479,8 +790,8 @@ public class ArmorBarRenderer {
         if (asset.equals(ArmorMaterials.DIAMOND.assetId())) return DIAMOND_STRIP;
         if (asset.equals(ArmorMaterials.NETHERITE.assetId())) return NETHERITE_STRIP;
         Identifier model = asset.getValue();
-        ^///?} else {
-        Identifier model = equippable != null ? equippable.model().orElse(null) : null;
+        //?} else {
+        /*Identifier model = equippable != null ? equippable.model().orElse(null) : null;
         if (model == null) return BASE_STRIP;
 
         if (model.equals(ArmorMaterials.TURTLE_SCUTE.modelId())) return TURTLE_STRIP;
@@ -490,8 +801,8 @@ public class ArmorBarRenderer {
         if (model.equals(ArmorMaterials.GOLD.modelId())) return GOLD_STRIP;
         if (model.equals(ArmorMaterials.DIAMOND.modelId())) return DIAMOND_STRIP;
         if (model.equals(ArmorMaterials.NETHERITE.modelId())) return NETHERITE_STRIP;
-        //?}
-    *///?} else if >=1.21 {
+        *///?}
+    //?} else if >=1.21 {
     /*private static Identifier getMaterialTex(RegistryEntry<ArmorMaterial> mat) {
         if (mat.equals(ArmorMaterials.TURTLE)) return TURTLE_STRIP;
         if (mat.equals(ArmorMaterials.LEATHER)) return LEATHER_STRIP;
@@ -501,7 +812,7 @@ public class ArmorBarRenderer {
         if (mat.equals(ArmorMaterials.DIAMOND)) return DIAMOND_STRIP;
         if (mat.equals(ArmorMaterials.NETHERITE)) return NETHERITE_STRIP;
     *///?} else {
-    private static Identifier getMaterialTex(ArmorMaterial mat) {
+    /*private static Identifier getMaterialTex(ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
         if (mat == ArmorMaterials.LEATHER) return LEATHER_STRIP;
         if (mat == ArmorMaterials.CHAIN) return CHAIN_STRIP;
@@ -509,7 +820,7 @@ public class ArmorBarRenderer {
         if (mat == ArmorMaterials.GOLD) return GOLD_STRIP;
         if (mat == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
-    //?}
+    *///?}
 
         net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         net.minecraft.resource.ResourceManager currentManager = client != null ? client.getResourceManager() : null;
@@ -521,12 +832,12 @@ public class ArmorBarRenderer {
         }
 
         //? if >=1.21.2 {
-        /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
-        *///?} else if >=1.21 {
+        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
+        //?} else if >=1.21 {
         /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getIdAsString(), name -> {
         *///?} else {
-        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getName(), name -> {
-        //?}
+        /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getName(), name -> {
+        *///?}
             Identifier id;
             try {
                 if (name.contains(":")) {
@@ -537,10 +848,10 @@ public class ArmorBarRenderer {
                 }
             } catch (Exception e) {
                 //? if >=1.21.2 {
-                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
-                *///?} else {
-                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
-                //?}
+                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
+                //?} else {
+                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
+                *///?}
                 if (shouldLog) {
                     LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", name);
                 }
@@ -549,20 +860,20 @@ public class ArmorBarRenderer {
 
             if (currentManager != null && currentManager.getResource(id).isPresent()) {
                 //? if >=1.21.2 {
-                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
-                *///?} else {
-                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
-                //?}
+                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
+                //?} else {
+                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
+                *///?}
                 if (shouldLog) {
                     LOGGER.info("Found custom texture for armor material '{}' at {}", name, id);
                 }
                 return id;
             } else {
                 //? if >=1.21.2 {
-                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
-                *///?} else {
-                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
-                //?}
+                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
+                //?} else {
+                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
+                *///?}
                 if (shouldLog) {
                     LOGGER.warn("Unknown armor material '{}' and no custom texture found at {}. Falling back to base texture.", name, id);
                 }
@@ -595,15 +906,17 @@ public class ArmorBarRenderer {
         int total = 0;
         for (EquipmentSlot slot : ARMOR_ORDER) {
             ItemStack stack = player.getEquippedStack(slot);
-            //? if >=1.21.2 {
+            //? if >=1.21.5 {
+            total += getProtection(stack, slot);
+            //?} else if >=1.21.2 {
             /*if (stack.getItem() instanceof ArmorItem) {
                 total += getProtection(stack, slot);
             }
             *///?} else {
-            if (stack.getItem() instanceof ArmorItem armor) {
+            /*if (stack.getItem() instanceof ArmorItem armor) {
                 total += getProtection(armor);
             }
-            //?}
+            *///?}
         }
         return total;
     }

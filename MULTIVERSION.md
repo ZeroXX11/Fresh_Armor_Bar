@@ -29,6 +29,7 @@ Only Minecraft/Fabric API differences are guarded with Stonecutter comments:
 - Minecraft 1.21.2+ reads armor value from the item attribute component because `ArmorItem#getProtection()` is no longer exposed.
 - Minecraft 1.21.2+ uses `DrawContext` texture overloads that require a GUI `RenderLayer` factory.
 - Minecraft 1.21.2 and 1.21.3 use `EquippableComponent#model()` for equipment assets; Minecraft 1.21.4 uses `EquippableComponent#assetId()`.
+- Minecraft 1.21.5, 1.21.6 and 1.21.7 are configured as Fabric/Stonecutter build targets and continue to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
 - Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
 - Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
 
@@ -39,6 +40,9 @@ The per-version Gradle properties live in:
 - `versions/1.21.2/gradle.properties`
 - `versions/1.21.3/gradle.properties`
 - `versions/1.21.4/gradle.properties`
+- `versions/1.21.5/gradle.properties`
+- `versions/1.21.6/gradle.properties`
+- `versions/1.21.7/gradle.properties`
 
 ## Changing Version
 
