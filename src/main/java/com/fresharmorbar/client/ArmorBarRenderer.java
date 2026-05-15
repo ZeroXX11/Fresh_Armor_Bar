@@ -14,9 +14,7 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.TextureSetup;
-import net.minecraft.resource.ResourceManager;
 import org.joml.Matrix3x2f;
 *///?} else {
 import net.minecraft.client.gui.DrawContext;
@@ -61,15 +59,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 //? if >=1.21.6
-//import java.io.InputStream;
-//? if >=1.21.6
-//import java.io.IOException;
-//? if >=1.21.6
 //import java.lang.reflect.Field;
 //? if >=1.21.6
-//import java.util.Map;
+//import java.lang.invoke.MethodHandle;
 //? if >=1.21.6
-//import java.util.concurrent.ConcurrentHashMap;
+//import java.lang.invoke.MethodHandles;
 
 // Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
 public class ArmorBarRenderer {
@@ -84,24 +78,33 @@ public class ArmorBarRenderer {
     //? if >=1.21.6 {
     /*private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
-            .withVertexShader("core/position_tex_color")
-            .withFragmentShader("core/position_tex_color")
+            .withVertexShader(id("core/fab_gui_glint_mask"))
+            .withFragmentShader(id("core/fab_gui_glint_mask"))
             .withSampler("Sampler0")
+            .withSampler("Sampler1")
+            .withSampler("Sampler2")
             .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
             .withUniform("Projection", UniformType.UNIFORM_BUFFER)
             .withBlend(BlendFunction.GLINT)
             .withCull(false)
             .withDepthWrite(false)
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-            .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS)
+            .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR_LIGHT, VertexFormat.DrawMode.QUADS)
             .build();
     private static final float GLINT_UV_SCALE = 0.025f;
     private static final float GLINT_TEXTURE_SCALE = 8.0f;
     private static final float GLINT_ROTATION = 0.17453292f;
+    private static final float GLINT_COS_SCALED = (float)Math.cos(GLINT_ROTATION) * GLINT_TEXTURE_SCALE;
+    private static final float GLINT_SIN_SCALED = (float)Math.sin(GLINT_ROTATION) * GLINT_TEXTURE_SCALE;
     private static final float GLINT_COLOR_MULTIPLIER = 0.85f;
-    private static final Field DRAW_CONTEXT_STATE_FIELD = findDrawContextStateField();
-    private static final Map<GlintMaskKey, IconMask> GLINT_MASK_CACHE = new ConcurrentHashMap<>();
-    private static ResourceManager lastGlintMaskResourceManager = null;
+    private static final int GLINT_MASK_COORD_SCALE = 256;
+    private static final MethodHandle DRAW_CONTEXT_STATE_GETTER = findDrawContextStateGetter();
+    private static final java.util.ArrayList<GlintTextureSetupEntry> GLINT_TEXTURE_SETUP_CACHE = new java.util.ArrayList<>();
+    private static net.minecraft.resource.ResourceManager lastGlintTextureSetupResourceManager = null;
+    private static double lastGlintStrength = Double.NaN;
+    private static int cachedGlintColor = 0xFFFFFFFF;
+    private static GlintTextureTransform cachedGlintTextureTransform = new GlintTextureTransform(0.0f, 0.0f);
+    private static boolean glintTextureTransformReady = false;
     *///?}
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
@@ -176,6 +179,8 @@ public class ArmorBarRenderer {
 
     public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra, boolean elytraEnchanted) {
         if (armorValue <= 0 && !hasElytra) return;
+        //? if >=1.21.6
+        //if (slotIndex == 0) glintTextureTransformReady = false;
 
         int renderArmorValue = Math.min(armorValue, CACHE.length);
         int maxRows = renderArmorValue > 0 ? (renderArmorValue + 19) / 20 : 1;
@@ -217,7 +222,7 @@ public class ArmorBarRenderer {
 
     private static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
         //? if >=1.21.6 {
-        /*renderGuiGlint(ctx, x, y, ELYTRA_TEX, 0, 0, 9, 0.0f, 9.0f, 0.0f, GLINT_UV_SCALE);
+        /*renderGuiGlint(ctx, x, y, ELYTRA_TEX, ELYTRA_TEX, 0, 0, 0.0f, 9.0f);
         *///?} else {
         
         renderSlotEnchantments(ctx, true, true, x, y);
@@ -534,54 +539,85 @@ public class ArmorBarRenderer {
     /*private static void renderSlotEnchantments(DrawContext ctx, SlotData left, SlotData right, int x, int y) {
         if (!left.enchanted && !right.enchanted) return;
 
-        if (isSame(left, right)) {
-            renderGuiGlint(ctx, x, y, left.materialTex, U_FULL, 0, 9, 0.0f, 9.0f, 0.0f, GLINT_UV_SCALE);
-        } else {
-            if (left.enchanted && left.materialTex != null) {
-                renderGuiGlint(ctx, x, y, left.materialTex, U_LEFT, 0, 5, 0.0f, 4.5f, 0.0f, GLINT_UV_SCALE * 0.5f);
+        if (left.enchanted && right.enchanted && left.materialTex != null && right.materialTex != null) {
+            if (isSame(left, right)) {
+                renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex, U_FULL, U_FULL, 0.0f, 9.0f);
+            } else {
+                renderGuiGlint(ctx, x, y, left.materialTex, right.materialTex, U_LEFT, U_RIGHT, 0.0f, 9.0f);
             }
-            if (right.enchanted && right.materialTex != null) {
-                renderGuiGlint(ctx, x, y, right.materialTex, U_RIGHT, 4, 9, 4.5f, 9.0f, GLINT_UV_SCALE * 0.5f, GLINT_UV_SCALE);
-            }
+        } else if (left.enchanted && left.materialTex != null) {
+            renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex, U_LEFT, U_LEFT, 0.0f, 4.5f);
+        } else if (right.enchanted && right.materialTex != null) {
+            renderGuiGlint(ctx, x, y, right.materialTex, right.materialTex, U_RIGHT, U_RIGHT, 4.5f, 9.0f);
         }
     }
 
-    private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier maskTexture, int maskU, int minPixelX, int maxPixelX, float xStart, float xEnd, float baseMinU, float baseMaxU) {
-        if (maskTexture == null) return;
+    private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd) {
+        if (leftMaskTexture == null || rightMaskTexture == null) return;
 
         GlintTextureTransform transform = getGlintTextureTransform();
-        IconMask mask = getIconMask(maskTexture, maskU);
         Matrix3x2f pose = new Matrix3x2f(ctx.getMatrices());
-        int minX = (int)Math.floor(x + Math.min(xStart, xEnd));
-        int maxX = (int)Math.ceil(x + Math.max(xStart, xEnd));
+        int minX = x + (int)xStart;
+        int maxX = x + ceilPositiveIconCoord(xEnd);
         ScreenRect bounds = new ScreenRect(minX, y, maxX - minX, 9).transformEachVertex(pose);
         GuiRenderState state = getGuiRenderState(ctx);
         if (state == null) return;
         int color = getGlintColor();
+        TextureSetup textureSetup = getGlintTextureSetup(leftMaskTexture, rightMaskTexture);
+        float baseMinU = (xStart / 9.0f) * GLINT_UV_SCALE;
+        float baseMaxU = (xEnd / 9.0f) * GLINT_UV_SCALE;
 
-        for (int i = 0; i < 2; i++) {
-            float offset = i * 0.5f;
-            float minU = baseMinU + offset;
-            float maxU = baseMaxU + offset;
-            float maxV = GLINT_UV_SCALE + offset;
-            state.addSimpleElement(new GlintMaskRenderState(
-                    pose, bounds, x, y, minPixelX, maxPixelX,
-                    xStart, xEnd, minU, maxU, offset, maxV,
-                    transform, mask, color
-            ));
+        state.addSimpleElement(new GlintMaskRenderState(
+                pose, bounds, textureSetup, x, y, leftMaskU, rightMaskU,
+                xStart, xEnd, baseMinU, baseMaxU,
+                transform, color
+        ));
+    }
+
+    private static int ceilPositiveIconCoord(float value) {
+        int whole = (int)value;
+        return value == whole ? whole : whole + 1;
+    }
+
+    private static TextureSetup getGlintTextureSetup(Identifier leftMaskTexture, Identifier rightMaskTexture) {
+        var client = net.minecraft.client.MinecraftClient.getInstance();
+        net.minecraft.resource.ResourceManager currentManager = client.getResourceManager();
+        if (currentManager != lastGlintTextureSetupResourceManager) {
+            GLINT_TEXTURE_SETUP_CACHE.clear();
+            lastGlintTextureSetupResourceManager = currentManager;
+        }
+
+        for (GlintTextureSetupEntry entry : GLINT_TEXTURE_SETUP_CACHE) {
+            if (entry.matches(leftMaskTexture, rightMaskTexture)) {
+                return entry.textureSetup;
+            }
+        }
+
+        var textureManager = client.getTextureManager();
+        var glintTexture = textureManager.getTexture(ItemRenderer.ITEM_ENCHANTMENT_GLINT);
+        var leftMask = textureManager.getTexture(leftMaskTexture);
+        var rightMask = textureManager.getTexture(rightMaskTexture);
+        TextureSetup textureSetup = new TextureSetup(glintTexture.getGlTextureView(), leftMask.getGlTextureView(), rightMask.getGlTextureView());
+        GLINT_TEXTURE_SETUP_CACHE.add(new GlintTextureSetupEntry(leftMaskTexture, rightMaskTexture, textureSetup));
+        return textureSetup;
+    }
+
+    private record GlintTextureSetupEntry(Identifier leftMaskTexture, Identifier rightMaskTexture, TextureSetup textureSetup) {
+        boolean matches(Identifier leftMaskTexture, Identifier rightMaskTexture) {
+            return this.leftMaskTexture.equals(leftMaskTexture) && this.rightMaskTexture.equals(rightMaskTexture);
         }
     }
 
-    private static TextureSetup getGlintTextureSetup() {
-        var texture = net.minecraft.client.MinecraftClient.getInstance().getTextureManager().getTexture(ItemRenderer.ITEM_ENCHANTMENT_GLINT);
-        return TextureSetup.withoutGlTexture(texture.getGlTextureView());
-    }
-
-    private static Field findDrawContextStateField() {
+    private static MethodHandle findDrawContextStateGetter() {
         for (Field field : DrawContext.class.getDeclaredFields()) {
             if (field.getType() == GuiRenderState.class) {
-                field.setAccessible(true);
-                return field;
+                try {
+                    field.setAccessible(true);
+                    return MethodHandles.lookup().unreflectGetter(field);
+                } catch (IllegalAccessException e) {
+                    LOGGER.error("Unable to create DrawContext GuiRenderState getter; enchanted armor glint cannot be rendered on 1.21.6+.", e);
+                    return null;
+                }
             }
         }
         LOGGER.error("Unable to find DrawContext GuiRenderState field; enchanted armor glint cannot be rendered on 1.21.6+.");
@@ -589,107 +625,67 @@ public class ArmorBarRenderer {
     }
 
     private static GuiRenderState getGuiRenderState(DrawContext ctx) {
-        if (DRAW_CONTEXT_STATE_FIELD == null) return null;
+        if (DRAW_CONTEXT_STATE_GETTER == null) return null;
         try {
-            return (GuiRenderState) DRAW_CONTEXT_STATE_FIELD.get(ctx);
-        } catch (IllegalAccessException e) {
+            return (GuiRenderState) DRAW_CONTEXT_STATE_GETTER.invoke(ctx);
+        } catch (Throwable e) {
             LOGGER.error("Unable to access DrawContext GuiRenderState; enchanted armor glint cannot be rendered on 1.21.6+.", e);
             return null;
         }
     }
 
-    private static IconMask getIconMask(Identifier texture, int u) {
-        var client = net.minecraft.client.MinecraftClient.getInstance();
-        ResourceManager currentManager = client != null ? client.getResourceManager() : null;
-        if (currentManager == null) return IconMask.full();
-
-        if (currentManager != lastGlintMaskResourceManager) {
-            GLINT_MASK_CACHE.clear();
-            lastGlintMaskResourceManager = currentManager;
-        }
-
-        return GLINT_MASK_CACHE.computeIfAbsent(new GlintMaskKey(texture, u), key -> loadIconMask(currentManager, key));
-    }
-
-    private static IconMask loadIconMask(ResourceManager manager, GlintMaskKey key) {
-        try {
-            var resource = manager.getResource(key.texture());
-            if (resource.isEmpty()) return IconMask.full();
-
-            try (InputStream stream = resource.get().getInputStream(); NativeImage image = NativeImage.read(stream)) {
-                boolean[] opaque = new boolean[81];
-                for (int py = 0; py < 9; py++) {
-                    for (int px = 0; px < 9; px++) {
-                        int sx = key.u() + px;
-                        opaque[py * 9 + px] = sx < image.getWidth() && py < image.getHeight()
-                                && Byte.toUnsignedInt(image.getOpacity(sx, py)) > 15;
-                    }
-                }
-                return new IconMask(opaque);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("Unable to read armor glint mask '{}'. Falling back to full icon glint mask.", key.texture(), e);
-            return IconMask.full();
-        }
-    }
-
     private static int getGlintColor() {
         double strength = net.minecraft.client.MinecraftClient.getInstance().options.getGlintStrength().getValue();
+        if (Double.compare(strength, lastGlintStrength) == 0) return cachedGlintColor;
+
         int channel = Math.clamp(Math.round(255.0D * GLINT_COLOR_MULTIPLIER * strength), 0, 255);
-        return 0xFF000000 | (channel << 16) | (channel << 8) | channel;
+        lastGlintStrength = strength;
+        cachedGlintColor = 0xFF000000 | (channel << 16) | (channel << 8) | channel;
+        return cachedGlintColor;
+    }
+
+    private static void prepareGlintRenderFrame() {
+        if (glintTextureTransformReady) return;
+        cachedGlintTextureTransform = createGlintTextureTransform();
+        glintTextureTransformReady = true;
     }
 
     private static GlintTextureTransform getGlintTextureTransform() {
+        prepareGlintRenderFrame();
+        return cachedGlintTextureTransform;
+    }
+
+    private static GlintTextureTransform createGlintTextureTransform() {
         double speed = net.minecraft.client.MinecraftClient.getInstance().options.getGlintSpeed().getValue();
         long time = (long)(Util.getMeasuringTimeMs() * speed * 8.0D);
         float translateU = -((time % 110000L) / 110000.0f);
         float translateV = (time % 30000L) / 30000.0f;
-        return new GlintTextureTransform(translateU, translateV, (float)Math.cos(GLINT_ROTATION), (float)Math.sin(GLINT_ROTATION));
+        return new GlintTextureTransform(translateU, translateV);
     }
 
-    private record GlintTextureTransform(float translateU, float translateV, float cos, float sin) {
+    private record GlintTextureTransform(float translateU, float translateV) {
         float u(float u, float v) {
-            float scaledU = u * GLINT_TEXTURE_SCALE;
-            float scaledV = v * GLINT_TEXTURE_SCALE;
-            return scaledU * cos - scaledV * sin + translateU;
+            return u * GLINT_COS_SCALED - v * GLINT_SIN_SCALED + translateU;
         }
 
         float v(float u, float v) {
-            float scaledU = u * GLINT_TEXTURE_SCALE;
-            float scaledV = v * GLINT_TEXTURE_SCALE;
-            return scaledU * sin + scaledV * cos + translateV;
-        }
-    }
-
-    private record GlintMaskKey(Identifier texture, int u) {}
-
-    private record IconMask(boolean[] opaque) {
-        static IconMask full() {
-            boolean[] opaque = new boolean[81];
-            java.util.Arrays.fill(opaque, true);
-            return new IconMask(opaque);
-        }
-
-        boolean isOpaque(int x, int y) {
-            return x >= 0 && x < 9 && y >= 0 && y < 9 && opaque[y * 9 + x];
+            return u * GLINT_SIN_SCALED + v * GLINT_COS_SCALED + translateV;
         }
     }
 
     private record GlintMaskRenderState(
             Matrix3x2f pose,
             ScreenRect bounds,
+            TextureSetup textureSetup,
             int x,
             int y,
-            int minPixelX,
-            int maxPixelX,
+            int leftMaskU,
+            int rightMaskU,
             float xStart,
             float xEnd,
-            float minU,
-            float maxU,
-            float minV,
-            float maxV,
+            float baseMinU,
+            float baseMaxU,
             GlintTextureTransform transform,
-            IconMask mask,
             int color
     ) implements SimpleGuiElementRenderState {
         @Override
@@ -699,39 +695,30 @@ public class ArmorBarRenderer {
 
         @Override
         public TextureSetup textureSetup() {
-            return getGlintTextureSetup();
+            return textureSetup;
         }
 
         @Override
         public void setupVertices(VertexConsumer vertexConsumer, float z) {
-            float uSpan = maxU - minU;
-            float vSpan = maxV - minV;
-            float xSpan = xEnd - xStart;
+            addGlintMaskQuad(vertexConsumer, z, 0.0f);
+            addGlintMaskQuad(vertexConsumer, z, 0.5f);
+        }
 
-            for (int py = 0; py < 9; py++) {
-                float topV = minV + (py / 9.0f) * vSpan;
-                float bottomV = minV + ((py + 1) / 9.0f) * vSpan;
+        private void addGlintMaskQuad(VertexConsumer vertexConsumer, float z, float offset) {
+            float minU = baseMinU + offset;
+            float maxU = baseMaxU + offset;
+            float maxV = GLINT_UV_SCALE + offset;
+            addGlintMaskVertex(vertexConsumer, z, xStart, 9.0f, minU, maxV);
+            addGlintMaskVertex(vertexConsumer, z, xEnd, 9.0f, maxU, maxV);
+            addGlintMaskVertex(vertexConsumer, z, xEnd, 0.0f, maxU, offset);
+            addGlintMaskVertex(vertexConsumer, z, xStart, 0.0f, minU, offset);
+        }
 
-                for (int px = minPixelX; px < maxPixelX; px++) {
-                    if (!mask.isOpaque(px, py)) continue;
-
-                    float localX1 = Math.max(px, xStart);
-                    float localX2 = Math.min(px + 1.0f, xEnd);
-                    if (localX2 <= localX1) continue;
-
-                    float leftU = minU + ((localX1 - xStart) / xSpan) * uSpan;
-                    float rightU = minU + ((localX2 - xStart) / xSpan) * uSpan;
-                    float screenX1 = x + localX1;
-                    float screenX2 = x + localX2;
-                    float screenY1 = y + py;
-                    float screenY2 = y + py + 1.0f;
-
-                    vertexConsumer.vertex(pose, screenX1, screenY2, z).texture(transform.u(leftU, bottomV), transform.v(leftU, bottomV)).color(color);
-                    vertexConsumer.vertex(pose, screenX2, screenY2, z).texture(transform.u(rightU, bottomV), transform.v(rightU, bottomV)).color(color);
-                    vertexConsumer.vertex(pose, screenX2, screenY1, z).texture(transform.u(rightU, topV), transform.v(rightU, topV)).color(color);
-                    vertexConsumer.vertex(pose, screenX1, screenY1, z).texture(transform.u(leftU, topV), transform.v(leftU, topV)).color(color);
-                }
-            }
+        private void addGlintMaskVertex(VertexConsumer vertexConsumer, float z, float localX, float localY, float u, float v) {
+            vertexConsumer.vertex(pose, x + localX, y + localY, z)
+                    .texture(transform.u(u, v), transform.v(u, v))
+                    .color(leftMaskU, rightMaskU, color & 0xFF, 255)
+                    .light(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
 
         @Override
