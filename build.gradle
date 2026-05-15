@@ -95,6 +95,9 @@ tasks.register("generateFabricModJson") {
 }
 
 sourceSets.main.resources.setSrcDirs([generatedFabricModJson, rootProject.file("src/main/resources")])
+if (stonecutter.eval(stonecutter.current.version, "<1.21.6")) {
+    sourceSets.main.resources.exclude("assets/fresh-armor-bar/shaders/**")
+}
 
 tasks.named("processResources").configure {
     dependsOn(tasks.named("generateFabricModJson"))
