@@ -699,11 +699,36 @@ public class ArmorBarRenderer {
         }
 
         @Override
+        //? if >=1.21.9 {
+        /^public void setupVertices(VertexConsumer vertexConsumer) {
+            addGlintMaskQuad(vertexConsumer, 0.0f);
+            addGlintMaskQuad(vertexConsumer, 0.5f);
+        }
+        ^///?} else {
         public void setupVertices(VertexConsumer vertexConsumer, float z) {
             addGlintMaskQuad(vertexConsumer, z, 0.0f);
             addGlintMaskQuad(vertexConsumer, z, 0.5f);
         }
+        //?}
 
+        //? if >=1.21.9 {
+        /^private void addGlintMaskQuad(VertexConsumer vertexConsumer, float offset) {
+            float minU = baseMinU + offset;
+            float maxU = baseMaxU + offset;
+            float maxV = GLINT_UV_SCALE + offset;
+            addGlintMaskVertex(vertexConsumer, xStart, 9.0f, minU, maxV);
+            addGlintMaskVertex(vertexConsumer, xEnd, 9.0f, maxU, maxV);
+            addGlintMaskVertex(vertexConsumer, xEnd, 0.0f, maxU, offset);
+            addGlintMaskVertex(vertexConsumer, xStart, 0.0f, minU, offset);
+        }
+
+        private void addGlintMaskVertex(VertexConsumer vertexConsumer, float localX, float localY, float u, float v) {
+            vertexConsumer.vertex(pose, x + localX, y + localY)
+                    .texture(transform.u(u, v), transform.v(u, v))
+                    .color(leftMaskU, rightMaskU, color & 0xFF, 255)
+                    .light(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
+        }
+        ^///?} else {
         private void addGlintMaskQuad(VertexConsumer vertexConsumer, float z, float offset) {
             float minU = baseMinU + offset;
             float maxU = baseMaxU + offset;
@@ -720,6 +745,7 @@ public class ArmorBarRenderer {
                     .color(leftMaskU, rightMaskU, color & 0xFF, 255)
                     .light(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
+        //?}
 
         @Override
         public ScreenRect scissorArea() {
