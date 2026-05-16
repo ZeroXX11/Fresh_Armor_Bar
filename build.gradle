@@ -1,9 +1,11 @@
 import groovy.text.SimpleTemplateEngine
 
 plugins {
-    id 'net.fabricmc.fabric-loom-remap'
     id 'maven-publish'
 }
+
+def isUnmappedMinecraft = stonecutter.eval(stonecutter.current.version, ">=26.1")
+apply plugin: isUnmappedMinecraft ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
 version = project.mod_version
 group = project.maven_group
@@ -43,16 +45,30 @@ dependencies {
     // --- Core Minecraft & Fabric ---
     // Le versioni sono gestite nel file gradle.properties
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    if (!isUnmappedMinecraft) {
+        mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    }
+
+    if (isUnmappedMinecraft) {
+        implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    } else {
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    }
 
     // --- Fabric API ---
-    modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-    modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    if (isUnmappedMinecraft) {
+        compileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+        runtimeOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    } else {
+        modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+        modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    }
 
     // --- Mod Compatibility & APIs ---
     // Trinkets API
-    modCompileOnly "dev.emi:trinkets:${project.trinkets_version}"
+    if (!isUnmappedMinecraft) {
+        modCompileOnly "dev.emi:trinkets:${project.trinkets_version}"
+    }
 
     if (stonecutter.eval(stonecutter.current.version, ">=1.21")) {
         compileOnly "com.google.code.findbugs:jsr305:3.0.2"
@@ -60,18 +76,22 @@ dependencies {
 
     // --- Libraries & Utilities ---
     // MixinExtras
-    modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
+    if (isUnmappedMinecraft) {
+        implementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
+    } else {
+        modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
+    }
     annotationProcessor "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
 }
 
-def runtimeJavaVersion = 21
-def targetJavaVersion = stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
+def runtimeJavaVersion = isUnmappedMinecraft ? 25 : 21
+def targetJavaVersion = isUnmappedMinecraft ? 25 : (stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17)
 def fabricModJsonProps = [
         "version": project.version,
         "mod_name": project.mod_name,
         "minecraft_version": stonecutter.current.version,
         "loader_version": project.loader_version,
-        "java_version": stonecutter.eval(stonecutter.current.version, ">=1.20.5") ? 21 : 17
+        "java_version": targetJavaVersion
 ]
 
 def generatedFabricModJson = layout.buildDirectory.dir("generated/resources/fabricModJson")
@@ -120,14 +140,23 @@ tasks.withType(JavaCompile).configureEach {
 tasks.named("sourcesJar").configure {
     dependsOn(tasks.named("generateFabricModJson"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    if (isUnmappedMinecraft) {
+        destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    }
 }
 
-tasks.named("remapJar").configure {
-    destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
-}
+if (isUnmappedMinecraft) {
+    tasks.named("jar").configure {
+        destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    }
+} else {
+    tasks.named("remapJar").configure {
+        destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    }
 
-tasks.named("remapSourcesJar").configure {
-    destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    tasks.named("remapSourcesJar").configure {
+        destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    }
 }
 
 jar {

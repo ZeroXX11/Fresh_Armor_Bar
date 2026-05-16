@@ -6,7 +6,14 @@ import com.fresharmorbar.client.ModCompat;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-//? if >=1.21.6
+//? if >=26.1 {
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.player.Player;
+//?} else {
+/*//? if >=1.21.6
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 //? if <1.21
 //import net.minecraft.client.MinecraftClient;
@@ -14,6 +21,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
+*///?}
 //? if <1.21 {
 /*import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,7 +32,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(InGameHud.class)
+//? if >=26.1 {
+@Mixin(Gui.class)
+//?} else {
+/*@Mixin(InGameHud.class)
+*///?}
 public class InGameHudMixin {
     //? if <1.21 {
     /*@Shadow @Final private MinecraftClient client;
@@ -46,7 +58,11 @@ public class InGameHudMixin {
     private static boolean fab$cachedElytraEnchanted = false;
 
     @Unique
-    private static void fab$resetArmorState(PlayerEntity player) {
+    //? if >=26.1 {
+    private static void fab$resetArmorState(Player player) {
+    //?} else {
+    /*private static void fab$resetArmorState(PlayerEntity player) {
+    *///?}
         fab$currentArmorSlot = 0;
 
         if (player != null) {
@@ -70,7 +86,11 @@ public class InGameHudMixin {
     }
 
     @Unique
-    private static void fab$renderNextArmorSlot(DrawContext ctx, int x, int y) {
+    //? if >=26.1 {
+    private static void fab$renderNextArmorSlot(GuiGraphicsExtractor ctx, int x, int y) {
+    //?} else {
+    /*private static void fab$renderNextArmorSlot(DrawContext ctx, int x, int y) {
+    *///?}
         if (fab$currentArmorSlot < 10) {
             ArmorBarRenderer.renderSlot(ctx, fab$currentArmorSlot, x, y, fab$totalArmorValue, fab$cachedHasElytra, fab$cachedElytraEnchanted);
             fab$currentArmorSlot++;
@@ -110,8 +130,35 @@ public class InGameHudMixin {
         }
         original.call(ctx, tex, x, y, u, v, w, h);
     }
-    *///?} else {
-    @Inject(method = "renderArmor", at = @At("HEAD"))
+    *///?} else if >=26.1 {
+    @Inject(method = "extractArmor", at = @At("HEAD"))
+    private static void fab$resetArmorSlot(GuiGraphicsExtractor graphics, Player player, int yLineBase, int numHealthRows, int healthRowHeight, int xLeft, CallbackInfo ci) {
+        fab$resetArmorState(player);
+    }
+
+    @ModifyExpressionValue(
+            method = "extractArmor",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"
+            )
+    )
+    private static int fab$forceArmorRenderForElytra(int original) {
+        return fab$applyElytraArmorFallback(original);
+    }
+
+    @WrapOperation(
+            method = "extractArmor",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
+            )
+    )
+    private static void fab$replaceVanillaArmorIcons(GuiGraphicsExtractor graphics, RenderPipeline renderPipeline, Identifier location, int x, int y, int width, int height, Operation<Void> original) {
+        fab$renderNextArmorSlot(graphics, x, y);
+    }
+    //?} else {
+    /*@Inject(method = "renderArmor", at = @At("HEAD"))
     private static void fab$resetArmorSlot(DrawContext ctx, PlayerEntity player, int i, int j, int k, int l, CallbackInfo ci) {
         fab$resetArmorState(player);
     }
@@ -139,7 +186,7 @@ public class InGameHudMixin {
         fab$renderNextArmorSlot(ctx, x, y);
     }
     //?} else if >=1.21.2 {
-    /*@WrapOperation(
+    /^@WrapOperation(
             method = "renderArmor",
             at = @At(
                     value = "INVOKE",
@@ -149,8 +196,8 @@ public class InGameHudMixin {
     private static void fab$replaceVanillaArmorIcons(DrawContext ctx, java.util.function.Function<Identifier, net.minecraft.client.render.RenderLayer> renderLayers, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
         fab$renderNextArmorSlot(ctx, x, y);
     }
-    *///?} else {
-    /*@WrapOperation(
+    ^///?} else {
+    /^@WrapOperation(
             method = "renderArmor",
             at = @At(
                     value = "INVOKE",
@@ -160,6 +207,6 @@ public class InGameHudMixin {
     private static void fab$replaceVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
         fab$renderNextArmorSlot(ctx, x, y);
     }
+    ^///?}
     *///?}
-    //?}
 }

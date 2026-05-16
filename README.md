@@ -18,6 +18,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Minecraft 1.21.9
 - Minecraft 1.21.10
 - Minecraft 1.21.11
+- Minecraft 26.1
 
 ## Features
 
@@ -28,7 +29,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Subtle glow overlay for selected shiny trim materials.
 - Enchantment glint rendering.
 - Elytra indicator when an Elytra is equipped.
-- Optional Trinkets integration for Elytra detection.
+- Optional Trinkets integration for Elytra detection on pre-26.1 targets.
 - Support for high armor values with additional HUD rows.
 - Shared multi-version codebase with minimal duplication.
 
@@ -50,11 +51,12 @@ Fabric API is suggested by the mod metadata. Trinkets is optional and is only us
 
 ### Requirements
 
-- Java 21 for the Gradle JVM.
+- Java 21 or newer for the Gradle JVM.
+- Java 25 toolchain support for the Minecraft 26.1 target.
 - The included Gradle wrapper.
 - IntelliJ IDEA with the Stonecutter Dev plugin, or another Gradle-capable Java IDE.
 
-Gradle runs on Java 21. Minecraft-specific bytecode targets are handled by the build configuration.
+Minecraft-specific bytecode targets are handled by the build configuration.
 
 ### Version Workflow
 
@@ -90,6 +92,7 @@ Build one target:
 ```bash
 ./gradlew :1.20.1:build --no-daemon
 ./gradlew :1.21.11:build --no-daemon
+./gradlew :26.1:build --no-daemon
 ```
 
 Build all supported targets:
@@ -117,11 +120,13 @@ Fresh Armor Bar uses Stonecutter to support multiple Minecraft versions from one
 Most code lives in `src/main/java` and `src/main/resources`. Version-specific differences are kept small and local with Stonecutter comments around Minecraft API changes, such as:
 
 - `Identifier` creation.
+- Official-mapping package/name changes for Minecraft 26.1.
 - Armor trim access.
 - Dyed armor color access.
 - Armor material type differences.
 - Equipment asset/component differences.
 - HUD hook differences.
+- GUI extraction/render-state differences.
 - Vertex API differences.
 
 There are no separate long-lived branches per Minecraft version. The project is designed around a common renderer, common assets, and small compatibility patches where the Minecraft API changes.

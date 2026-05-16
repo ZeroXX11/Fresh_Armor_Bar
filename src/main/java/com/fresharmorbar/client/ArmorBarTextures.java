@@ -1,18 +1,25 @@
 package com.fresharmorbar.client;
 
-//? if >=1.21.2 {
+//? if >=26.1 {
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.equipment.ArmorMaterials;
+//?} else {
+/*//? if >=1.21.2 {
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.equipment.ArmorMaterials;
 //?} else if >=1.21 {
-/*import net.minecraft.item.ArmorMaterial;
+/^import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
 import net.minecraft.registry.entry.RegistryEntry;
-*///?} else {
-/*import net.minecraft.item.ArmorMaterial;
+^///?} else {
+/^import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
-*///?}
+^///?}
 import net.minecraft.util.Identifier;
+*///?}
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +47,10 @@ final class ArmorBarTextures {
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
     private static final Set<Object> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
-    private static net.minecraft.resource.ResourceManager lastResourceManager = null;
+    //? if >=26.1
+    private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager = null;
+    //? if <26.1
+    //private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
     private ArmorBarTextures() {
     }
@@ -67,19 +77,29 @@ final class ArmorBarTextures {
 
     //? if >=1.21.2 {
     static Identifier getMaterialTex(ItemStack stack) {
-        var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
+        //? if >=26.1
+        var equippable = stack.get(DataComponents.EQUIPPABLE);
+        //? if <26.1
+        //var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
         //? if >=1.21.4 {
         var asset = equippable != null ? equippable.assetId().orElse(null) : null;
         if (asset == null) return BASE_STRIP;
 
         if (asset.equals(ArmorMaterials.TURTLE_SCUTE.assetId())) return TURTLE_STRIP;
         if (asset.equals(ArmorMaterials.LEATHER.assetId())) return LEATHER_STRIP;
-        if (asset.equals(ArmorMaterials.CHAIN.assetId())) return CHAIN_STRIP;
+        //? if >=26.1 {
+        if (asset.equals(ArmorMaterials.CHAINMAIL.assetId())) return CHAIN_STRIP;
+        //?} else {
+        /*if (asset.equals(ArmorMaterials.CHAIN.assetId())) return CHAIN_STRIP;
+        *///?}
         if (asset.equals(ArmorMaterials.IRON.assetId())) return IRON_STRIP;
         if (asset.equals(ArmorMaterials.GOLD.assetId())) return GOLD_STRIP;
         if (asset.equals(ArmorMaterials.DIAMOND.assetId())) return DIAMOND_STRIP;
         if (asset.equals(ArmorMaterials.NETHERITE.assetId())) return NETHERITE_STRIP;
-        Identifier model = asset.getValue();
+        //? if >=26.1
+        Identifier model = asset.identifier();
+        //? if <26.1
+        //Identifier model = asset.getValue();
         //?} else {
         /*Identifier model = equippable != null ? equippable.model().orElse(null) : null;
         if (model == null) return BASE_STRIP;
@@ -112,14 +132,28 @@ final class ArmorBarTextures {
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
     *///?}
 
-        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+        //? if >=26.1 {
+        net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+        net.minecraft.server.packs.resources.ResourceManager currentManager = client.getResourceManager();
+        //?} else {
+        /*net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
         net.minecraft.resource.ResourceManager currentManager = client != null ? client.getResourceManager() : null;
+        *///?}
 
+        //? if >=26.1 {
+        if (currentManager != lastResourceManager) {
+            MATERIAL_TEXTURE_CACHE.clear();
+            UNKNOWN_MATERIALS_LOGGED.clear();
+            lastResourceManager = currentManager;
+        }
+        //?} else {
+        /*
         if (currentManager != null && currentManager != lastResourceManager) {
             MATERIAL_TEXTURE_CACHE.clear();
             UNKNOWN_MATERIALS_LOGGED.clear();
             lastResourceManager = currentManager;
         }
+        *///?}
 
         //? if >=1.21.2 {
         return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
@@ -148,7 +182,11 @@ final class ArmorBarTextures {
                 return BASE_STRIP;
             }
 
-            if (currentManager != null && currentManager.getResource(id).isPresent()) {
+            //? if >=26.1 {
+            if (currentManager.getResource(id).isPresent()) {
+            //?} else {
+            /*if (currentManager != null && currentManager.getResource(id).isPresent()) {
+            *///?}
                 //? if >=1.21.2 {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 //?} else {
@@ -173,17 +211,21 @@ final class ArmorBarTextures {
     }
 
     private static Identifier id(String path) {
-        //? if >=1.21 {
-        return Identifier.of(MODID, path);
-        //?} else {
+        //? if >=26.1 {
+        return Identifier.fromNamespaceAndPath(MODID, path);
+        //?} else if >=1.21 {
+        /*return Identifier.of(MODID, path);
+        *///?} else {
         /*return new Identifier(MODID, path);
         *///?}
     }
 
     private static Identifier id(String namespace, String path) {
-        //? if >=1.21 {
-        return Identifier.of(namespace, path);
-        //?} else {
+        //? if >=26.1 {
+        return Identifier.fromNamespaceAndPath(namespace, path);
+        //?} else if >=1.21 {
+        /*return Identifier.of(namespace, path);
+        *///?} else {
         /*return new Identifier(namespace, path);
         *///?}
     }

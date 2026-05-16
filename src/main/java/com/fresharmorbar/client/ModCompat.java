@@ -1,33 +1,58 @@
 package com.fresharmorbar.client;
 
-import net.minecraft.entity.EquipmentSlot;
+//? if >=26.1 {
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+//?} else {
+/*import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.fabricmc.loader.api.FabricLoader;
+*///?}
+//? if <26.1
+/*import net.fabricmc.loader.api.FabricLoader;*/
 
 public class ModCompat {
     
     // Helper per mantenere in cache lo stato delle mod (più performante di isModLoaded ogni frame)
-    private static final boolean TRINKETS_LOADED = FabricLoader.getInstance().isModLoaded("trinkets");
+    //? if <26.1
+    /*private static final boolean TRINKETS_LOADED = FabricLoader.getInstance().isModLoaded("trinkets");*/
 
     public record ElytraState(boolean equipped, boolean enchanted) {
         public static final ElytraState NONE = new ElytraState(false, false);
     }
 
-    public static ElytraState getElytraState(PlayerEntity player) {
-        ItemStack chest = player.getEquippedStack(EquipmentSlot.CHEST);
-        if (chest.isOf(Items.ELYTRA)) {
+    //? if >=26.1 {
+    public static ElytraState getElytraState(Player player) {
+    //?} else {
+    /*public static ElytraState getElytraState(PlayerEntity player) {
+    *///?}
+        //? if >=26.1
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        //? if <26.1
+        //ItemStack chest = player.getEquippedStack(EquipmentSlot.CHEST);
+        //? if >=26.1 {
+        if (chest.is(Items.ELYTRA)) {
+            return new ElytraState(true, chest.isEnchanted());
+        }
+        //?} else {
+        /*if (chest.isOf(Items.ELYTRA)) {
             return new ElytraState(true, chest.hasEnchantments());
         }
-        if (TRINKETS_LOADED) {
+        *///?}
+        //? if <26.1 {
+        /*if (TRINKETS_LOADED) {
             return Trinkets.getElytraState(player);
         }
+        *///?}
         return ElytraState.NONE;
     }
 
     // Integrazioni Mod (Devono essere classi separate per evitare crash)
-    private static class Trinkets {
+    //? if <26.1 {
+    /*private static class Trinkets {
         static ElytraState getElytraState(PlayerEntity player) {
             try {
                 return dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(player)
@@ -43,4 +68,5 @@ public class ModCompat {
             }
         }
     }
+    *///?}
 }
