@@ -597,7 +597,14 @@ public class ArmorBarRenderer {
         var glintTexture = textureManager.getTexture(ItemRenderer.ITEM_ENCHANTMENT_GLINT);
         var leftMask = textureManager.getTexture(leftMaskTexture);
         var rightMask = textureManager.getTexture(rightMaskTexture);
+        //? if >=1.21.11 {
+        /^TextureSetup textureSetup = new TextureSetup(
+                glintTexture.getGlTextureView(), leftMask.getGlTextureView(), rightMask.getGlTextureView(),
+                glintTexture.getSampler(), leftMask.getSampler(), rightMask.getSampler()
+        );
+        ^///?} else {
         TextureSetup textureSetup = new TextureSetup(glintTexture.getGlTextureView(), leftMask.getGlTextureView(), rightMask.getGlTextureView());
+        //?}
         GLINT_TEXTURE_SETUP_CACHE.add(new GlintTextureSetupEntry(leftMaskTexture, rightMaskTexture, textureSetup));
         return textureSetup;
     }
