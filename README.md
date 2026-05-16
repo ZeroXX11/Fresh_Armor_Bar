@@ -11,6 +11,13 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Minecraft 1.21.2
 - Minecraft 1.21.3
 - Minecraft 1.21.4
+- Minecraft 1.21.5
+- Minecraft 1.21.6
+- Minecraft 1.21.7
+- Minecraft 1.21.8
+- Minecraft 1.21.9
+- Minecraft 1.21.10
+- Minecraft 1.21.11
 
 ## Features
 
@@ -82,7 +89,7 @@ Build one target:
 
 ```bash
 ./gradlew :1.20.1:build --no-daemon
-./gradlew :1.21.4:build --no-daemon
+./gradlew :1.21.11:build --no-daemon
 ```
 
 Build all supported targets:
@@ -135,7 +142,13 @@ Fresh_Armor_Bar/
 ### Key Areas
 
 - `src/main/java/.../ArmorBarRenderer.java`  
-  Builds and renders the custom armor HUD.
+  Coordinates the custom armor HUD, caches visual armor state, and renders each armor slot.
+
+- `src/main/java/.../ArmorBarTextures.java`
+  Owns armor bar texture identifiers, material texture lookup, custom material fallback, trim colors, and glow-trim selection.
+
+- `src/main/java/.../ArmorBarGlintRenderer.java`
+  Owns enchantment glint rendering, including the newer masked GUI glint path used by recent Minecraft versions.
 
 - `src/main/java/.../ModCompat.java`  
   Handles optional mod compatibility, currently including Trinkets Elytra lookup.
@@ -155,6 +168,12 @@ Fresh_Armor_Bar/
 ## Technical Overview
 
 Fresh Armor Bar reads the player's equipped armor directly, builds a cached visual representation of each armor half-point, and renders custom HUD icons in place of the vanilla armor bar.
+
+The renderer is intentionally split into small client-side helpers:
+
+- `ArmorBarRenderer` owns the HUD flow and cached slot data.
+- `ArmorBarTextures` owns material, trim, and fallback texture decisions.
+- `ArmorBarGlintRenderer` owns enchantment glint drawing.
 
 The renderer updates only when relevant visual state changes:
 

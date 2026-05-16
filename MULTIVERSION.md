@@ -8,6 +8,8 @@ The shared source lives in the normal Fabric main source set:
 
 - `src/main/java/com/fresharmorbar/client/ModCompat.java`
 - `src/main/java/com/fresharmorbar/client/ArmorBarRenderer.java`
+- `src/main/java/com/fresharmorbar/client/ArmorBarTextures.java`
+- `src/main/java/com/fresharmorbar/client/ArmorBarGlintRenderer.java`
 - `src/main/java/com/fresharmorbar/mixin/client/InGameHudMixin.java`
 - `src/main/resources/fresh-armor-bar.client.mixins.json`
 - `src/main/resources/fabric.mod.json`
@@ -17,6 +19,12 @@ The shared source lives in the normal Fabric main source set:
 This is still a client-only mod. `fabric.mod.json` declares `"environment": "client"` and loads only `fresh-armor-bar.client.mixins.json`; that mixin config uses the `client` mixin section for `InGameHudMixin`. There is no main or server entrypoint, so the HUD/rendering classes are not exposed as a generic server/common initializer.
 
 Assets, metadata, mod id, package names, renderer flow, elytra compatibility, trim color table and texture lookup cache are shared.
+
+The armor HUD code is split by responsibility:
+
+- `ArmorBarRenderer` coordinates HUD slot rendering and cached armor visual state.
+- `ArmorBarTextures` contains texture identifiers, material texture lookup, trim colors and glow-trim selection.
+- `ArmorBarGlintRenderer` contains the enchantment glint rendering paths, including the 1.21.6+ masked GUI glint implementation.
 
 ## Version-Specific Code
 
@@ -29,7 +37,8 @@ Only Minecraft/Fabric API differences are guarded with Stonecutter comments:
 - Minecraft 1.21.2+ reads armor value from the item attribute component because `ArmorItem#getProtection()` is no longer exposed.
 - Minecraft 1.21.2+ uses `DrawContext` texture overloads that require a GUI `RenderLayer` factory.
 - Minecraft 1.21.2 and 1.21.3 use `EquippableComponent#model()` for equipment assets; Minecraft 1.21.4 uses `EquippableComponent#assetId()`.
-- Minecraft 1.21.5, 1.21.6 and 1.21.7 are configured as Fabric/Stonecutter build targets and continue to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
+- Minecraft 1.21.5 through 1.21.11 are configured as Fabric/Stonecutter build targets and continue to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
+- Minecraft 1.21.6+ uses the extracted `ArmorBarGlintRenderer` masked GUI glint path and includes shader resources for that path.
 - Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
 - Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
 
@@ -43,6 +52,10 @@ The per-version Gradle properties live in:
 - `versions/1.21.5/gradle.properties`
 - `versions/1.21.6/gradle.properties`
 - `versions/1.21.7/gradle.properties`
+- `versions/1.21.8/gradle.properties`
+- `versions/1.21.9/gradle.properties`
+- `versions/1.21.10/gradle.properties`
+- `versions/1.21.11/gradle.properties`
 
 ## Changing Version
 
@@ -100,7 +113,7 @@ Build one target:
 
 ```powershell
 .\gradlew.bat :1.20.1:build --no-daemon
-.\gradlew.bat :1.21.4:build --no-daemon
+.\gradlew.bat :1.21.11:build --no-daemon
 ```
 
 Build all configured Stonecutter targets:
