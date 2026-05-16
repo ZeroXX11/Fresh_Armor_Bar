@@ -41,8 +41,8 @@ Only Minecraft/Fabric API differences are guarded with Stonecutter comments:
 - Minecraft 1.21.6+ uses the extracted `ArmorBarGlintRenderer` masked GUI glint path and includes shader resources for that path.
 - Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
 - Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
-- Minecraft 26.1 uses official mappings, Java 25 bytecode, `GuiGraphicsExtractor`/`GuiRenderState` APIs, and hooks `Gui.extractArmor`.
-- Minecraft 26.1 does not compile against Trinkets until a compatible 26.1 API is available; Elytra detection remains chest-slot based on that target.
+- Minecraft 26.1+ uses official mappings, Java 25 bytecode, `GuiGraphicsExtractor`/`GuiRenderState` APIs, and hooks `Gui.extractArmor`.
+- Minecraft 26.1+ does not compile against Trinkets until a compatible 26.1+ API is available; Elytra detection remains chest-slot based on those targets.
 
 The per-version Gradle properties live in:
 
@@ -59,6 +59,8 @@ The per-version Gradle properties live in:
 - `versions/1.21.10/gradle.properties`
 - `versions/1.21.11/gradle.properties`
 - `versions/26.1/gradle.properties`
+- `versions/26.1.1/gradle.properties`
+- `versions/26.1.2/gradle.properties`
 
 ## Changing Version
 
@@ -109,7 +111,7 @@ Compilation uses version-specific Java toolchains. The emitted bytecode is still
 
 - Minecraft 1.20.1: Java 17 bytecode, because that Minecraft version targets Java 17.
 - Minecraft 1.21.x: Java 21 bytecode.
-- Minecraft 26.1: Java 25 bytecode.
+- Minecraft 26.1+: Java 25 bytecode.
 
 In IntelliJ IDEA, reload the Gradle project after checkout. If IDEA asks for a Gradle JVM, choose a Java 21 JDK or the Gradle wrapper/daemon JVM option; do not choose a Java 17 Gradle JVM.
 
@@ -119,6 +121,8 @@ Build one target:
 .\gradlew.bat :1.20.1:build --no-daemon
 .\gradlew.bat :1.21.11:build --no-daemon
 .\gradlew.bat :26.1:build --no-daemon
+.\gradlew.bat :26.1.1:build --no-daemon
+.\gradlew.bat :26.1.2:build --no-daemon
 ```
 
 Build all configured Stonecutter targets:

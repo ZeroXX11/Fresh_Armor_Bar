@@ -19,6 +19,8 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Minecraft 1.21.10
 - Minecraft 1.21.11
 - Minecraft 26.1
+- Minecraft 26.1.1
+- Minecraft 26.1.2
 
 ## Features
 
@@ -52,7 +54,7 @@ Fabric API is suggested by the mod metadata. Trinkets is optional and is only us
 ### Requirements
 
 - Java 21 or newer for the Gradle JVM.
-- Java 25 toolchain support for the Minecraft 26.1 target.
+- Java 25 toolchain support for the Minecraft 26.1+ targets.
 - The included Gradle wrapper.
 - IntelliJ IDEA with the Stonecutter Dev plugin, or another Gradle-capable Java IDE.
 
@@ -93,6 +95,8 @@ Build one target:
 ./gradlew :1.20.1:build --no-daemon
 ./gradlew :1.21.11:build --no-daemon
 ./gradlew :26.1:build --no-daemon
+./gradlew :26.1.1:build --no-daemon
+./gradlew :26.1.2:build --no-daemon
 ```
 
 Build all supported targets:
