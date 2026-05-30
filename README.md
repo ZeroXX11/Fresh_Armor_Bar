@@ -31,7 +31,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Subtle glow overlay for selected shiny trim materials.
 - Enchantment glint rendering.
 - Elytra indicator when an Elytra is equipped.
-- Optional Trinkets integration for Elytra detection on pre-26.1 targets.
+- Optional Trinkets, Trinkets Updated and Accessories integration for Elytra slot detection.
 - Support for high armor values with additional HUD rows.
 - Shared multi-version codebase with minimal duplication.
 
@@ -47,9 +47,44 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 4. Launch Minecraft with the Fabric profile.
 
-Fabric API is suggested by the mod metadata, but it is not declared as a hard dependency. Trinkets is optional and is only used when installed to detect Elytra in Trinkets slots.
+Fabric API is suggested by the mod metadata, but it is not declared as a hard dependency. Trinkets, Trinkets Updated and Accessories are optional and are only used when installed to detect Elytra in accessory slots.
 
 Fresh Armor Bar declares `fabricloader >=0.19.2` in its generated `fabric.mod.json`. This keeps the mod aligned with the newest stable Fabric Loader and avoids older loader versions, such as `0.19.0`, being accepted by launchers or modpacks where newer mods require the latest loader.
+
+## Mod Compatibility
+
+Fresh Armor Bar always detects Elytra in the vanilla chest slot. When optional slot APIs are installed, it also checks common Elytra accessory slots without requiring those mods as hard dependencies.
+
+Supported optional Elytra lookups:
+
+- Trinkets API (`dev.emi.trinkets.api`) for classic Trinkets-compatible slots.
+- Trinkets Canary and Trinkets Continued when they expose the same `trinkets` mod id and classic API.
+- Trinkets Updated (`eu.pb4.trinkets.api`) for newer Trinkets Updated slots, including 26.1+ targets where available.
+- Accessories API (`io.wispforest.accessories.api`) for mods that moved Elytra slots to Accessories.
+
+This covers Elytra-slot mods that store the Elytra through Trinkets or Accessories, including modern Elytra Slot builds where the installed version exposes one of those APIs. If none of those APIs are installed, Fresh Armor Bar falls back to vanilla chest-slot detection.
+
+### Optional Mod Compatibility Table
+
+| Minecraft | Trinkets | Trinkets Updated | Trinkets Continued | Accessories | Elytra Slot | Elytra Trinket |
+|---|---:|---:|---:|---:|---:|---:|
+| 1.20.1 | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 1.21.1 | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 1.21.2 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 1.21.3 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| 1.21.4 | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 1.21.5 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| 1.21.6 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 1.21.7 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 1.21.8 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| 1.21.9 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 1.21.10 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| 1.21.11 | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| 26.1 | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| 26.1.1 | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| 26.1.2 | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+
+✅ means the optional mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
 
 ## Resource Pack Textures
 
@@ -248,7 +283,7 @@ Fresh_Armor_Bar/
   Owns enchantment glint rendering, including the newer masked GUI glint path used by recent Minecraft versions.
 
 - `src/main/java/.../ModCompat.java`  
-  Handles optional mod compatibility, currently including Trinkets Elytra lookup.
+  Handles optional mod compatibility, including Trinkets, Trinkets Updated and Accessories Elytra lookup.
 
 - `src/main/java/.../mixin/client/InGameHudMixin.java`  
   Hooks the vanilla HUD and replaces armor icon rendering.
