@@ -111,6 +111,8 @@ This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Up
 
 ✅ means the optional API or slot mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
 
+For API / Library columns, ✅ only means Fresh Armor Bar can read Elytra data from that API if another mod stores an Elytra there. The API alone does not add an Elytra slot. For example, Trinkets Updated is available on 26.1+, but no matching Elytra Slot or Elytra Trinket Fabric release is currently listed for those versions in this table.
+
 ## Resource Pack Textures
 
 Fresh Armor Bar textures can be replaced with a normal Minecraft resource pack. You do not need to edit the mod jar.
