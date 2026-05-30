@@ -37,7 +37,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 ## Installation
 
-1. Install the Fabric Loader for your Minecraft version.
+1. Install Fabric Loader `0.19.2` or newer for your Minecraft version.
 2. Download the Fresh Armor Bar jar matching your game version.
 3. Put the jar in your Minecraft mods folder:
 
@@ -47,7 +47,93 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 4. Launch Minecraft with the Fabric profile.
 
-Fabric API is suggested by the mod metadata. Trinkets is optional and is only used when installed to detect Elytra in Trinkets slots.
+Fabric API is suggested by the mod metadata, but it is not declared as a hard dependency. Trinkets is optional and is only used when installed to detect Elytra in Trinkets slots.
+
+Fresh Armor Bar declares `fabricloader >=0.19.2` in its generated `fabric.mod.json`. This keeps the mod aligned with the newest stable Fabric Loader and avoids older loader versions, such as `0.19.0`, being accepted by launchers or modpacks where newer mods require the latest loader.
+
+## Resource Pack Textures
+
+Fresh Armor Bar textures can be replaced with a normal Minecraft resource pack. You do not need to edit the mod jar.
+
+The mod loads its built-in HUD textures from this namespace and folder:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/
+```
+
+To override them, create a resource pack with the same folder structure and place your replacement PNG files there. For example:
+
+```text
+FreshArmorBar_ResourcePack/
+|- pack.mcmeta
+`- assets/
+   `- fresh-armor-bar/
+      `- textures/
+         `- gui/
+            `- armorbar/
+               |- empty.png
+               |- base.png
+               |- elytra.png
+               |- strips/
+               |  |- turtle.png
+               |  |- leather.png
+               |  |- chainmail.png
+               |  |- iron.png
+               |  |- gold.png
+               |  |- diamond.png
+               |  `- netherite.png
+               `- overlays/
+                  `- trim/
+                     |- trim_base.png
+                     `- trim_glow_tex.png
+```
+
+Use the `pack_format` required by your Minecraft version in `pack.mcmeta`. The file should use this shape:
+
+```json
+{
+  "pack": {
+    "pack_format": 0,
+    "description": "Fresh Armor Bar custom textures"
+  }
+}
+```
+
+Replace `0` with the correct resource-pack format for the version you are playing; do not leave the placeholder value in a real pack.
+
+### Texture Layout
+
+- `empty.png` and `elytra.png` are `9x9` icons.
+- Material strip textures are `27x9` PNGs.
+- Trim overlay textures are `27x9` PNGs.
+- `base.png` is the fallback `27x9` strip used when no material-specific texture is available.
+
+The `27x9` strip layout is split into three `9x9` regions:
+
+```text
+left half | right half | full icon
+0..8      | 9..17      | 18..26
+```
+
+The renderer uses the left and right regions when one armor icon is made from two different armor halves, and the full-icon region when both halves have the same visual state.
+
+### Adding Textures For Custom Armor Materials
+
+Fresh Armor Bar also looks for resource-pack textures for armor materials that are not built into vanilla.
+
+For a material with no namespace, add:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png
+```
+
+For a namespaced material such as `examplemod:ruby`, add:
+
+```text
+assets/examplemod/textures/gui/armorbar/strips/ruby.png
+```
+
+If the texture exists, Fresh Armor Bar uses it automatically. If it does not exist, the material falls back to `base.png` and a warning is written to the log.
 
 ## Development
 
@@ -110,6 +196,8 @@ On Windows:
 ```powershell
 .\gradlew.bat buildAllVersions --no-daemon
 ```
+
+The unqualified `buildAllVersions` task name is intentional: Gradle runs the matching task in each Stonecutter version project.
 
 Final jars are written directly to the root `build/libs` folder. Per-version
 `versions/<minecraft-version>/build` folders are Gradle/Loom working output, not
@@ -194,11 +282,7 @@ The renderer updates only when relevant visual state changes:
 - Elytra state.
 - Player identity.
 
-Unknown armor materials fall back to a base texture. Resource packs or integrations can provide matching textures using this path style:
-
-```text
-textures/gui/armorbar/strips/<material>.png
-```
+Unknown armor materials fall back to `base.png`. See [Resource Pack Textures](#resource-pack-textures) for the full override layout and custom material texture paths.
 
 ## License
 

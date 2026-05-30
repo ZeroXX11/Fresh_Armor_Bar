@@ -137,6 +137,8 @@ On Unix-like shells:
 ./gradlew buildAllVersions --no-daemon
 ```
 
+This uses Gradle's unqualified task selection: every Stonecutter version project has its own `buildAllVersions` task, so the root command runs the matching task for each configured target.
+
 `buildAndCollect` is kept as a compatibility alias for older workflows.
 
 The final remapped jars and sources jars are written directly to:
