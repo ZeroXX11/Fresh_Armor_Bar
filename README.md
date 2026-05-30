@@ -53,38 +53,63 @@ Fresh Armor Bar declares `fabricloader >=0.19.2` in its generated `fabric.mod.js
 
 ## Mod Compatibility
 
-Fresh Armor Bar always detects Elytra in the vanilla chest slot. When optional slot APIs are installed, it also checks common Elytra accessory slots without requiring those mods as hard dependencies.
+Fresh Armor Bar always detects Elytra in the vanilla chest slot. When optional slot APIs are installed, it also checks common Elytra accessory slots without requiring those APIs or slot mods as hard dependencies.
 
-Supported optional Elytra lookups:
+There are two different kinds of compatibility:
+
+- Slot APIs/libraries provide the inventory system that stores extra equipment slots. Trinkets, Trinkets Updated and Accessories are in this category. On their own, they do not necessarily add an Elytra slot.
+- Elytra slot mods add the actual wearable Elytra slot. Elytra Slot and Elytra Trinket are in this category, and they usually depend on one of the slot APIs/libraries.
+
+Supported optional slot API lookups:
 
 - Trinkets API (`dev.emi.trinkets.api`) for classic Trinkets-compatible slots.
-- Trinkets Canary and Trinkets Continued when they expose the same `trinkets` mod id and classic API.
+- Trinkets Canary when it exposes the same `trinkets` mod id and classic API.
 - Trinkets Updated (`eu.pb4.trinkets.api`) for newer Trinkets Updated slots, including 26.1+ targets where available.
 - Accessories API (`io.wispforest.accessories.api`) for mods that moved Elytra slots to Accessories.
 
-This covers Elytra-slot mods that store the Elytra through Trinkets or Accessories, including modern Elytra Slot builds where the installed version exposes one of those APIs. If none of those APIs are installed, Fresh Armor Bar falls back to vanilla chest-slot detection.
+This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Updated or Accessories. If no compatible slot API is installed, Fresh Armor Bar falls back to vanilla chest-slot detection.
 
 ### Optional Mod Compatibility Table
 
-| Minecraft | Trinkets | Trinkets Updated | Trinkets Continued | Accessories | Elytra Slot | Elytra Trinket |
-|---|---:|---:|---:|---:|---:|---:|
-| 1.20.1 | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| 1.21.1 | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| 1.21.2 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| 1.21.3 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| 1.21.4 | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| 1.21.5 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| 1.21.6 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| 1.21.7 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| 1.21.8 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| 1.21.9 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| 1.21.10 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| 1.21.11 | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| 26.1 | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 26.1.1 | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 26.1.2 | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>API / Library</th>
+      <th>API / Library</th>
+      <th>API / Library</th>
+      <th>Elytra Slot Mod</th>
+      <th>Elytra Slot Mod</th>
+    </tr>
+    <tr>
+      <th>Minecraft</th>
+      <th>Trinkets</th>
+      <th>Trinkets Updated</th>
+      <th>Accessories</th>
+      <th>Elytra Slot</th>
+      <th>Elytra Trinket</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1.20.1</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>1.21.1</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>1.21.2</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.3</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.4</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>1.21.5</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.6</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.7</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.8</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.9</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.10</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.11</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>26.1</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+    <tr><td>26.1.1</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+    <tr><td>26.1.2</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+  </tbody>
+</table>
 
-✅ means the optional mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
+✅ means the optional API or slot mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
 
 ## Resource Pack Textures
 
