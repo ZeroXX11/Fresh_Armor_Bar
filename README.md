@@ -31,7 +31,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Subtle glow overlay for selected shiny trim materials.
 - Enchantment glint rendering.
 - Elytra indicator when an Elytra is equipped.
-- Optional Trinkets, Trinkets Updated and Accessories integration for Elytra slot detection.
+- Optional Trinkets and Trinkets Updated integration for Elytra slot detection.
 - Support for high armor values with additional HUD rows.
 - Shared multi-version codebase with minimal duplication.
 
@@ -47,27 +47,26 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 4. Launch Minecraft with the Fabric profile.
 
-Fabric API is suggested by the mod metadata, but it is not declared as a hard dependency. Trinkets, Trinkets Updated and Accessories are optional and are only used when installed to detect Elytra in accessory slots.
+Fabric API is suggested by the mod metadata, but it is not declared as a hard dependency. Trinkets and Trinkets Updated are optional and are only used when installed to detect Elytra in extra Elytra slots.
 
 Fresh Armor Bar declares `fabricloader >=0.19.2` in its generated `fabric.mod.json`. This keeps the mod aligned with the newest stable Fabric Loader and avoids older loader versions, such as `0.19.0`, being accepted by launchers or modpacks where newer mods require the latest loader.
 
 ## Mod Compatibility
 
-Fresh Armor Bar always detects Elytra in the vanilla chest slot. When optional slot APIs are installed, it also checks common Elytra accessory slots without requiring those APIs or slot mods as hard dependencies.
+Fresh Armor Bar always detects Elytra in the vanilla chest slot. When optional Trinkets-family slot APIs are installed, it also checks Elytra slot mods that store Elytra through those APIs without requiring them as hard dependencies.
 
 There are two different kinds of compatibility:
 
-- Slot APIs/libraries provide the inventory system that stores extra equipment slots. Trinkets, Trinkets Updated and Accessories are in this category. On their own, they do not necessarily add an Elytra slot.
+- Slot APIs/libraries provide the inventory system that stores extra equipment slots. Trinkets and Trinkets Updated are in this category. On their own, they do not necessarily add an Elytra slot.
 - Elytra slot mods add the actual wearable Elytra slot. Elytra Slot and Elytra Trinket are in this category, and they usually depend on one of the slot APIs/libraries.
 
 Supported optional slot API lookups:
 
 - Trinkets API (`dev.emi.trinkets.api`) for classic Trinkets-compatible slots.
-- Trinkets Canary when it exposes the same `trinkets` mod id and classic API.
+- Trinkets Canary, which exposes the same `trinkets` mod id and classic `dev.emi.trinkets.api` API.
 - Trinkets Updated (`eu.pb4.trinkets.api`) for newer Trinkets Updated slots, including 26.1+ targets where available.
-- Accessories API (`io.wispforest.accessories.api`) for mods that moved Elytra slots to Accessories.
 
-This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Updated or Accessories. If no compatible slot API is installed, Fresh Armor Bar falls back to vanilla chest-slot detection.
+This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Canary or Trinkets Updated. If no compatible slot API is installed, Fresh Armor Bar falls back to vanilla chest-slot detection.
 
 ### Optional Mod Compatibility Table
 
@@ -84,34 +83,36 @@ This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Up
     <tr>
       <th>Minecraft</th>
       <th>Trinkets</th>
+      <th>Trinkets Canary</th>
       <th>Trinkets Updated</th>
-      <th>Accessories</th>
       <th>Elytra Slot</th>
       <th>Elytra Trinket</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td>1.20.1</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
-    <tr><td>1.21.1</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>1.20.1</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td></tr>
+    <tr><td>1.21.1</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td></tr>
     <tr><td>1.21.2</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.3</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.4</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
-    <tr><td>1.21.5</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.6</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.7</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.8</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.9</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.10</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.11</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>26.1</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
-    <tr><td>26.1.1</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
-    <tr><td>26.1.2</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+    <tr><td>1.21.3</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.4</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td></tr>
+    <tr><td>1.21.5</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.6</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.7</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.8</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.9</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.10</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>1.21.11</td><td>❌</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+    <tr><td>26.1</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>26.1.1</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>26.1.2</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
   </tbody>
 </table>
 
 ✅ means the optional API or slot mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
 
 For API / Library columns, ✅ only means Fresh Armor Bar can read Elytra data from that API if another mod stores an Elytra there. The API alone does not add an Elytra slot. For example, Trinkets Updated is available on 26.1+, but no matching Elytra Slot or Elytra Trinket Fabric release is currently listed for those versions in this table.
+
+The Trinkets Canary column is listed separately for clarity, even though Trinkets Canary declares the same runtime mod id and API package as classic Trinkets.
 
 ## Resource Pack Textures
 
@@ -310,7 +311,7 @@ Fresh_Armor_Bar/
   Owns enchantment glint rendering, including the newer masked GUI glint path used by recent Minecraft versions.
 
 - `src/main/java/.../ModCompat.java`  
-  Handles optional mod compatibility, including Trinkets, Trinkets Updated and Accessories Elytra lookup.
+  Handles optional mod compatibility, including Trinkets and Trinkets Updated Elytra lookup.
 
 - `src/main/java/.../mixin/client/InGameHudMixin.java`  
   Hooks the vanilla HUD and replaces armor icon rendering.

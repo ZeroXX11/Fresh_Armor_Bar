@@ -42,7 +42,7 @@ Only Minecraft/Fabric API differences are guarded with Stonecutter comments:
 - Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
 - Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
 - Minecraft 26.1+ uses official mappings, Java 25 bytecode, `GuiGraphicsExtractor`/`GuiRenderState` APIs, and hooks `Gui.extractArmor`.
-- Minecraft 26.1+ does not compile directly against Trinkets. Optional Elytra slot detection is handled through guarded reflection for Trinkets Updated, classic Trinkets-compatible APIs when present, and Accessories; if no compatible API is installed, detection remains chest-slot based.
+- Minecraft 26.1+ does not compile directly against Trinkets. Optional Elytra slot detection is handled through guarded reflection for Trinkets Updated and classic Trinkets-compatible APIs when present; if no compatible API is installed, detection remains chest-slot based.
 
 The per-version Gradle properties live in:
 

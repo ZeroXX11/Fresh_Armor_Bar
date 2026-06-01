@@ -22,14 +22,11 @@ public class ModCompat {
     private static final boolean TRINKETS_LOADED = LOADER.isModLoaded("trinkets");
     private static final boolean TRINKETS_UPDATED_LOADED =
             LOADER.isModLoaded("trinkets_updated") || LOADER.isModLoaded("trinkets-updated");
-    private static final boolean ACCESSORIES_LOADED = LOADER.isModLoaded("accessories");
 
     private static final Class<?> TRINKETS_API =
             TRINKETS_LOADED ? classOrNull("dev.emi.trinkets.api.TrinketsApi") : null;
     private static final Class<?> TRINKETS_UPDATED_API =
             TRINKETS_UPDATED_LOADED ? classOrNull("eu.pb4.trinkets.api.TrinketsApi") : null;
-    private static final Class<?> ACCESSORIES_CAPABILITY =
-            ACCESSORIES_LOADED ? classOrNull("io.wispforest.accessories.api.AccessoriesCapability") : null;
     private static final String[] STACK_ACCESSORS =
             {"stack", "getStack", "getRight", "getB", "getSecond", "right", "second"};
 
@@ -54,9 +51,7 @@ public class ModCompat {
         if (state.equipped()) return state;
 
         state = getApiElytraState(TRINKETS_UPDATED_LOADED, TRINKETS_UPDATED_API, "getAttachment", player);
-        if (state.equipped()) return state;
-
-        return getApiElytraState(ACCESSORIES_LOADED, ACCESSORIES_CAPABILITY, "get", player);
+        return state;
     }
 
     //? if >=26.1 {
