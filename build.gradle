@@ -118,6 +118,9 @@ sourceSets.main.resources.setSrcDirs([generatedFabricModJson, rootProject.file("
 if (stonecutter.eval(stonecutter.current.version, "<1.21.6")) {
     sourceSets.main.resources.exclude("assets/fresh-armor-bar/shaders/**")
 }
+if (stonecutter.eval(stonecutter.current.version, "<1.21.9")) {
+    sourceSets.main.resources.exclude("assets/fresh-armor-bar/textures/gui/armorbar/strips/copper.png")
+}
 
 tasks.named("processResources").configure {
     dependsOn(tasks.named("generateFabricModJson"))

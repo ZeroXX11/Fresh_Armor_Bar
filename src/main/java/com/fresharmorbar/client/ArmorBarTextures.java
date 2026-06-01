@@ -39,6 +39,8 @@ final class ArmorBarTextures {
     private static final Identifier TURTLE_STRIP = id("textures/gui/armorbar/strips/turtle.png");
     private static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
     private static final Identifier CHAIN_STRIP = id("textures/gui/armorbar/strips/chainmail.png");
+    //? if >=1.21.9
+    //private static final Identifier COPPER_STRIP = id("textures/gui/armorbar/strips/copper.png");
     private static final Identifier IRON_STRIP = id("textures/gui/armorbar/strips/iron.png");
     private static final Identifier GOLD_STRIP = id("textures/gui/armorbar/strips/gold.png");
     private static final Identifier DIAMOND_STRIP = id("textures/gui/armorbar/strips/diamond.png");
@@ -92,6 +94,8 @@ final class ArmorBarTextures {
         ¹^///?} else {
         if (asset.equals(ArmorMaterials.CHAIN.assetId())) return CHAIN_STRIP;
         //?}
+        //? if >=1.21.9
+        //if (asset.equals(ArmorMaterials.COPPER.assetId())) return COPPER_STRIP;
         if (asset.equals(ArmorMaterials.IRON.assetId())) return IRON_STRIP;
         if (asset.equals(ArmorMaterials.GOLD.assetId())) return GOLD_STRIP;
         if (asset.equals(ArmorMaterials.DIAMOND.assetId())) return DIAMOND_STRIP;
