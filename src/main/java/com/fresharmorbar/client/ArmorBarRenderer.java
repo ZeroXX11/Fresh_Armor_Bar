@@ -50,13 +50,16 @@ import java.util.UUID;
 public class ArmorBarRenderer {
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
-    private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
+    private static final int U_LEFT = 0;
+    private static final int U_RIGHT = 9;
+    private static final int U_FULL = 18;
+    private static final UUID NO_PLAYER_UUID = new UUID(0L, 0L);
 
     // Cache per evitare ricalcoli inutili ad ogni frame
     private static final SlotData[] CACHE = new SlotData[60];
     private static final ItemStack[] LAST_STACKS = new ItemStack[4];
     private static int lastArmorValue = -1;
-    private static UUID lastPlayerUuid = null;
+    private static UUID lastPlayerUuid = NO_PLAYER_UUID;
     private static ModCompat.ElytraState lastElytraState = ModCompat.ElytraState.NONE;
 
     static {
@@ -71,26 +74,40 @@ public class ArmorBarRenderer {
     }
 
     static class SlotData {
-        Identifier materialTex;
+        Identifier materialTex = EMPTY_TEX;
+        boolean hasMaterial;
+
         int trimRgb = -1;
-        float trimR = 1f, trimG = 1f, trimB = 1f;
-        boolean trimGlow = false;
-        boolean enchanted = false;
+        float trimR = 1f;
+        float trimG = 1f;
+        float trimB = 1f;
+
+        boolean trimGlow;
+        boolean enchanted;
+
         int armorColor = -1;
-        float matR = 1f, matG = 1f, matB = 1f;
+
+        float matR = 1f;
+        float matG = 1f;
+        float matB = 1f;
 
         void fill(Identifier tex, int rgb, float tr, float tg, float tb, boolean glow, boolean ench, int color, float mr, float mg, float mb) {
-            materialTex = tex; trimRgb = rgb; trimR = tr; trimG = tg; trimB = tb;
+            materialTex = tex; hasMaterial = true; trimRgb = rgb; trimR = tr; trimG = tg; trimB = tb;
             trimGlow = glow; enchanted = ench; armorColor = color; matR = mr; matG = mg; matB = mb;
         }
 
         void reset() {
-            materialTex = null;
+            materialTex = EMPTY_TEX;
+            hasMaterial = false;
+
             trimRgb = -1;
             trimR = 1f; trimG = 1f; trimB = 1f;
+
             trimGlow = false;
             enchanted = false;
+
             armorColor = -1;
+
             matR = 1f; matG = 1f; matB = 1f;
         }
     }
@@ -161,7 +178,7 @@ public class ArmorBarRenderer {
         //UUID playerUuid = player.getUUID();
         //? if <26.1
         UUID playerUuid = player.getUuid();
-        if (lastPlayerUuid == null || !lastPlayerUuid.equals(playerUuid)) {
+        if (!lastPlayerUuid.equals(playerUuid)) {
             invalidate();
             lastPlayerUuid = playerUuid;
             return true;
@@ -334,7 +351,9 @@ public class ArmorBarRenderer {
             var trimOpt = ArmorTrim.getTrim(registry, stack);
             //?}
             int rgb = -1;
-            float tr = 1f, tg = 1f, tb = 1f;
+            float tr = 1f;
+            float tg = 1f;
+            float tb = 1f;
             boolean glow = false;
 
             //? if >=1.21 {
@@ -372,7 +391,9 @@ public class ArmorBarRenderer {
             //?}
 
             int color = -1;
-            float mr = 1f, mg = 1f, mb = 1f;
+            float mr = 1f;
+            float mg = 1f;
+            float mb = 1f;
             //? if >=26.1 {
             /*var dyedColor = stack.get(DataComponents.DYED_COLOR);
             if (dyedColor != null) {
@@ -407,7 +428,7 @@ public class ArmorBarRenderer {
     *///?} else {
     private static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u) {
     //?}
-        if (side.materialTex != null) {
+        if (side.hasMaterial) {
             drawPart(ctx, side.materialTex, x, y, u, side.armorColor != -1, side.matR, side.matG, side.matB, false);
             if (side.trimRgb != -1) {
                 drawPart(ctx, TRIM_BASE, x, y, u, true, side.trimR, side.trimG, side.trimB, side.trimGlow);
@@ -423,7 +444,7 @@ public class ArmorBarRenderer {
         SlotData left = CACHE[slot * 2];
         SlotData right = CACHE[slot * 2 + 1];
 
-        if (left.materialTex == null && right.materialTex == null) return;
+        if (!left.hasMaterial && !right.hasMaterial) return;
 
         if (isSame(left, right)) {
             drawSide(ctx, left, x, y, U_FULL);
@@ -438,7 +459,7 @@ public class ArmorBarRenderer {
     static boolean isSame(SlotData a, SlotData b) {
         // matR/G/B sono derivati deterministicamente da armorColor in updateData(),
         // quindi confrontare armorColor è sufficiente per coprire anche il colore dyeable.
-        return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor
+        return a.hasMaterial && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor
                 && a.enchanted == b.enchanted && a.matR == b.matR && a.matG == b.matG && a.matB == b.matB;
     }
 

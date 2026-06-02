@@ -24,9 +24,9 @@ public class ModCompat {
             LOADER.isModLoaded("trinkets_updated") || LOADER.isModLoaded("trinkets-updated");
 
     private static final Class<?> TRINKETS_API =
-            TRINKETS_LOADED ? classOrNull("dev.emi.trinkets.api.TrinketsApi") : null;
+            TRINKETS_LOADED ? trinketsApiClassOrNull() : null;
     private static final Class<?> TRINKETS_UPDATED_API =
-            TRINKETS_UPDATED_LOADED ? classOrNull("eu.pb4.trinkets.api.TrinketsApi") : null;
+            TRINKETS_UPDATED_LOADED ? updatedTrinketsApiClassOrNull() : null;
     private static final String[] STACK_ACCESSORS =
             {"stack", "getStack", "getRight", "getB", "getSecond", "right", "second"};
 
@@ -121,7 +121,7 @@ public class ModCompat {
         try {
             Method method = target.getClass().getMethod(methodName);
             return method.invoke(target);
-        } catch (Throwable ignored) {
+        } catch (ReflectiveOperationException | SecurityException ignored) {
             return null;
         }
     }
@@ -130,21 +130,35 @@ public class ModCompat {
         if (owner == null || arg == null) return null;
         try {
             for (Method method : owner.getMethods()) {
-                if (!method.getName().equals(methodName) || method.getParameterCount() != 1) continue;
-                if (!method.getParameterTypes()[0].isInstance(arg)) continue;
-                return method.invoke(target, arg);
+                if (method.getName().equals(methodName)
+                        && method.getParameterCount() == 1
+                        && method.getParameterTypes()[0].isInstance(arg)) {
+                    return method.invoke(target, arg);
+                }
             }
-        } catch (Throwable ignored) {
+        } catch (ReflectiveOperationException | SecurityException ignored) {
             return null;
         }
         return null;
     }
 
-    private static Class<?> classOrNull(String name) {
+    private static Class<?> trinketsApiClassOrNull() {
         try {
-            return Class.forName(name, false, ModCompat.class.getClassLoader());
-        } catch (Throwable ignored) {
+            return Class.forName("dev.emi.trinkets.api.TrinketsApi", false, contextClassLoader());
+        } catch (ClassNotFoundException ignored) {
             return null;
         }
+    }
+
+    private static Class<?> updatedTrinketsApiClassOrNull() {
+        try {
+            return Class.forName("eu.pb4.trinkets.api.TrinketsApi", false, contextClassLoader());
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        }
+    }
+
+    private static ClassLoader contextClassLoader() {
+        return Thread.currentThread().getContextClassLoader();
     }
 }
