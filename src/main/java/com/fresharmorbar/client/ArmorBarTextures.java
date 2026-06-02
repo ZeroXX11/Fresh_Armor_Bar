@@ -27,8 +27,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 final class ArmorBarTextures {
-    private static final Logger LOGGER = LoggerFactory.getLogger("fresh-armor-bar");
     private static final String MODID = "fresh-armor-bar";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
     static final Identifier EMPTY_TEX = id("textures/gui/armorbar/empty.png");
     static final Identifier BASE_STRIP = id("textures/gui/armorbar/base.png");

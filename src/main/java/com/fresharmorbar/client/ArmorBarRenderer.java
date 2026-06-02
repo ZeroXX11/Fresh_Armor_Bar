@@ -48,6 +48,9 @@ import java.util.UUID;
 
 // Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
 public class ArmorBarRenderer {
+    private ArmorBarRenderer() {
+    }
+
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
     private static final int U_LEFT = 0;
