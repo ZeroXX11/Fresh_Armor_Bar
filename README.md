@@ -70,43 +70,24 @@ This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Ca
 
 ### Optional Mod Compatibility Table
 
-<table>
-  <thead>
-    <tr>
-      <th>Type</th>
-      <th>API / Library</th>
-      <th>API / Library</th>
-      <th>API / Library</th>
-      <th>Elytra Slot Mod</th>
-      <th>Elytra Slot Mod</th>
-    </tr>
-    <tr>
-      <th>Minecraft</th>
-      <th>Trinkets</th>
-      <th>Trinkets Canary</th>
-      <th>Trinkets Updated</th>
-      <th>Elytra Slot</th>
-      <th>Elytra Trinket</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td>1.20.1</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td></tr>
-    <tr><td>1.21.1</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td></tr>
-    <tr><td>1.21.2</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.3</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.4</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td></tr>
-    <tr><td>1.21.5</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.6</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.7</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.8</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.9</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.10</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td></tr>
-    <tr><td>1.21.11</td><td>❌</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
-    <tr><td>26.1</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
-    <tr><td>26.1.1</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
-    <tr><td>26.1.2</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
-  </tbody>
-</table>
+| Type | API / Library | API / Library | API / Library | Elytra Slot Mod | Elytra Slot Mod |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| Minecraft | Trinkets | Trinkets Canary | Trinkets Updated | Elytra Slot | Elytra Trinket |
+| 1.20.1 | ✅ | ❌ | ❌ | ✅ | ✅ |
+| 1.21.1 | ✅ | ❌ | ❌ | ✅ | ✅ |
+| 1.21.2 | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 1.21.3 | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 1.21.4 | ❌ | ✅ | ❌ | ✅ | ✅ |
+| 1.21.5 | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 1.21.6 | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 1.21.7 | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 1.21.8 | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 1.21.9 | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 1.21.10 | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 1.21.11 | ❌ | ✅ | ✅ | ❌ | ✅ |
+| 26.1 | ❌ | ❌ | ✅ | ❌ | ❌ |
+| 26.1.1 | ❌ | ❌ | ✅ | ❌ | ❌ |
+| 26.1.2 | ❌ | ❌ | ✅ | ❌ | ❌ |
 
 ✅ means the optional API or slot mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
 
