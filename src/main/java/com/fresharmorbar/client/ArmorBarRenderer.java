@@ -50,7 +50,9 @@ import java.util.UUID;
 public class ArmorBarRenderer {
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
-    private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
+    private static final int U_LEFT = 0;
+    private static final int U_RIGHT = 9;
+    private static final int U_FULL = 18;
 
     // Cache per evitare ricalcoli inutili ad ogni frame
     private static final SlotData[] CACHE = new SlotData[60];
@@ -72,12 +74,20 @@ public class ArmorBarRenderer {
 
     static class SlotData {
         Identifier materialTex;
+
         int trimRgb = -1;
-        float trimR = 1f, trimG = 1f, trimB = 1f;
+        float trimR = 1f;
+        float trimG = 1f;
+        float trimB = 1f;
+
         boolean trimGlow = false;
         boolean enchanted = false;
+
         int armorColor = -1;
-        float matR = 1f, matG = 1f, matB = 1f;
+
+        float matR = 1f;
+        float matG = 1f;
+        float matB = 1f;
 
         void fill(Identifier tex, int rgb, float tr, float tg, float tb, boolean glow, boolean ench, int color, float mr, float mg, float mb) {
             materialTex = tex; trimRgb = rgb; trimR = tr; trimG = tg; trimB = tb;
@@ -86,11 +96,15 @@ public class ArmorBarRenderer {
 
         void reset() {
             materialTex = null;
+
             trimRgb = -1;
             trimR = 1f; trimG = 1f; trimB = 1f;
+
             trimGlow = false;
             enchanted = false;
+
             armorColor = -1;
+
             matR = 1f; matG = 1f; matB = 1f;
         }
     }
@@ -334,7 +348,9 @@ public class ArmorBarRenderer {
             var trimOpt = ArmorTrim.getTrim(registry, stack);
             //?}
             int rgb = -1;
-            float tr = 1f, tg = 1f, tb = 1f;
+            float tr = 1f;
+            float tg = 1f;
+            float tb = 1f;
             boolean glow = false;
 
             //? if >=1.21 {
@@ -372,7 +388,9 @@ public class ArmorBarRenderer {
             //?}
 
             int color = -1;
-            float mr = 1f, mg = 1f, mb = 1f;
+            float mr = 1f;
+            float mg = 1f;
+            float mb = 1f;
             //? if >=26.1 {
             /*var dyedColor = stack.get(DataComponents.DYED_COLOR);
             if (dyedColor != null) {

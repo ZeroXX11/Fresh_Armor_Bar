@@ -121,29 +121,33 @@ public class ModCompat {
         try {
             Method method = target.getClass().getMethod(methodName);
             return method.invoke(target);
-        } catch (Throwable ignored) {
+        } catch (ReflectiveOperationException | SecurityException ignored) {
             return null;
         }
     }
 
     private static Object invokeSingleArg(Class<?> owner, Object target, String methodName, Object arg) {
         if (owner == null || arg == null) return null;
+
         try {
             for (Method method : owner.getMethods()) {
-                if (!method.getName().equals(methodName) || method.getParameterCount() != 1) continue;
-                if (!method.getParameterTypes()[0].isInstance(arg)) continue;
-                return method.invoke(target, arg);
+                if (method.getName().equals(methodName)
+                        && method.getParameterCount() == 1
+                        && method.getParameterTypes()[0].isInstance(arg)) {
+                    return method.invoke(target, arg);
+                }
             }
-        } catch (Throwable ignored) {
+        } catch (ReflectiveOperationException | SecurityException ignored) {
             return null;
         }
+
         return null;
     }
 
     private static Class<?> classOrNull(String name) {
         try {
             return Class.forName(name, false, ModCompat.class.getClassLoader());
-        } catch (Throwable ignored) {
+        } catch (ReflectiveOperationException | SecurityException ignored) {
             return null;
         }
     }
