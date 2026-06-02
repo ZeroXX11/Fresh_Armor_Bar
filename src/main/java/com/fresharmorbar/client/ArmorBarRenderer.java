@@ -232,7 +232,8 @@ public class ArmorBarRenderer {
         var colorB = b.get(DataComponentTypes.DYED_COLOR);
         return java.util.Objects.equals(colorA, colorB);
         *///?} else {
-        var nbtA = a.getNbt(); var nbtB = b.getNbt();
+        var nbtA = a.getNbt();
+        var nbtB = b.getNbt();
         var trimA = nbtA != null ? nbtA.get("Trim") : null;
         var trimB = nbtB != null ? nbtB.get("Trim") : null;
         if (!java.util.Objects.equals(trimA, trimB)) return false;

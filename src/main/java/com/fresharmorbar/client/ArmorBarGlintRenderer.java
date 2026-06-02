@@ -186,8 +186,8 @@ final class ArmorBarGlintRenderer {
             float maxU = baseMaxU + offset;
             float maxV = scale + offset; // scale + offset
 
-            addGlintVertex(vertexConsumer, matrix, x1, y + 9, minU, maxV);
-            addGlintVertex(vertexConsumer, matrix, x2, y + 9, maxU, maxV);
+            addGlintVertex(vertexConsumer, matrix, x1, y + 9.0f, minU, maxV);
+            addGlintVertex(vertexConsumer, matrix, x2, y + 9.0f, maxU, maxV);
             addGlintVertex(vertexConsumer, matrix, x2, y, maxU, offset);
             addGlintVertex(vertexConsumer, matrix, x1, y, minU, offset);
         }
