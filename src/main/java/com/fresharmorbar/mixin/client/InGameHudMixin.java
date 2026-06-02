@@ -46,68 +46,61 @@ public class InGameHudMixin {
     //?}
 
     @Unique
-    private static final int MAX_ARMOR_SLOTS_PER_ROW = 10;
+    private static int fab$totalArmorValue = 0;
 
     @Unique
-    private static final int VANILLA_ARMOR_TEXTURE_V = 9;
+    private static int fab$currentArmorSlot = 0;
 
     @Unique
-    private static int fabTotalArmorValue;
+    private static boolean fab$cachedHasElytra = false;
 
     @Unique
-    private static int fabCurrentArmorSlot;
-
-    @Unique
-    private static boolean fabCachedHasElytra;
-
-    @Unique
-    private static boolean fabCachedElytraEnchanted;
+    private static boolean fab$cachedElytraEnchanted = false;
 
     @Unique
     //? if >=26.1 {
-    /*private static void fabResetArmorState(Player player) {
+    /*private static void fab$resetArmorState(Player player) {
     *///?} else {
-    private static void fabResetArmorState(PlayerEntity player) {
+    private static void fab$resetArmorState(PlayerEntity player) {
     //?}
-        fabCurrentArmorSlot = 0;
+        fab$currentArmorSlot = 0;
 
         if (player != null) {
-            fabTotalArmorValue = ArmorBarRenderer.calculateEquippedArmor(player);
+            fab$totalArmorValue = ArmorBarRenderer.calculateEquippedArmor(player);
 
             ModCompat.ElytraState es = ModCompat.getElytraState(player);
-            fabCachedHasElytra = es.equipped();
-            fabCachedElytraEnchanted = es.enchanted();
+            fab$cachedHasElytra = es.equipped();
+            fab$cachedElytraEnchanted = es.enchanted();
 
-            ArmorBarRenderer.updateIfNeeded(player, fabTotalArmorValue, es);
+            ArmorBarRenderer.updateIfNeeded(player, fab$totalArmorValue, es);
         } else {
-            fabTotalArmorValue = 0;
-            fabCachedHasElytra = false;
-            fabCachedElytraEnchanted = false;
+            fab$totalArmorValue = 0;
+            fab$cachedHasElytra = false;
+            fab$cachedElytraEnchanted = false;
         }
     }
 
     @Unique
-    private static int fabApplyElytraArmorFallback(int armor) {
-        return (armor == 0 && fabCachedHasElytra) ? 1 : armor;
+    private static int fab$applyElytraArmorFallback(int armor) {
+        return (armor == 0 && fab$cachedHasElytra) ? 1 : armor;
     }
 
     @Unique
     //? if >=26.1 {
-    /*private static void fabRenderNextArmorSlot(GuiGraphicsExtractor ctx, int x, int y) {
+    /*private static void fab$renderNextArmorSlot(GuiGraphicsExtractor ctx, int x, int y) {
     *///?} else {
-    private static void fabRenderNextArmorSlot(DrawContext ctx, int x, int y) {
+    private static void fab$renderNextArmorSlot(DrawContext ctx, int x, int y) {
     //?}
-        if (fabCurrentArmorSlot < MAX_ARMOR_SLOTS_PER_ROW) {
-            ArmorBarRenderer.renderSlot(ctx, fabCurrentArmorSlot, x, y, fabTotalArmorValue, fabCachedHasElytra, fabCachedElytraEnchanted);
-            fabCurrentArmorSlot++;
+        if (fab$currentArmorSlot < 10) {
+            ArmorBarRenderer.renderSlot(ctx, fab$currentArmorSlot, x, y, fab$totalArmorValue, fab$cachedHasElytra, fab$cachedElytraEnchanted);
+            fab$currentArmorSlot++;
         }
     }
 
     //? if <1.21 {
     @Inject(method = "renderStatusBars", at = @At("HEAD"))
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    void fabResetArmorSlot(DrawContext ignoredCtx, CallbackInfo ignoredCi) {
-        fabResetArmorState(this.client.player);
+    private void fab$resetArmorSlot(DrawContext ctx, CallbackInfo ci) {
+        fab$resetArmorState(this.client.player);
     }
 
     @WrapOperation(
@@ -117,9 +110,8 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/entity/player/PlayerEntity;getArmor()I"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    int fabForceArmorRenderForElytra(PlayerEntity player, Operation<Integer> original) {
-        return fabApplyElytraArmorFallback(original.call(player));
+    private int fab$forceArmorRenderForElytra(PlayerEntity player, Operation<Integer> original) {
+        return fab$applyElytraArmorFallback(original.call(player));
     }
 
     @WrapOperation(
@@ -129,11 +121,10 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIIIII)V"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    void fabReplaceVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h, Operation<Void> original) {
-        if (VANILLA_ICONS.equals(tex) && v == VANILLA_ARMOR_TEXTURE_V) {
+    private void fab$replaceVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int u, int v, int w, int h, Operation<Void> original) {
+        if (VANILLA_ICONS.equals(tex) && v == 9) {
             if (this.client.player != null) {
-                fabRenderNextArmorSlot(ctx, x, y);
+                fab$renderNextArmorSlot(ctx, x, y);
             }
             return;
         }
@@ -141,9 +132,8 @@ public class InGameHudMixin {
     }
     //?} else if >=26.1 {
     /*@Inject(method = "extractArmor", at = @At("HEAD"))
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static void fabResetArmorSlot(GuiGraphicsExtractor ignoredGraphics, Player player, int ignoredYLineBase, int ignoredNumHealthRows, int ignoredHealthRowHeight, int ignoredXLeft, CallbackInfo ignoredCi) {
-        fabResetArmorState(player);
+    private static void fab$resetArmorSlot(GuiGraphicsExtractor graphics, Player player, int yLineBase, int numHealthRows, int healthRowHeight, int xLeft, CallbackInfo ci) {
+        fab$resetArmorState(player);
     }
 
     @ModifyExpressionValue(
@@ -153,9 +143,8 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static int fabForceArmorRenderForElytra(int original) {
-        return fabApplyElytraArmorFallback(original);
+    private static int fab$forceArmorRenderForElytra(int original) {
+        return fab$applyElytraArmorFallback(original);
     }
 
     @WrapOperation(
@@ -165,15 +154,13 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static void fabReplaceVanillaArmorIcons(GuiGraphicsExtractor graphics, RenderPipeline ignoredRenderPipeline, Identifier ignoredLocation, int x, int y, int ignoredWidth, int ignoredHeight, Operation<Void> ignoredOriginal) {
-        fabRenderNextArmorSlot(graphics, x, y);
+    private static void fab$replaceVanillaArmorIcons(GuiGraphicsExtractor graphics, RenderPipeline renderPipeline, Identifier location, int x, int y, int width, int height, Operation<Void> original) {
+        fab$renderNextArmorSlot(graphics, x, y);
     }
     *///?} else {
     /*@Inject(method = "renderArmor", at = @At("HEAD"))
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static void fabResetArmorSlot(DrawContext ignoredCtx, PlayerEntity player, int ignoredI, int ignoredJ, int ignoredK, int ignoredL, CallbackInfo ignoredCi) {
-        fabResetArmorState(player);
+    private static void fab$resetArmorSlot(DrawContext ctx, PlayerEntity player, int i, int j, int k, int l, CallbackInfo ci) {
+        fab$resetArmorState(player);
     }
 
     @ModifyExpressionValue(
@@ -183,9 +170,8 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/entity/player/PlayerEntity;getArmor()I"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static int fabForceArmorRenderForElytra(int original) {
-        return fabApplyElytraArmorFallback(original);
+    private static int fab$forceArmorRenderForElytra(int original) {
+        return fab$applyElytraArmorFallback(original);
     }
 
     //? if >=1.21.6 {
@@ -196,9 +182,8 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static void fabReplaceVanillaArmorIcons(DrawContext ctx, RenderPipeline ignoredPipeline, Identifier ignoredTex, int x, int y, int ignoredWidth, int ignoredHeight, Operation<Void> ignoredOriginal) {
-        fabRenderNextArmorSlot(ctx, x, y);
+    private static void fab$replaceVanillaArmorIcons(DrawContext ctx, RenderPipeline pipeline, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
+        fab$renderNextArmorSlot(ctx, x, y);
     }
     ^///?} else if >=1.21.2 {
     /^@WrapOperation(
@@ -208,9 +193,8 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIII)V"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static void fabReplaceVanillaArmorIcons(DrawContext ctx, java.util.function.Function<Identifier, net.minecraft.client.render.RenderLayer> ignoredRenderLayers, Identifier ignoredTex, int x, int y, int ignoredWidth, int ignoredHeight, Operation<Void> ignoredOriginal) {
-        fabRenderNextArmorSlot(ctx, x, y);
+    private static void fab$replaceVanillaArmorIcons(DrawContext ctx, java.util.function.Function<Identifier, net.minecraft.client.render.RenderLayer> renderLayers, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
+        fab$renderNextArmorSlot(ctx, x, y);
     }
     ^///?} else {
     @WrapOperation(
@@ -220,9 +204,8 @@ public class InGameHudMixin {
                     target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"
             )
     )
-    @SuppressWarnings({"unused", "PMD.UnusedPrivateMethod", "PMD.UnusedFormalParameter"})
-    static void fabReplaceVanillaArmorIcons(DrawContext ctx, Identifier ignoredTex, int x, int y, int ignoredWidth, int ignoredHeight, Operation<Void> ignoredOriginal) {
-        fabRenderNextArmorSlot(ctx, x, y);
+    private static void fab$replaceVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
+        fab$renderNextArmorSlot(ctx, x, y);
     }
     //?}
     *///?}

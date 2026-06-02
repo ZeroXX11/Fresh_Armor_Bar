@@ -50,9 +50,9 @@ final class ArmorBarTextures {
     private static final Set<Object> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     //? if >=26.1
-    //private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager;
+    //private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager = null;
     //? if <26.1
-    private static net.minecraft.resource.ResourceManager lastResourceManager;
+    private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
     private ArmorBarTextures() {
     }
