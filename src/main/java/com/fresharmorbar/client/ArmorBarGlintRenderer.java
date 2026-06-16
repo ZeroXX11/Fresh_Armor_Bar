@@ -5,6 +5,10 @@ package com.fresharmorbar.client;
 
 //? if >=26.1 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
+//? if >=26.2 {
+/^import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.pipeline.BindGroupLayout;
+^///?}
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -12,6 +16,7 @@ import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+//? if <26.2
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -26,6 +31,7 @@ import org.jspecify.annotations.Nullable;
 import org.joml.Matrix3x2f;
 import org.joml.Matrix4f;
 
+//? if <26.2
 import java.util.Optional;
 *///?} else if >=1.21.6 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
@@ -51,17 +57,14 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.Identifier;
 //?}
-//? if >=1.21.6
-//import org.slf4j.Logger;
-//? if >=1.21.6
-//import org.slf4j.LoggerFactory;
+//? if >=1.21.6 {
+/*import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-//? if >=1.21.6
-//import java.lang.invoke.MethodHandle;
-//? if >=1.21.6
-//import java.lang.invoke.MethodHandles;
-//? if >=1.21.6
-//import java.lang.reflect.Field;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+*///?}
 
 final class ArmorBarGlintRenderer {
     //? if >=1.21.6 {
@@ -73,7 +76,25 @@ final class ArmorBarGlintRenderer {
     *///?}
 
     //? if >=1.21.6 {
-    /*//? if >=26.1 {
+    /*//? if >=26.2 {
+    /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
+            .withLocation(id(MODID, "pipeline/gui_glint"))
+            .withVertexShader(id("core/fab_gui_glint_mask"))
+            .withFragmentShader(id("core/fab_gui_glint_mask"))
+            .withBindGroupLayout(BindGroupLayout.builder()
+                    .withSampler("Sampler0")
+                    .withSampler("Sampler1")
+                    .withSampler("Sampler2")
+                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+                    .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+                    .build())
+            .withColorTargetState(new ColorTargetState(BlendFunction.GLINT))
+            .withCull(false)
+            .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false, 0.0F, 0.0F))
+            .withVertexBinding(0, DefaultVertexFormat.PARTICLE)
+            .withPrimitiveTopology(PrimitiveTopology.QUADS)
+            .build();
+    ^///?} else if >=26.1 {
     /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
             .withVertexShader(id("core/fab_gui_glint_mask"))

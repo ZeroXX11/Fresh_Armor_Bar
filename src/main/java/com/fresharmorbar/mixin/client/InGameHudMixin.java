@@ -8,8 +8,12 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 //? if >=26.1 {
 /*import com.mojang.blaze3d.pipeline.RenderPipeline;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//? if >=26.2 {
+/^import net.minecraft.client.gui.Hud;
+^///?} else {
+import net.minecraft.client.gui.Gui;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 *///?} else {
@@ -32,7 +36,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-//? if >=26.1 {
+//? if >=26.2 {
+/*@Mixin(Hud.class)
+*///?} else if >=26.1 {
 /*@Mixin(Gui.class)
 *///?} else {
 @Mixin(InGameHud.class)
