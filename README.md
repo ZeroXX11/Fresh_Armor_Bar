@@ -21,6 +21,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 - Minecraft 26.1
 - Minecraft 26.1.1
 - Minecraft 26.1.2
+- Minecraft 26.2
 
 ## Features
 
