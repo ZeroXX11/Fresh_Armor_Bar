@@ -117,6 +117,7 @@ public class ArmorBarRenderer {
     *///?} else {
     public static void updateIfNeeded(PlayerEntity player, int armorValue, ModCompat.ElytraState elytraState) {
     //?}
+        ArmorBarFeedback.update(player);
         if (needsUpdate(player, armorValue, elytraState)) {
             updateData(player, armorValue, elytraState);
         }
@@ -157,6 +158,8 @@ public class ArmorBarRenderer {
                 ArmorBarGlintRenderer.renderSlotEnchantments(ctx, CACHE[currentSlot * 2].enchanted, CACHE[currentSlot * 2 + 1].enchanted, x, currentY);
                 //?}
             }
+
+            ArmorBarFeedback.renderSlotFeedback(ctx, currentSlot, x, currentY, renderArmorValue, CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
         }
 
         // 4. Elytra
