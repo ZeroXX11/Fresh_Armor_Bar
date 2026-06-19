@@ -1,0 +1,12 @@
+{
+  "fresharmorbar.config.title": "Fresh Armor Bar",
+  "fresharmorbar.config.category.damage": "Effetti danno",
+  "fresharmorbar.config.category.mending": "Mending",
+  "fresharmorbar.config.damage.all": "Tutti gli effetti danno",
+  "fresharmorbar.config.damage.generic": "Danno generico",
+  "fresharmorbar.config.damage.fire": "Danno da fuoco",
+  "fresharmorbar.config.damage.blast": "Danno da esplosione",
+  "fresharmorbar.config.damage.projectile": "Danno da proiettile",
+  "fresharmorbar.config.damage.fall": "Danno da caduta",
+  "fresharmorbar.config.mending.effect": "Effetto Mending"
+}

@@ -13,7 +13,11 @@
   "license": "MIT",
   "icon": "icon.png",
   "environment": "client",
-  "entrypoints": {},
+  "entrypoints": {
+    "modmenu": [
+      "com.fresharmorbar.client.config.FreshArmorBarModMenu"
+    ]
+  },
   "mixins": [
     "fresh-armor-bar.client.mixins.json"
   ],
@@ -23,6 +27,7 @@
     "java": ">=${java_version}"
   },
   "suggests": {
-    "fabric-api": "*"
+    "fabric-api": "*",
+    "modmenu": "*"
   }
 }

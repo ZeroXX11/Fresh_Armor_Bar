@@ -65,6 +65,13 @@ dependencies {
     }
 
     // --- Mod Compatibility & APIs ---
+    // Mod Menu is optional at runtime; this only compiles the config screen entrypoint.
+    if (isUnmappedMinecraft) {
+        compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    } else {
+        modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    }
+
     // Trinkets API
     if (!isUnmappedMinecraft) {
         modCompileOnly "dev.emi:trinkets:${project.trinkets_version}"

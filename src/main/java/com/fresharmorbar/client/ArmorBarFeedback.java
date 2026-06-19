@@ -1,5 +1,7 @@
 package com.fresharmorbar.client;
 
+import com.fresharmorbar.client.config.FreshArmorBarConfig;
+
 //? if <1.21 {
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
@@ -66,6 +68,11 @@ public final class ArmorBarFeedback {
     }
 
     public static void update(PlayerEntity player) {
+        if (!FreshArmorBarConfig.anyFeedbackEffectsEnabled()) {
+            reset();
+            return;
+        }
+
         if (player == null) {
             reset();
             return;
@@ -107,10 +114,12 @@ public final class ArmorBarFeedback {
                 if (!firstSeenStack) {
                     int lostDurability = damage - LAST_DAMAGE[i];
                     if (lostDurability > 0) {
-                        PULSES[i] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
                         anyDurabilityDamage = true;
-                        anyBlastDamage |= kind == DamageKind.BLAST;
-                    } else if (lostDurability < 0 && hasMending(stack)) {
+                        if (damageEffectEnabled(kind)) {
+                            PULSES[i] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
+                            anyBlastDamage |= kind == DamageKind.BLAST;
+                        }
+                    } else if (lostDurability < 0 && hasMending(stack) && FreshArmorBarConfig.mendingEffectEnabled()) {
                         REPAIR_PULSES[i] = new RepairPulse(now);
                     }
                 }
@@ -135,6 +144,7 @@ public final class ArmorBarFeedback {
             int armorValue,
             ArmorBarRenderer.SlotData left,
             ArmorBarRenderer.SlotData right) {
+        if (!FreshArmorBarConfig.anyFeedbackEffectsEnabled()) return;
         if (armorValue <= 0) return;
 
         int leftHalf = armorSlot * 2;
@@ -143,8 +153,8 @@ public final class ArmorBarFeedback {
 
         // Uno slot grafico contiene due mezzi-slot: possono appartenere allo stesso pezzo o a pezzi diversi.
         Pulse pulse = pulseFor(leftHalf, rightHalf, now);
-        boolean hasDamagePulse = !pulse.isExpired(now);
-        boolean hasRepairPulse = hasRepairPulse(leftHalf, rightHalf, now);
+        boolean hasDamagePulse = !pulse.isExpired(now) && damageEffectEnabled(pulse.kind);
+        boolean hasRepairPulse = FreshArmorBarConfig.mendingEffectEnabled() && hasRepairPulse(leftHalf, rightHalf, now);
         if (!hasDamagePulse && !hasRepairPulse) return;
 
         RenderSystem.enableBlend();
@@ -196,6 +206,13 @@ public final class ArmorBarFeedback {
                         if (heat > 0.0f) {
                             int alpha = clamp255((int)(fade * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
                             int rgb = fireFlameRgb(px, py, progress, flame, glow, spark, diagonalGlow);
+                            ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
+                        }
+                    } else if (pulse.kind == DamageKind.GENERIC) {
+                        GenericHitPixel hit = genericHitPixel(px, py, progress, pulse.heavy);
+                        if (hit.alpha > 0) {
+                            int alpha = clamp255((int)(hit.alpha * fade));
+                            int rgb = hit.rgb;
                             ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
                         }
                     } else {
@@ -371,6 +388,33 @@ public final class ArmorBarFeedback {
         return clamp01((sparkA + sparkB + sparkC) * 1.55f);
     }
 
+    private static GenericHitPixel genericHitPixel(int x, int y, float progress, boolean heavy) {
+        float eased = smoothStep(progress);
+        float fade = 1.0f - smoothStep(progress / 0.92f);
+        float distance = distanceFromCenter(x, y);
+
+        float core = (1.0f - smoothStep(distance / (heavy ? 4.45f : 3.8f))) * (1.0f - smoothStep(progress / 0.48f));
+        float wave = band(distance, 1.15f + eased * (heavy ? 5.05f : 4.28f), 1.75f) * fade;
+        float slash = band(Math.abs((x - 4.0f) + (y - 4.0f) * 0.42f), 0.0f, 1.35f)
+                * band(x + y * 0.35f, 2.55f + eased * 5.7f, 4.1f)
+                * (1.0f - smoothStep(progress / 0.62f));
+        float coolShadow = (1.0f - smoothStep(distance / 4.8f)) * fade * clamp01((x + y - 4.5f) / 8.5f);
+
+        float energy = Math.max(Math.max(core, wave), Math.max(slash, coolShadow));
+        if (energy <= 0.0f) return GenericHitPixel.EMPTY;
+
+        int alpha = clamp255((int)((heavy ? 198.0f : 164.0f) * energy));
+        int tone = slash > wave && slash > core ? 0 : (coolShadow > core && coolShadow > wave ? 2 : 1);
+        int rgb = genericHitRgb(core, wave, slash, coolShadow);
+        return new GenericHitPixel(rgb, alpha, tone);
+    }
+
+    private static int genericHitRgb(float core, float wave, float slash, float coolShadow) {
+        int rgb = blendRgb(0x2D5361, 0x7FE6D7, wave * 0.5f + slash * 0.32f);
+        rgb = blendRgb(rgb, 0xEFFFFA, core * 0.62f + slash * 0.48f);
+        return blendRgb(rgb, 0x18242D, coolShadow * 0.42f);
+    }
+
     private static float sparkDot(int x, int y, float centerX, float centerY) {
         return band(Math.abs(x - centerX) + Math.abs(y - centerY), 0.0f, 1.28f);
     }
@@ -460,7 +504,18 @@ public final class ArmorBarFeedback {
     private static void pulsePiece(int index, long now, DamageKind kind, boolean heavy) {
         if (index < 0 || index >= PULSES.length) return;
         if (lastHalfEnd[index] <= lastHalfStart[index]) return;
+        if (!damageEffectEnabled(kind)) return;
         PULSES[index] = new Pulse(now, kind, heavy);
+    }
+
+    private static boolean damageEffectEnabled(DamageKind kind) {
+        return switch (kind) {
+            case GENERIC -> FreshArmorBarConfig.genericDamageEffectEnabled();
+            case FIRE -> FreshArmorBarConfig.fireDamageEffectEnabled();
+            case BLAST -> FreshArmorBarConfig.blastDamageEffectEnabled();
+            case PROJECTILE -> FreshArmorBarConfig.projectileDamageEffectEnabled();
+            case FALL -> FreshArmorBarConfig.fallDamageEffectEnabled();
+        };
     }
 
     private static DamageKind classify(DamageSource source) {
@@ -623,7 +678,7 @@ public final class ArmorBarFeedback {
     }
 
     private enum DamageKind {
-        GENERIC(0xFFFFFF, 0xFFFFFF),
+        GENERIC(0xC9D1D8, 0xF4F7FA),
         FIRE(0xFF6A00, 0xFF8C1A),
         BLAST(0xFFB000, 0xFFE066),
         PROJECTILE(0xA8E0FF, 0xD8F3FF),
@@ -636,6 +691,10 @@ public final class ArmorBarFeedback {
             this.flashRgb = flashRgb;
             this.markRgb = markRgb;
         }
+    }
+
+    private record GenericHitPixel(int rgb, int alpha, int tone) {
+        private static final GenericHitPixel EMPTY = new GenericHitPixel(0, 0, 0);
     }
 
     private record Pulse(long startedAt, DamageKind kind, boolean heavy) {
