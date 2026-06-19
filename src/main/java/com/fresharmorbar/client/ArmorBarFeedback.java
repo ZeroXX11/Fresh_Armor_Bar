@@ -97,28 +97,25 @@ public final class ArmorBarFeedback {
             lastHalfStart[i] = halfStart;
             lastHalfEnd[i] = halfEnd;
 
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem) || !stack.isDamageable()) {
+            boolean validArmorStack = !stack.isEmpty() && stack.getItem() instanceof ArmorItem && stack.isDamageable();
+            if (!validArmorStack) {
                 rememberEmpty(i);
-                continue;
-            }
-
-            int damage = stack.getDamage();
-            int maxDamage = stack.getMaxDamage();
-            if (!ItemStack.areItemsEqual(stack, LAST_STACKS[i]) || LAST_MAX_DAMAGE[i] != maxDamage || LAST_DAMAGE[i] < 0) {
+            } else {
+                int damage = stack.getDamage();
+                int maxDamage = stack.getMaxDamage();
+                boolean firstSeenStack = !ItemStack.areItemsEqual(stack, LAST_STACKS[i]) || LAST_MAX_DAMAGE[i] != maxDamage || LAST_DAMAGE[i] < 0;
+                if (!firstSeenStack) {
+                    int lostDurability = damage - LAST_DAMAGE[i];
+                    if (lostDurability > 0) {
+                        PULSES[i] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
+                        anyDurabilityDamage = true;
+                        anyBlastDamage |= kind == DamageKind.BLAST;
+                    } else if (lostDurability < 0 && hasMending(stack)) {
+                        REPAIR_PULSES[i] = new RepairPulse(now);
+                    }
+                }
                 rememberStack(i, stack, damage, maxDamage);
-                continue;
             }
-
-            int lostDurability = damage - LAST_DAMAGE[i];
-            if (lostDurability > 0) {
-                PULSES[i] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
-                anyDurabilityDamage = true;
-                anyBlastDamage |= kind == DamageKind.BLAST;
-            } else if (lostDurability < 0 && hasMending(stack)) {
-                REPAIR_PULSES[i] = new RepairPulse(now);
-            }
-
-            rememberStack(i, stack, damage, maxDamage);
         }
 
         if (anyBlastDamage) {
@@ -183,48 +180,47 @@ public final class ArmorBarFeedback {
         // Disegna pixel-per-pixel sopra la texture dell'armatura, ma solo dove la mask dice che esiste armatura.
         for (int py = 0; py < ICON_SIZE; py++) {
             for (int px = 0; px < ICON_SIZE; px++) {
-                if (isEmptyArmorPixel(left, right, px, py)) continue;
+                if (!isEmptyArmorPixel(left, right, px, py)) {
+                    float diagonal = px + py * 0.58f;
+                    float sweep = band(diagonal, sweepCenter, pulse.heavy ? 3.2f : 2.35f);
+                    float pulseGlow = 0.45f + wave * 0.55f;
+                    float ripple = pulse.kind == DamageKind.BLAST ? band(distanceFromCenter(px, py), rippleCenter, 1.9f) : 0.0f;
 
-                float diagonal = px + py * 0.58f;
-                float sweep = band(diagonal, sweepCenter, pulse.heavy ? 3.2f : 2.35f);
-                float pulseGlow = 0.45f + wave * 0.55f;
-                float ripple = pulse.kind == DamageKind.BLAST ? band(distanceFromCenter(px, py), rippleCenter, 1.9f) : 0.0f;
+                    if (pulse.kind == DamageKind.FIRE) {
+                        // Il fuoco ha un ramo dedicato per non ereditare flash bianchi o forme degli altri danni.
+                        float glow = fireGlow(px, py, progress, wave);
+                        float flame = fireFlame(px, py, progress, wave);
+                        float spark = fireSpark(px, py, progress);
+                        float diagonalGlow = fireDiagonalGlow(px, py, progress);
+                        float heat = Math.max(Math.max(glow, flame), Math.max(spark, diagonalGlow));
+                        if (heat > 0.0f) {
+                            int alpha = clamp255((int)(fade * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
+                            int rgb = fireFlameRgb(px, py, progress, flame, glow, spark, diagonalGlow);
+                            ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
+                        }
+                    } else {
+                        int rgb = blendRgb(pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
+                        int alpha = clamp255((int)((pulse.heavy ? 92 : 54) * fade
+                                + (pulse.heavy ? 78 : 46) * sweep * fade
+                                + 28 * pulseGlow * fade
+                                + 68 * ripple * fade));
 
-                if (pulse.kind == DamageKind.FIRE) {
-                    // Il fuoco ha un ramo dedicato per non ereditare flash bianchi o forme degli altri danni.
-                    float glow = fireGlow(px, py, progress, wave);
-                    float flame = fireFlame(px, py, progress, wave);
-                    float spark = fireSpark(px, py, progress);
-                    float diagonalGlow = fireDiagonalGlow(px, py, progress);
-                    float heat = Math.max(Math.max(glow, flame), Math.max(spark, diagonalGlow));
-                    if (heat > 0.0f) {
-                        int alpha = clamp255((int)(fade * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
-                        int rgb = fireFlameRgb(px, py, progress, flame, glow, spark, diagonalGlow);
-                        ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
+                        int effectPatternY = py + lift;
+                        if (isEffectPixel(pulse.kind, px, effectPatternY)) {
+                            float effectBoost = 0.72f + 0.28f * Math.max(wave, sweep);
+                            alpha = Math.max(alpha, clamp255((int)(230 * fade * effectBoost)));
+                            rgb = blendRgb(effectRgb(pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
+                        }
+                        if (pulse.heavy && progress < 0.35f && isEdgePixel(left, right, px, py)) {
+                            float edgeFade = 1.0f - smoothStep(progress / 0.35f);
+                            alpha = Math.max(alpha, clamp255((int)(210 * edgeFade)));
+                            rgb = blendRgb(rgb, 0xFFFFFF, 0.62f * edgeFade);
+                        }
+
+                        if (alpha > 0) {
+                            ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
+                        }
                     }
-                    continue;
-                }
-
-                int rgb = blendRgb(pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
-                int alpha = clamp255((int)((pulse.heavy ? 92 : 54) * fade
-                        + (pulse.heavy ? 78 : 46) * sweep * fade
-                        + 28 * pulseGlow * fade
-                        + 68 * ripple * fade));
-
-                int effectPatternY = py + lift;
-                if (isEffectPixel(pulse.kind, px, effectPatternY)) {
-                    float effectBoost = 0.72f + 0.28f * Math.max(wave, sweep);
-                    alpha = Math.max(alpha, clamp255((int)(230 * fade * effectBoost)));
-                    rgb = blendRgb(effectRgb(pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
-                }
-                if (pulse.heavy && progress < 0.35f && isEdgePixel(left, right, px, py)) {
-                    float edgeFade = 1.0f - smoothStep(progress / 0.35f);
-                    alpha = Math.max(alpha, clamp255((int)(210 * edgeFade)));
-                    rgb = blendRgb(rgb, 0xFFFFFF, 0.62f * edgeFade);
-                }
-
-                if (alpha > 0) {
-                    ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
                 }
             }
         }
@@ -556,20 +552,21 @@ public final class ArmorBarFeedback {
         // Mending deve colorare solo il pezzo riparato, anche se nello stesso slot grafico c'e un altro materiale.
         for (int i = 0; i < REPAIR_PULSES.length; i++) {
             RepairPulse pulse = REPAIR_PULSES[i];
-            if (pulse.isExpired(now)) continue;
+            if (!pulse.isExpired(now)) {
+                boolean leftActive = leftHalf >= lastHalfStart[i] && leftHalf < lastHalfEnd[i];
+                boolean rightActive = rightHalf >= lastHalfStart[i] && rightHalf < lastHalfEnd[i];
+                if (leftActive || rightActive) {
+                    float progress = pulse.progress(now);
+                    float fade = 1.0f - smoothStep(progress);
+                    int alpha = clamp255((int)(fade * 238.0f));
 
-            boolean leftActive = leftHalf >= lastHalfStart[i] && leftHalf < lastHalfEnd[i];
-            boolean rightActive = rightHalf >= lastHalfStart[i] && rightHalf < lastHalfEnd[i];
-            if (!leftActive && !rightActive) continue;
-
-            float progress = pulse.progress(now);
-            float fade = 1.0f - smoothStep(progress);
-            int alpha = clamp255((int)(fade * 238.0f));
-
-            for (int py = 0; py < ICON_SIZE; py++) {
-                for (int px = 0; px < ICON_SIZE; px++) {
-                    if (!isActiveRepairEdgePixel(left, right, leftActive, rightActive, px, py)) continue;
-                    ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | MENDING_XP_YELLOW);
+                    for (int py = 0; py < ICON_SIZE; py++) {
+                        for (int px = 0; px < ICON_SIZE; px++) {
+                            if (isActiveRepairEdgePixel(left, right, leftActive, rightActive, px, py)) {
+                                ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | MENDING_XP_YELLOW);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -611,8 +608,14 @@ public final class ArmorBarFeedback {
     private record MaskKey(Identifier texture, int u) {
     }
 
-    private record PixelMask(boolean[] pixels) {
+    @SuppressWarnings("ClassCanBeRecord") // Non e un record: contiene un array e Sonar richiede equality basata sul contenuto.
+    private static final class PixelMask {
         private static final PixelMask EMPTY = new PixelMask(new boolean[ICON_SIZE * ICON_SIZE]);
+        private final boolean[] pixels;
+
+        private PixelMask(boolean[] pixels) {
+            this.pixels = pixels;
+        }
 
         boolean isVisible(int x, int y) {
             return x >= 0 && x < ICON_SIZE && y >= 0 && y < ICON_SIZE && pixels[y * ICON_SIZE + x];
