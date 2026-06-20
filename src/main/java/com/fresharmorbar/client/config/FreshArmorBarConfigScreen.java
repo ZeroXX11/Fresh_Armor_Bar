@@ -165,10 +165,10 @@ public final class FreshArmorBarConfigScreen extends Screen {
         int centerX = this.width / 2;
         int dividerLeft = centerX - WIDE_BUTTON_WIDTH / 2;
         int dividerRight = centerX + WIDE_BUTTON_WIDTH / 2;
-        drawCentered(context, text("fresharmorbar.config.title"), centerX, 16, 0xFFFFFFFF);
-        drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48, 0xFFFFFFFF);
-        drawDivider(context, dividerLeft, 178, dividerRight, 0x55FFFFFF);
-        drawCentered(context, text("fresharmorbar.config.category.mending"), centerX, 190, 0xFFFFFFFF);
+        drawCentered(context, text("fresharmorbar.config.title"), centerX, 16);
+        drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48);
+        drawDivider(context, dividerLeft, dividerRight);
+        drawCentered(context, text("fresharmorbar.config.category.mending"), centerX, 190);
 
         //? if >=26.1 {
         /*super.extractRenderState(context, mouseX, mouseY, delta);
@@ -206,12 +206,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
     //?}
 
     //? if >=26.1 {
-    /*private static void drawDivider(GuiGraphicsExtractor context, int left, int y, int right, int color) {
-        context.fill(left, y, right, y + 1, color);
+    /*private static void drawDivider(GuiGraphicsExtractor context, int left, int right) {
+        context.fill(left, 178, right, 179, 0x55FFFFFF);
     }
 
-    private void drawCentered(GuiGraphicsExtractor context, Component value, int x, int y, int color) {
-        context.centeredText(this.font, value, x, y, color);
+    private void drawCentered(GuiGraphicsExtractor context, Component value, int x, int y) {
+        context.centeredText(this.font, value, x, y, 0xFFFFFFFF);
     }
 
     private static Component text(String key) {
@@ -222,12 +222,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
         return Component.translatable("fresharmorbar.config.option", text(key), text(enabled ? "options.on" : "options.off"));
     }
     *///?} else {
-    private static void drawDivider(DrawContext context, int left, int y, int right, int color) {
-        context.fill(left, y, right, y + 1, color);
+    private static void drawDivider(DrawContext context, int left, int right) {
+        context.fill(left, 178, right, 179, 0x55FFFFFF);
     }
 
-    private void drawCentered(DrawContext context, Text value, int x, int y, int color) {
-        context.drawCenteredTextWithShadow(this.textRenderer, value, x, y, color);
+    private void drawCentered(DrawContext context, Text value, int x, int y) {
+        context.drawCenteredTextWithShadow(this.textRenderer, value, x, y, 0xFFFFFFFF);
     }
 
     private static Text text(String key) {

@@ -32,15 +32,15 @@ public final class FreshArmorBarConfig {
     private FreshArmorBarConfig() {
     }
 
-    public static boolean anyFeedbackEffectsEnabled() {
+    public static boolean allFeedbackEffectsDisabled() {
         load();
-        return mendingEffect
-                || (damageEffects
-                        && (genericDamageEffect
-                                || fireDamageEffect
-                                || blastDamageEffect
-                                || projectileDamageEffect
-                                || fallDamageEffect));
+        return !mendingEffect
+                && (!damageEffects
+                        || (!genericDamageEffect
+                                && !fireDamageEffect
+                                && !blastDamageEffect
+                                && !projectileDamageEffect
+                                && !fallDamageEffect));
     }
 
     public static boolean damageEffectEnabled() {

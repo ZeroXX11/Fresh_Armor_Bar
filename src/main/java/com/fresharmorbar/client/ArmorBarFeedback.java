@@ -68,7 +68,7 @@ public final class ArmorBarFeedback {
     }
 
     public static void update(PlayerEntity player) {
-        if (!FreshArmorBarConfig.anyFeedbackEffectsEnabled()) {
+        if (FreshArmorBarConfig.allFeedbackEffectsDisabled()) {
             reset();
             return;
         }
@@ -144,7 +144,7 @@ public final class ArmorBarFeedback {
             int armorValue,
             ArmorBarRenderer.SlotData left,
             ArmorBarRenderer.SlotData right) {
-        if (!FreshArmorBarConfig.anyFeedbackEffectsEnabled()) return;
+        if (FreshArmorBarConfig.allFeedbackEffectsDisabled()) return;
         if (armorValue <= 0) return;
 
         int leftHalf = armorSlot * 2;
