@@ -13,9 +13,9 @@ import net.minecraft.text.Text;
 //?}
 
 public final class FreshArmorBarConfigScreen extends Screen {
-    private static final int BUTTON_WIDTH = 220;
+    private static final int BUTTON_WIDTH = 150;
+    private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 8;
     private static final int BUTTON_HEIGHT = 20;
-    private static final int ROW_GAP = 22;
 
     private final Screen parent;
 
@@ -44,92 +44,105 @@ public final class FreshArmorBarConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        int x = this.width / 2 - BUTTON_WIDTH / 2;
-        int y = 40;
+        int left = this.width / 2 - WIDE_BUTTON_WIDTH / 2;
+        int right = left + BUTTON_WIDTH + 8;
+        int y = 66;
 
         //? if >=26.1 {
-        /*this.damageEffectsButton = addButton(x, y, toggleText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
+        /*this.damageEffectsButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
                 () -> FreshArmorBarConfig.setDamageEffectsEnabled(!FreshArmorBarConfig.damageEffectEnabled()));
-        y += ROW_GAP + 4;
-        this.genericDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()),
+        y += 34;
+        this.genericDamageButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setGenericDamageEffectEnabled(!FreshArmorBarConfig.genericDamageEffectSelected()));
-        y += ROW_GAP;
-        this.fireDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()),
+        this.fireDamageButton = addButton(right, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFireDamageEffectEnabled(!FreshArmorBarConfig.fireDamageEffectSelected()));
-        y += ROW_GAP;
-        this.blastDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()),
+        y += 24;
+        this.blastDamageButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setBlastDamageEffectEnabled(!FreshArmorBarConfig.blastDamageEffectSelected()));
-        y += ROW_GAP;
-        this.projectileDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()),
+        this.projectileDamageButton = addButton(right, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setProjectileDamageEffectEnabled(!FreshArmorBarConfig.projectileDamageEffectSelected()));
-        y += ROW_GAP;
-        this.fallDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
+        y += 24;
+        this.fallDamageButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
-        y += ROW_GAP + 14;
-        this.mendingButton = addButton(x, y, toggleText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
+
+        y += 54;
+        this.mendingButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+                optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
         this.addRenderableWidget(Button.builder(text("gui.done"), button -> closeToParent())
-                .bounds(this.width / 2 - 60, this.height - 28, 120, BUTTON_HEIGHT)
+                .bounds(this.width / 2 - 100, this.height - 28, 200, 20)
                 .build());
         *///?} else {
-        this.damageEffectsButton = addButton(x, y, toggleText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
+        this.damageEffectsButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
                 () -> FreshArmorBarConfig.setDamageEffectsEnabled(!FreshArmorBarConfig.damageEffectEnabled()));
-        y += ROW_GAP + 4;
-        this.genericDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()),
+        y += 34;
+        this.genericDamageButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setGenericDamageEffectEnabled(!FreshArmorBarConfig.genericDamageEffectSelected()));
-        y += ROW_GAP;
-        this.fireDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()),
+        this.fireDamageButton = addButton(right, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFireDamageEffectEnabled(!FreshArmorBarConfig.fireDamageEffectSelected()));
-        y += ROW_GAP;
-        this.blastDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()),
+        y += 24;
+        this.blastDamageButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setBlastDamageEffectEnabled(!FreshArmorBarConfig.blastDamageEffectSelected()));
-        y += ROW_GAP;
-        this.projectileDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()),
+        this.projectileDamageButton = addButton(right, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setProjectileDamageEffectEnabled(!FreshArmorBarConfig.projectileDamageEffectSelected()));
-        y += ROW_GAP;
-        this.fallDamageButton = addButton(x, y, toggleText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
+        y += 24;
+        this.fallDamageButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
-        y += ROW_GAP + 14;
-        this.mendingButton = addButton(x, y, toggleText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
+
+        y += 54;
+        this.mendingButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+                optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
         this.addDrawableChild(ButtonWidget.builder(text("gui.done"), button -> closeToParent())
-                .dimensions(this.width / 2 - 60, this.height - 28, 120, BUTTON_HEIGHT)
+                .dimensions(this.width / 2 - 100, this.height - 28, 200, 20)
                 .build());
         //?}
     }
 
     //? if >=26.1 {
-    /*private Button addButton(int x, int y, Component message, Runnable action) {
+    /*private Button addButton(int x, int y, int width, Component message, Runnable action) {
         Button button = Button.builder(message, ignored -> {
                     action.run();
                     refreshButtons();
                 })
-                .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .bounds(x, y, width, BUTTON_HEIGHT)
                 .build();
         return this.addRenderableWidget(button);
     }
     *///?} else {
-    private ButtonWidget addButton(int x, int y, Text message, Runnable action) {
+    private ButtonWidget addButton(int x, int y, int width, Text message, Runnable action) {
         ButtonWidget button = ButtonWidget.builder(message, ignored -> {
                     action.run();
                     refreshButtons();
                 })
-                .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .dimensions(x, y, width, BUTTON_HEIGHT)
                 .build();
         return this.addDrawableChild(button);
     }
     //?}
 
     private void refreshButtons() {
-        this.damageEffectsButton.setMessage(toggleText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()));
-        this.genericDamageButton.setMessage(toggleText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()));
-        this.fireDamageButton.setMessage(toggleText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()));
-        this.blastDamageButton.setMessage(toggleText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()));
-        this.projectileDamageButton.setMessage(toggleText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()));
-        this.fallDamageButton.setMessage(toggleText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()));
-        this.mendingButton.setMessage(toggleText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()));
+        this.damageEffectsButton.setMessage(optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()));
+        this.genericDamageButton.setMessage(optionText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()));
+        this.fireDamageButton.setMessage(optionText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()));
+        this.blastDamageButton.setMessage(optionText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()));
+        this.projectileDamageButton.setMessage(optionText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()));
+        this.fallDamageButton.setMessage(optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()));
+        this.mendingButton.setMessage(optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()));
     }
 
     //? if >=26.1 {
@@ -150,9 +163,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //?}
 
         int centerX = this.width / 2;
-        drawCentered(context, text("fresharmorbar.config.title"), centerX, 12, 0xFFFFFFFF);
-        drawText(context, text("fresharmorbar.config.category.damage"), centerX - BUTTON_WIDTH / 2, 29, 0xFFA0A0A0);
-        drawText(context, text("fresharmorbar.config.category.mending"), centerX - BUTTON_WIDTH / 2, 180, 0xFFA0A0A0);
+        int dividerLeft = centerX - WIDE_BUTTON_WIDTH / 2;
+        int dividerRight = centerX + WIDE_BUTTON_WIDTH / 2;
+        drawCentered(context, text("fresharmorbar.config.title"), centerX, 16, 0xFFFFFFFF);
+        drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48, 0xFFFFFFFF);
+        drawDivider(context, dividerLeft, 178, dividerRight, 0x55FFFFFF);
+        drawCentered(context, text("fresharmorbar.config.category.mending"), centerX, 190, 0xFFFFFFFF);
 
         //? if >=26.1 {
         /*super.extractRenderState(context, mouseX, mouseY, delta);
@@ -190,36 +206,36 @@ public final class FreshArmorBarConfigScreen extends Screen {
     //?}
 
     //? if >=26.1 {
-    /*private void drawCentered(GuiGraphicsExtractor context, Component value, int x, int y, int color) {
-        context.centeredText(this.font, value, x, y, color);
+    /*private static void drawDivider(GuiGraphicsExtractor context, int left, int y, int right, int color) {
+        context.fill(left, y, right, y + 1, color);
     }
 
-    private void drawText(GuiGraphicsExtractor context, Component value, int x, int y, int color) {
-        context.text(this.font, value, x, y, color);
+    private void drawCentered(GuiGraphicsExtractor context, Component value, int x, int y, int color) {
+        context.centeredText(this.font, value, x, y, color);
     }
 
     private static Component text(String key) {
         return Component.translatable(key);
     }
 
-    private static Component toggleText(String key, boolean enabled) {
-        return Component.translatable(key).append(Component.literal(": ")).append(text(enabled ? "options.on" : "options.off"));
+    private static Component optionText(String key, boolean enabled) {
+        return Component.translatable("fresharmorbar.config.option", text(key), text(enabled ? "options.on" : "options.off"));
     }
     *///?} else {
-    private void drawCentered(DrawContext context, Text value, int x, int y, int color) {
-        context.drawCenteredTextWithShadow(this.textRenderer, value, x, y, color);
+    private static void drawDivider(DrawContext context, int left, int y, int right, int color) {
+        context.fill(left, y, right, y + 1, color);
     }
 
-    private void drawText(DrawContext context, Text value, int x, int y, int color) {
-        context.drawTextWithShadow(this.textRenderer, value, x, y, color);
+    private void drawCentered(DrawContext context, Text value, int x, int y, int color) {
+        context.drawCenteredTextWithShadow(this.textRenderer, value, x, y, color);
     }
 
     private static Text text(String key) {
         return Text.translatable(key);
     }
 
-    private static Text toggleText(String key, boolean enabled) {
-        return Text.translatable(key).append(": ").append(text(enabled ? "options.on" : "options.off"));
+    private static Text optionText(String key, boolean enabled) {
+        return Text.translatable("fresharmorbar.config.option", text(key), text(enabled ? "options.on" : "options.off"));
     }
     //?}
 }

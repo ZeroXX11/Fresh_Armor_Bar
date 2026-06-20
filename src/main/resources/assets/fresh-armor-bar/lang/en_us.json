@@ -1,12 +1,14 @@
 {
   "fresharmorbar.config.title": "Fresh Armor Bar",
-  "fresharmorbar.config.category.damage": "Damage effects",
-  "fresharmorbar.config.category.mending": "Mending",
-  "fresharmorbar.config.damage.all": "All damage effects",
-  "fresharmorbar.config.damage.generic": "Generic damage",
-  "fresharmorbar.config.damage.fire": "Fire damage",
-  "fresharmorbar.config.damage.blast": "Explosion damage",
-  "fresharmorbar.config.damage.projectile": "Projectile damage",
-  "fresharmorbar.config.damage.fall": "Fall damage",
-  "fresharmorbar.config.mending.effect": "Mending effect"
+  "fresharmorbar.config.option": "%s: %s",
+  "fresharmorbar.config.category.damage": "DAMAGE FEEDBACK",
+  "fresharmorbar.config.category.damage_hint": "Master toggle first, then fine tune each hit type.",
+  "fresharmorbar.config.category.mending": "MENDING",
+  "fresharmorbar.config.damage.all": "All damage feedback",
+  "fresharmorbar.config.damage.generic": "Normal hit feedback",
+  "fresharmorbar.config.damage.fire": "Fire hit feedback",
+  "fresharmorbar.config.damage.blast": "Explosion hit feedback",
+  "fresharmorbar.config.damage.projectile": "Projectile hit feedback",
+  "fresharmorbar.config.damage.fall": "Fall hit feedback",
+  "fresharmorbar.config.mending.effect": "Repair flash"
 }

@@ -1,12 +1,14 @@
 {
   "fresharmorbar.config.title": "Fresh Armor Bar",
-  "fresharmorbar.config.category.damage": "Effetti danno",
-  "fresharmorbar.config.category.mending": "Mending",
-  "fresharmorbar.config.damage.all": "Tutti gli effetti danno",
-  "fresharmorbar.config.damage.generic": "Danno generico",
-  "fresharmorbar.config.damage.fire": "Danno da fuoco",
-  "fresharmorbar.config.damage.blast": "Danno da esplosione",
-  "fresharmorbar.config.damage.projectile": "Danno da proiettile",
-  "fresharmorbar.config.damage.fall": "Danno da caduta",
-  "fresharmorbar.config.mending.effect": "Effetto Mending"
+  "fresharmorbar.config.option": "%s: %s",
+  "fresharmorbar.config.category.damage": "FEEDBACK DANNO",
+  "fresharmorbar.config.category.damage_hint": "Interruttore generale, poi regoli ogni tipo di colpo.",
+  "fresharmorbar.config.category.mending": "MENDING",
+  "fresharmorbar.config.damage.all": "Tutto il feedback danno",
+  "fresharmorbar.config.damage.generic": "Feedback colpo normale",
+  "fresharmorbar.config.damage.fire": "Feedback colpo da fuoco",
+  "fresharmorbar.config.damage.blast": "Feedback esplosione",
+  "fresharmorbar.config.damage.projectile": "Feedback proiettile",
+  "fresharmorbar.config.damage.fall": "Feedback caduta",
+  "fresharmorbar.config.mending.effect": "Flash riparazione"
 }
