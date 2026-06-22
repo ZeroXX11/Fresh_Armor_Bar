@@ -2,11 +2,12 @@ package com.fresharmorbar.client;
 
 import com.fresharmorbar.client.config.FreshArmorBarConfig;
 
-//? if <1.21 {
+//? if <1.21.2 {
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.NativeImage;
+//? if <1.21
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
@@ -445,7 +446,11 @@ public final class ArmorBarFeedback {
     }
 
     private static float clamp01(float value) {
+        //? if >=1.21 {
+        /*return Math.clamp(value, 0.0f, 1.0f);
+        *///?} else {
         return Math.max(0.0f, Math.min(1.0f, value));
+        //?}
     }
 
     private static int blendRgb(int from, int to, float amount) {
@@ -539,7 +544,11 @@ public final class ArmorBarFeedback {
     }
 
     private static boolean hasMending(ItemStack stack) {
+        //? if >=1.21 {
+        /*return stack.getEnchantments().getEnchantments().stream().anyMatch(enchantment -> enchantment.matchesKey(Enchantments.MENDING));
+        *///?} else {
         return EnchantmentHelper.getLevel(Enchantments.MENDING, stack) > 0;
+        //?}
     }
 
     private static int getProtection(ItemStack stack) {
@@ -598,7 +607,11 @@ public final class ArmorBarFeedback {
     }
 
     private static int clamp255(int value) {
+        //? if >=1.21 {
+        /*return Math.clamp(value, 0, 255);
+        *///?} else {
         return Math.max(0, Math.min(255, value));
+        //?}
     }
 
     private static void renderMendingOutline(
@@ -712,7 +725,11 @@ public final class ArmorBarFeedback {
         }
 
         float progress(long now) {
+            //? if >=1.21 {
+            /*return Math.clamp((now - startedAt) / (float)DURATION_MS, 0.0f, 1.0f);
+            *///?} else {
             return Math.max(0.0f, Math.min(1.0f, (now - startedAt) / (float)DURATION_MS));
+            //?}
         }
     }
 
@@ -725,7 +742,11 @@ public final class ArmorBarFeedback {
         }
 
         float progress(long now) {
+            //? if >=1.21 {
+            /*return Math.clamp((now - startedAt) / (float)DURATION_MS, 0.0f, 1.0f);
+            *///?} else {
             return Math.max(0.0f, Math.min(1.0f, (now - startedAt) / (float)DURATION_MS));
+            //?}
         }
     }
 }
