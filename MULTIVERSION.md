@@ -71,8 +71,12 @@ mod_version=2.1
 
 Per-version `gradle.properties` files should only contain Minecraft, mappings,
 Mod Menu, Trinkets and MixinExtras values needed to compile that target. They
-should not duplicate `mod_version`. Fabric API is intentionally not listed
-because the mod does not compile against `net.fabricmc.fabric.api.*` classes.
+should not duplicate `mod_version`. `dev_fabric_api_version` is for the
+development classpath/runtime, so optional test mods in `run/mods` can depend on
+Fabric API and newer unmapped Minecraft targets can compile signatures that
+reference Fabric API types. Fresh Armor Bar source itself still does not import
+`net.fabricmc.fabric.api.*` classes, and Fabric API is not declared in the
+published mod metadata.
 
 Release grouping is configured once in:
 

@@ -96,6 +96,17 @@ dependencies {
         modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     }
 
+    // Fabric API is not required by Fresh Armor Bar, but it is useful in the
+    // development runtime because optional test mods in run/mods may depend on it.
+    if (project.hasProperty("dev_fabric_api_version")) {
+        if (isUnmappedMinecraft) {
+            compileOnly "net.fabricmc.fabric-api:fabric-api:${project.dev_fabric_api_version}"
+            runtimeOnly "net.fabricmc.fabric-api:fabric-api:${project.dev_fabric_api_version}"
+        } else {
+            modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.dev_fabric_api_version}"
+        }
+    }
+
     // --- Mod Compatibility & APIs ---
     // Mod Menu is optional at runtime; this only compiles the config screen entrypoint.
     if (isUnmappedMinecraft) {
