@@ -205,6 +205,7 @@ public final class FreshArmorBarConfig {
                 properties.store(output, "Fresh Armor Bar client config");
             }
         } catch (IOException ignored) {
+            // Il salvataggio della config client e best-effort; se fallisce restano validi i valori in memoria.
         }
     }
 

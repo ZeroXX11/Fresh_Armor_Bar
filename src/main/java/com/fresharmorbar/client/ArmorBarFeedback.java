@@ -404,9 +404,15 @@ public final class ArmorBarFeedback {
         if (energy <= 0.0f) return GenericHitPixel.EMPTY;
 
         int alpha = clamp255((int)((heavy ? 198.0f : 164.0f) * energy));
-        int tone = slash > wave && slash > core ? 0 : (coolShadow > core && coolShadow > wave ? 2 : 1);
+        int tone = genericHitTone(core, wave, slash, coolShadow);
         int rgb = genericHitRgb(core, wave, slash, coolShadow);
         return new GenericHitPixel(rgb, alpha, tone);
+    }
+
+    private static int genericHitTone(float core, float wave, float slash, float coolShadow) {
+        if (slash > wave && slash > core) return 0;
+        if (coolShadow > core && coolShadow > wave) return 2;
+        return 1;
     }
 
     private static int genericHitRgb(float core, float wave, float slash, float coolShadow) {
