@@ -1,3 +1,6 @@
+import groovy.json.JsonSlurper
+import java.util.zip.ZipFile
+
 pluginManagement {
 	repositories {
 		mavenLocal()
@@ -19,12 +22,16 @@ plugins {
 	id 'dev.kikugie.stonecutter' version '0.9.4'
 }
 
-def stonecutterVersions = ['1.20.1', '1.21.1', '1.21.2', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11', '26.1', '26.1.1', '26.1.2', '26.2']
-def releaseBuildVersions = ['1.20.1', '1.21.1', '1.21.2', '1.21.4', '1.21.5', '1.21.6', '1.21.9', '1.21.11', '26.1', '26.2']
+apply from: 'gradle/release-versions.gradle'
+
+List<String> stonecutterMinecraftVersions = ext.stonecutterMinecraftVersions as List<String>
+List<List<String>> releaseMinecraftVersionSets = ext.releaseMinecraftVersionSets as List<List<String>>
+List<String> releaseBuildMinecraftVersions = ext.releaseBuildMinecraftVersions as List<String>
+String[] stonecutterMinecraftVersionArray = stonecutterMinecraftVersions as String[]
 def stonecutterVcsVersion = '1.20.1'
 
 stonecutter.create(getRootProject()) {
-	versions(*stonecutterVersions)
+	versions(stonecutterMinecraftVersionArray)
 	vcsVersion = stonecutterVcsVersion
 }
 
@@ -49,12 +56,12 @@ gradle.rootProject { root ->
 		root.tasks.register('verifyAllVersions') {
 			group = 'verification'
 			description = 'Builds every configured Stonecutter target to verify compatibility.'
-			dependsOn(stonecutterVersions.collect { version ->
+			dependsOn(stonecutterMinecraftVersions.collect { version ->
 				root.project(":${version}").tasks.named('build')
 			})
 		}
 
-		def releaseBuildTasks = releaseBuildVersions.collect { version ->
+		def releaseBuildTasks = releaseBuildMinecraftVersions.collect { version ->
 			def releaseProject = root.project(":${version}")
 			releaseProject.tasks.matching {
 				it.name in ['jar', 'remapJar', 'sourcesJar', 'remapSourcesJar']
@@ -69,6 +76,141 @@ gradle.rootProject { root ->
 			description = 'Cleans build/libs, then builds only the targets that produce release artifacts.'
 			dependsOn(cleanCollectedJars)
 			dependsOn(releaseBuildTasks)
+		}
+
+		Closure<String> compactVersionRange = { List<String> versions ->
+			def first = versions.first()
+			def last = versions.last()
+			def firstParts = first.split('\\.')
+			def lastParts = last.split('\\.')
+			def commonPartCount = 0
+			while (commonPartCount < firstParts.length
+					&& commonPartCount < lastParts.length
+					&& firstParts[commonPartCount] == lastParts[commonPartCount]) {
+				commonPartCount++
+			}
+			def dropCount = firstParts.length == lastParts.length
+					? commonPartCount
+					: Math.max(0, commonPartCount - 1)
+			def lastUniquePart = lastParts.drop(dropCount).join('.')
+			lastUniquePart.isEmpty() ? first : "${first}-${lastUniquePart}"
+		}
+
+		Closure<String> expectedReleaseSuffix = { List<String> versions ->
+			versions.size() > 1 ? compactVersionRange(versions) : versions.first()
+		}
+
+		Closure<Map> readFabricModJson = { File jarFile ->
+			ZipFile zip = new ZipFile(jarFile)
+			try {
+				def entry = zip.getEntry('fabric.mod.json')
+				if (entry == null) {
+					throw new GradleException("Missing fabric.mod.json in ${jarFile.name}")
+				}
+				def input = zip.getInputStream(entry)
+				try {
+					return new JsonSlurper().parse(input) as Map
+				} finally {
+					input.close()
+				}
+			} finally {
+				zip.close()
+			}
+		}
+
+		Closure<Void> assertMinecraftDependency = { Object actual, List<String> expected, String context ->
+			if (expected.size() == 1) {
+				def expectedSingle = "~${expected.first()}"
+				if (actual != expectedSingle) {
+					throw new GradleException("${context}: expected minecraft ${expectedSingle}, found ${actual}")
+				}
+			} else if (actual != expected) {
+				throw new GradleException("${context}: expected minecraft ${expected}, found ${actual}")
+			}
+			null
+		}
+
+		root.tasks.register('validateReleaseArtifacts') {
+			group = 'verification'
+			description = 'Validates collected release jars, filenames and generated fabric.mod.json metadata.'
+			dependsOn(root.tasks.named('releaseBuild'))
+
+			doLast {
+				def libsDir = root.layout.buildDirectory.dir('libs').get().asFile
+				def modVersion = root.findProperty('mod_version').toString()
+				def loaderVersion = root.findProperty('loader_version').toString()
+				def expectedFiles = [] as Set
+
+				releaseMinecraftVersionSets.each { List<String> versions ->
+					def suffix = expectedReleaseSuffix(versions)
+					def artifactVersion = "${modVersion}-${suffix}"
+					def jarName = "FreshArmorBar-${artifactVersion}.jar"
+					def sourcesName = "FreshArmorBar-${artifactVersion}-sources.jar"
+					expectedFiles << jarName
+					expectedFiles << sourcesName
+
+					def jarFile = new File(libsDir, jarName)
+					def sourcesFile = new File(libsDir, sourcesName)
+					if (!jarFile.isFile()) {
+						throw new GradleException("Missing release jar: ${jarName}")
+					}
+					if (!sourcesFile.isFile()) {
+						throw new GradleException("Missing release sources jar: ${sourcesName}")
+					}
+
+					def metadata = readFabricModJson(jarFile)
+					if (metadata.version != artifactVersion) {
+						throw new GradleException("${jarName}: expected version ${artifactVersion}, found ${metadata.version}")
+					}
+					if (metadata.depends?.fabricloader != ">=${loaderVersion}") {
+						throw new GradleException("${jarName}: expected fabricloader >=${loaderVersion}, found ${metadata.depends?.fabricloader}")
+					}
+					if (metadata.depends?.containsKey('fabric-api')) {
+						throw new GradleException("${jarName}: fabric-api must not be a hard dependency")
+					}
+					if (metadata.suggests?.containsKey('fabric-api')) {
+						throw new GradleException("${jarName}: fabric-api must not be suggested")
+					}
+					assertMinecraftDependency(metadata.depends?.minecraft, versions, jarName)
+				}
+
+				def actualFiles = libsDir.listFiles({ File file -> file.name.endsWith('.jar') } as FileFilter)
+						.collect { it.name } as Set
+				def unexpectedFiles = actualFiles - expectedFiles
+				if (!unexpectedFiles.isEmpty()) {
+					throw new GradleException("Unexpected jar(s) in build/libs: ${unexpectedFiles.sort()}")
+				}
+			}
+		}
+
+		root.tasks.register('validateReleaseGroups') {
+			group = 'verification'
+			description = 'Builds grouped targets and validates that their generated metadata agrees with release grouping.'
+			dependsOn(releaseMinecraftVersionSets.findAll { List<String> versions -> versions.size() > 1 }.collectMany { List<String> versions ->
+				versions.collect { String version -> root.project(":${version}").tasks.named('build') }
+			})
+
+			doLast {
+				def modVersion = root.findProperty('mod_version').toString()
+				releaseMinecraftVersionSets.findAll { List<String> versions -> versions.size() > 1 }.each { List<String> versions ->
+					def artifactVersion = "${modVersion}-${expectedReleaseSuffix(versions)}"
+					versions.each { String version ->
+						def metadataFile = root.project(":${version}")
+								.layout.buildDirectory
+								.file('generated/resources/fabricModJson/fabric.mod.json')
+								.get()
+								.asFile
+						if (!metadataFile.isFile()) {
+							throw new GradleException("${version}: missing generated fabric.mod.json")
+						}
+						def metadata = new JsonSlurper().parse(metadataFile)
+						if (metadata.version != artifactVersion) {
+							throw new GradleException("${version}: expected grouped artifact version ${artifactVersion}, found ${metadata.version}")
+						}
+						assertMinecraftDependency(metadata.depends?.minecraft, versions, version)
+					}
+				}
+			}
 		}
 	}
 }

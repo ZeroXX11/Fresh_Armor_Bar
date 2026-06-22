@@ -74,6 +74,14 @@ Mod Menu, Trinkets and MixinExtras values needed to compile that target. They
 should not duplicate `mod_version`. Fabric API is intentionally not listed
 because the mod does not compile against `net.fabricmc.fabric.api.*` classes.
 
+Release grouping is configured once in:
+
+- `gradle/release-versions.gradle`
+
+`settings.gradle` uses that file to decide which Stonecutter targets exist and
+which representative versions `releaseBuild` should build. `build.gradle` uses
+the same file to generate jar names and `fabric.mod.json` Minecraft metadata.
+
 ## Release Artifacts
 
 Stonecutter still compiles every configured Minecraft target. Release uploads
@@ -199,6 +207,37 @@ On Unix-like shells:
 representative target per release artifact. This keeps `build/libs` free of
 stale jars from previous versioning or grouping schemes.
 
+Validate release artifacts:
+
+```powershell
+.\gradlew.bat validateReleaseArtifacts --no-daemon
+```
+
+On Unix-like shells:
+
+```bash
+./gradlew validateReleaseArtifacts --no-daemon
+```
+
+This runs `releaseBuild`, then checks collected jar names, sources jars and
+generated `fabric.mod.json` metadata. It also verifies that Fabric API is not
+declared as either a required or suggested dependency.
+
+Validate grouped release targets:
+
+```powershell
+.\gradlew.bat validateReleaseGroups --no-daemon
+```
+
+On Unix-like shells:
+
+```bash
+./gradlew validateReleaseGroups --no-daemon
+```
+
+This builds every grouped Stonecutter target and checks that each generated
+`fabric.mod.json` agrees with the configured release group.
+
 The older unqualified `buildAllVersions` workflow is still available through
 the per-version tasks, and `buildAndCollect` is kept as a compatibility alias
 for older workflows. Prefer `verifyAllVersions` for compatibility checks and
@@ -222,6 +261,6 @@ those jars as development/intermediate artifacts, not release jars.
 3. Switch to the new version with the Stonecutter Dev plugin or an official Stonecutter task, then compile `:<minecraft-version>:build`.
 4. If the new version only changes a method, import or type, add a small Stonecutter conditional in the existing shared file.
 5. If the new version changes a whole behavior area, extract a tiny adapter and keep the rest of the renderer/mixin shared.
-6. If the new version should share a published jar with another target, update the release grouping in `build.gradle` and the representative list in `settings.gradle`.
+6. If the new version should share a published jar with another target, update the release grouping in `gradle/release-versions.gradle`.
 
 Do not duplicate the whole mod tree for a new version.

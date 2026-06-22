@@ -5,20 +5,16 @@ plugins {
     id 'maven-publish'
 }
 
+apply from: rootProject.file("gradle/release-versions.gradle")
+
 def isUnmappedMinecraft = stonecutter.eval(stonecutter.current.version, ">=26.1")
 apply plugin: isUnmappedMinecraft ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
-def releaseMinecraftVersionGroups = [
-        ['1.21.2', '1.21.3'],
-        ['1.21.6', '1.21.7', '1.21.8'],
-        ['1.21.9', '1.21.10'],
-        ['26.1', '26.1.1', '26.1.2']
-]
-def releaseMinecraftVersions = releaseMinecraftVersionGroups.find {
+List<String> releaseMinecraftVersions = (releaseMinecraftVersionSets.find {
     it.contains(stonecutter.current.version)
-} ?: [stonecutter.current.version]
+} ?: [stonecutter.current.version]) as List<String>
 def baseModVersion = project.mod_version.toString()
-def compactVersionRange = { List<String> versions ->
+Closure<String> compactVersionRange = { List<String> versions ->
     def first = versions.first()
     def last = versions.last()
     def firstParts = first.split("\\.")
@@ -214,13 +210,13 @@ jar {
 
 tasks.register("buildAllVersions") {
     group = "build"
-    description = "Builds this version and writes the remapped jars to the root build/libs folder."
+    description = "Legacy per-version build alias. Prefer root verifyAllVersions for compatibility checks."
     dependsOn(tasks.named("build"))
 }
 
 tasks.register("buildAndCollect") {
     group = "build"
-    description = "Compatibility alias for buildAllVersions."
+    description = "Legacy compatibility alias for buildAllVersions. Prefer root releaseBuild for publishing."
     dependsOn(tasks.named("buildAllVersions"))
 }
 
