@@ -28,7 +28,7 @@ The armor HUD code is split by responsibility:
 
 ## Version-Specific Code
 
-Only Minecraft/Fabric API differences are guarded with Stonecutter comments:
+Only Minecraft API differences are guarded with Stonecutter comments:
 
 - Minecraft 1.20.1 uses `new Identifier(...)`; Minecraft 1.21.x uses `Identifier.of(...)`; Minecraft 26.1 uses `Identifier.fromNamespaceAndPath(...)`.
 - Minecraft 1.20.1 reads armor trims from NBT/registry APIs; Minecraft 1.21.x reads trim and dyed color from data components.
@@ -61,6 +61,49 @@ The per-version Gradle properties live in:
 - `versions/26.1/gradle.properties`
 - `versions/26.1.1/gradle.properties`
 - `versions/26.1.2/gradle.properties`
+- `versions/26.2/gradle.properties`
+
+The shared mod version is configured once in the root `gradle.properties`:
+
+```properties
+mod_version=2.1
+```
+
+Per-version `gradle.properties` files should only contain Minecraft, mappings,
+Mod Menu, Trinkets and MixinExtras values needed to compile that target. They
+should not duplicate `mod_version`. Fabric API is intentionally not listed
+because the mod does not compile against `net.fabricmc.fabric.api.*` classes.
+
+## Release Artifacts
+
+Stonecutter still compiles every configured Minecraft target. Release uploads
+are grouped only when the generated code and packaged resources are compatible
+across multiple Minecraft versions.
+
+Current release jars are:
+
+- `FreshArmorBar-<mod_version>-1.20.1.jar`
+- `FreshArmorBar-<mod_version>-1.21.1.jar`
+- `FreshArmorBar-<mod_version>-1.21.2-3.jar`
+- `FreshArmorBar-<mod_version>-1.21.4.jar`
+- `FreshArmorBar-<mod_version>-1.21.5.jar`
+- `FreshArmorBar-<mod_version>-1.21.6-8.jar`
+- `FreshArmorBar-<mod_version>-1.21.9-10.jar`
+- `FreshArmorBar-<mod_version>-1.21.11.jar`
+- `FreshArmorBar-<mod_version>-26.1-1.2.jar`
+- `FreshArmorBar-<mod_version>-26.2.jar`
+
+The grouped release jars declare all supported Minecraft versions in
+`fabric.mod.json`. For example, the `1.21.6-8` jar declares:
+
+```json
+{
+  "minecraft": ["1.21.6", "1.21.7", "1.21.8"]
+}
+```
+
+The `versions/<minecraft-version>` folders remain separate even for grouped
+release jars. They are build/test targets, not upload folders.
 
 ## Changing Version
 
@@ -125,21 +168,41 @@ Build one target:
 .\gradlew.bat :26.1.2:build --no-daemon
 ```
 
-Build all configured Stonecutter targets:
+Verify all configured Stonecutter targets:
 
 ```powershell
-.\gradlew.bat buildAllVersions --no-daemon
+.\gradlew.bat verifyAllVersions --no-daemon
 ```
 
 On Unix-like shells:
 
 ```bash
-./gradlew buildAllVersions --no-daemon
+./gradlew verifyAllVersions --no-daemon
 ```
 
-This uses Gradle's unqualified task selection: every Stonecutter version project has its own `buildAllVersions` task, so the root command runs the matching task for each configured target.
+This compiles every configured Stonecutter target and is the compatibility
+check to run before publishing.
 
-`buildAndCollect` is kept as a compatibility alias for older workflows.
+Build only release artifacts:
+
+```powershell
+.\gradlew.bat releaseBuild --no-daemon
+```
+
+On Unix-like shells:
+
+```bash
+./gradlew releaseBuild --no-daemon
+```
+
+`releaseBuild` deletes the root `build/libs` folder first, then builds only one
+representative target per release artifact. This keeps `build/libs` free of
+stale jars from previous versioning or grouping schemes.
+
+The older unqualified `buildAllVersions` workflow is still available through
+the per-version tasks, and `buildAndCollect` is kept as a compatibility alias
+for older workflows. Prefer `verifyAllVersions` for compatibility checks and
+`releaseBuild` for publishing.
 
 The final remapped jars and sources jars are written directly to:
 
@@ -155,9 +218,10 @@ those jars as development/intermediate artifacts, not release jars.
 ## Adding A New Version
 
 1. Add a new entry to `settings.gradle` under `stonecutter { create(...) { versions ... } }`.
-2. Create `versions/<minecraft-version>/gradle.properties` with the matching Minecraft, Fabric API, MixinExtras and mod version values. Add Yarn/Trinkets values only for targets that still use those dependencies.
+2. Create `versions/<minecraft-version>/gradle.properties` with the matching Minecraft and MixinExtras values. Add Yarn/Trinkets values only for targets that still use those dependencies.
 3. Switch to the new version with the Stonecutter Dev plugin or an official Stonecutter task, then compile `:<minecraft-version>:build`.
 4. If the new version only changes a method, import or type, add a small Stonecutter conditional in the existing shared file.
 5. If the new version changes a whole behavior area, extract a tiny adapter and keep the rest of the renderer/mixin shared.
+6. If the new version should share a published jar with another target, update the release grouping in `build.gradle` and the representative list in `settings.gradle`.
 
 Do not duplicate the whole mod tree for a new version.

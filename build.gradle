@@ -1,4 +1,5 @@
 import groovy.text.SimpleTemplateEngine
+import groovy.json.JsonOutput
 
 plugins {
     id 'maven-publish'
@@ -7,7 +8,51 @@ plugins {
 def isUnmappedMinecraft = stonecutter.eval(stonecutter.current.version, ">=26.1")
 apply plugin: isUnmappedMinecraft ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
-version = project.mod_version
+def releaseMinecraftVersionGroups = [
+        ['1.21.2', '1.21.3'],
+        ['1.21.6', '1.21.7', '1.21.8'],
+        ['1.21.9', '1.21.10'],
+        ['26.1', '26.1.1', '26.1.2']
+]
+def releaseMinecraftVersions = releaseMinecraftVersionGroups.find {
+    it.contains(stonecutter.current.version)
+} ?: [stonecutter.current.version]
+def baseModVersion = project.mod_version.toString()
+def compactVersionRange = { List<String> versions ->
+    def first = versions.first()
+    def last = versions.last()
+    def firstParts = first.split("\\.")
+    def lastParts = last.split("\\.")
+    if (firstParts.length != lastParts.length) {
+        def commonPartCount = 0
+        while (commonPartCount < firstParts.length
+                && commonPartCount < lastParts.length
+                && firstParts[commonPartCount] == lastParts[commonPartCount]) {
+            commonPartCount++
+        }
+        def lastUniquePart = lastParts.drop(Math.max(0, commonPartCount - 1)).join(".")
+        return lastUniquePart.isEmpty() ? first : "${first}-${lastUniquePart}"
+    }
+
+    def commonPartCount = 0
+    while (commonPartCount < firstParts.length
+            && firstParts[commonPartCount] == lastParts[commonPartCount]) {
+        commonPartCount++
+    }
+    def lastUniquePart = lastParts.drop(commonPartCount).join(".")
+    return lastUniquePart.isEmpty() ? first : "${first}-${lastUniquePart}"
+}
+def releaseMinecraftVersionSuffix = releaseMinecraftVersions.size() > 1
+        ? compactVersionRange(releaseMinecraftVersions)
+        : stonecutter.current.version
+def releaseModVersion = releaseMinecraftVersions.size() > 1
+        ? "${baseModVersion}-${releaseMinecraftVersionSuffix}"
+        : "${baseModVersion}-${stonecutter.current.version}"
+def minecraftDependency = releaseMinecraftVersions.size() > 1
+        ? JsonOutput.toJson(releaseMinecraftVersions)
+        : JsonOutput.toJson("~${stonecutter.current.version}")
+
+version = releaseModVersion
 group = project.maven_group
 
 base {
@@ -55,15 +100,6 @@ dependencies {
         modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     }
 
-    // --- Fabric API ---
-    if (isUnmappedMinecraft) {
-        compileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-        runtimeOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-    } else {
-        modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-        modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-    }
-
     // --- Mod Compatibility & APIs ---
     // Mod Menu is optional at runtime; this only compiles the config screen entrypoint.
     if (isUnmappedMinecraft) {
@@ -96,7 +132,7 @@ def targetJavaVersion = isUnmappedMinecraft ? 25 : (stonecutter.eval(stonecutter
 def fabricModJsonProps = [
         "version": project.version,
         "mod_name": project.mod_name,
-        "minecraft_version": stonecutter.current.version,
+        "minecraft_dependency": minecraftDependency,
         "loader_version": project.loader_version,
         "java_version": targetJavaVersion
 ]
@@ -118,6 +154,7 @@ tasks.register("generateFabricModJson") {
                 .createTemplate(fabricModJsonTemplate)
                 .make(fabricModJsonProps)
                 .toString()
+                .replace('"__minecraft_dependency__"', minecraftDependency)
     }
 }
 

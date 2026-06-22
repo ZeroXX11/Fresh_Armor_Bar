@@ -48,7 +48,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 4. Launch Minecraft with the Fabric profile.
 
-Fabric API is suggested by the mod metadata, but it is not declared as a hard dependency. Trinkets and Trinkets Updated are optional and are only used when installed to detect Elytra in extra Elytra slots.
+Fabric API is not required. Trinkets and Trinkets Updated are optional and are only used when installed to detect Elytra in extra Elytra slots.
 
 Fresh Armor Bar declares `fabricloader >=0.19.2` in its generated `fabric.mod.json`. This keeps the mod aligned with the newest stable Fabric Loader and avoids older loader versions, such as `0.19.0`, being accepted by launchers or modpacks where newer mods require the latest loader.
 

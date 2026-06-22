@@ -23,11 +23,10 @@
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
-    "minecraft": "~${minecraft_version}",
+    "minecraft": "__minecraft_dependency__",
     "java": ">=${java_version}"
   },
   "suggests": {
-    "fabric-api": "*",
     "modmenu": "*"
   }
 }
