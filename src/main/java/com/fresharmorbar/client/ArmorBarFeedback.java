@@ -2,7 +2,8 @@ package com.fresharmorbar.client;
 
 import com.fresharmorbar.client.config.FreshArmorBarConfig;
 
-//? if <1.21.5 {
+//? if <1.21.6 {
+//? if <1.21.5
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -18,6 +19,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
+//? if <1.21.5
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
@@ -113,7 +115,11 @@ public final class ArmorBarFeedback {
             lastHalfStart[i] = halfStart;
             lastHalfEnd[i] = halfEnd;
 
+            //? if >=1.21.5 {
+            /*boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageable();
+            *///?} else {
             boolean validArmorStack = !stack.isEmpty() && stack.getItem() instanceof ArmorItem && stack.isDamageable();
+            //?}
             if (!validArmorStack) {
                 rememberEmpty(i);
             } else {
@@ -166,8 +172,10 @@ public final class ArmorBarFeedback {
         boolean hasRepairPulse = FreshArmorBarConfig.mendingEffectEnabled() && hasRepairPulse(leftHalf, rightHalf, now);
         if (!hasDamagePulse && !hasRepairPulse) return;
 
+        //? if <1.21.5 {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        //?}
         if (hasDamagePulse) {
             float progress = pulse.progress(now);
             if (progress < 1.0f) {
@@ -179,6 +187,7 @@ public final class ArmorBarFeedback {
         if (hasRepairPulse) {
             renderMendingOutline(ctx, left, right, x, y, leftHalf, rightHalf, now);
         }
+        //? if <1.21.5
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
