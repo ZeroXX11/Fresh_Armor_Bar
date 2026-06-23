@@ -2,7 +2,7 @@ package com.fresharmorbar.client;
 
 import com.fresharmorbar.client.config.FreshArmorBarConfig;
 
-//? if <1.21.2 {
+//? if <1.21.3 {
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -11,6 +11,10 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
+//? if >=1.21.2 {
+/*import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.attribute.EntityAttributes;
+*///?}
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
@@ -98,7 +102,11 @@ public final class ArmorBarFeedback {
         for (int i = 0; i < ARMOR_ORDER.length; i++) {
             EquipmentSlot slot = ARMOR_ORDER[i];
             ItemStack stack = player.getEquippedStack(slot);
+            //? if >=1.21.2 {
+            /*int protection = getProtection(stack, slot);
+            *///?} else {
             int protection = getProtection(stack);
+            //?}
             int halfStart = halfCursor;
             int halfEnd = halfCursor + protection;
             halfCursor = halfEnd;
@@ -551,12 +559,27 @@ public final class ArmorBarFeedback {
         //?}
     }
 
+    //? if >=1.21.2 {
+    /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
+        var modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return 0;
+
+        final int[] protection = {0};
+        modifiers.applyModifiers(slot, (attribute, modifier) -> {
+            if (attribute.equals(EntityAttributes.ARMOR)) {
+                protection[0] += (int)Math.round(modifier.value());
+            }
+        });
+        return protection[0];
+    }
+    *///?} else {
     private static int getProtection(ItemStack stack) {
         if (stack.getItem() instanceof ArmorItem armor) {
             return armor.getProtection();
         }
         return 0;
     }
+    //?}
 
     private static void resetFor(PlayerEntity player) {
         reset();
@@ -566,8 +589,13 @@ public final class ArmorBarFeedback {
 
         int halfCursor = 0;
         for (int i = 0; i < ARMOR_ORDER.length; i++) {
-            ItemStack stack = player.getEquippedStack(ARMOR_ORDER[i]);
+            EquipmentSlot slot = ARMOR_ORDER[i];
+            ItemStack stack = player.getEquippedStack(slot);
+            //? if >=1.21.2 {
+            /*int protection = getProtection(stack, slot);
+            *///?} else {
             int protection = getProtection(stack);
+            //?}
             lastHalfStart[i] = halfCursor;
             halfCursor += protection;
             lastHalfEnd[i] = halfCursor;

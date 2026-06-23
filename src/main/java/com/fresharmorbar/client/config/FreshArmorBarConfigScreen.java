@@ -162,6 +162,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //?}
         //?}
 
+        //? if >=26.1 {
+        /*super.extractRenderState(context, mouseX, mouseY, delta);
+        *///?} else {
+        super.render(context, mouseX, mouseY, delta);
+        //?}
+
         int centerX = this.width / 2;
         int dividerLeft = centerX - WIDE_BUTTON_WIDTH / 2;
         int dividerRight = centerX + WIDE_BUTTON_WIDTH / 2;
@@ -169,12 +175,6 @@ public final class FreshArmorBarConfigScreen extends Screen {
         drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48);
         drawDivider(context, dividerLeft, dividerRight);
         drawCentered(context, text("fresharmorbar.config.category.mending"), centerX, 190);
-
-        //? if >=26.1 {
-        /*super.extractRenderState(context, mouseX, mouseY, delta);
-        *///?} else {
-        super.render(context, mouseX, mouseY, delta);
-        //?}
     }
 
     private void closeToParent() {
