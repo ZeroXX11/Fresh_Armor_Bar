@@ -2,7 +2,7 @@ package com.fresharmorbar.client;
 
 import com.fresharmorbar.client.config.FreshArmorBarConfig;
 
-//? if <1.21.9 {
+//? if <26.1 {
 //? if <1.21.5
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
