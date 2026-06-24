@@ -155,7 +155,9 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //? if >=26.1 {
         /*this.extractBackground(context, mouseX, mouseY, delta);
         *///?} else {
-        //? if >=1.21 {
+        //? if >=1.21.6 {
+        /*context.fill(0, 0, this.width, this.height, 0x66000000);
+        *///?} else if >=1.21 {
         /*this.renderBackground(context, mouseX, mouseY, delta);
         *///?} else {
         this.renderBackground(context);
