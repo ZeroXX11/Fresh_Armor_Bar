@@ -53,7 +53,7 @@ gradle.rootProject { root ->
 			delete(root.layout.buildDirectory.dir('libs'))
 		}
 
-		root.tasks.register('verifyAllVersions') {
+		def verifyAllVersions = root.tasks.register('verifyAllVersions') {
 			group = 'verification'
 			description = 'Builds every configured Stonecutter target to verify compatibility.'
 			dependsOn(stonecutterMinecraftVersions.collect { version ->
@@ -130,10 +130,11 @@ gradle.rootProject { root ->
 			null
 		}
 
-		root.tasks.register('validateReleaseArtifacts') {
+		def validateReleaseArtifacts = root.tasks.register('validateReleaseArtifacts') {
 			group = 'verification'
 			description = 'Validates collected release jars, filenames and generated fabric.mod.json metadata.'
 			dependsOn(root.tasks.named('releaseBuild'))
+			mustRunAfter(verifyAllVersions)
 
 			doLast {
 				def libsDir = root.layout.buildDirectory.dir('libs').get().asFile
@@ -183,9 +184,10 @@ gradle.rootProject { root ->
 			}
 		}
 
-		root.tasks.register('validateReleaseGroups') {
+		def validateReleaseGroups = root.tasks.register('validateReleaseGroups') {
 			group = 'verification'
 			description = 'Builds grouped targets and validates that their generated metadata agrees with release grouping.'
+			mustRunAfter(validateReleaseArtifacts)
 			dependsOn(releaseMinecraftVersionSets.findAll { List<String> versions -> versions.size() > 1 }.collectMany { List<String> versions ->
 				versions.collect { String version -> root.project(":${version}").tasks.named('build') }
 			})
@@ -211,6 +213,14 @@ gradle.rootProject { root ->
 					}
 				}
 			}
+		}
+
+		root.tasks.register('fullVerify') {
+			group = 'verification'
+			description = 'Runs all compatibility and release validation checks in a stable order.'
+			dependsOn(verifyAllVersions)
+			dependsOn(validateReleaseArtifacts)
+			dependsOn(validateReleaseGroups)
 		}
 	}
 }

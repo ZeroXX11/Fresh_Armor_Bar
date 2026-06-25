@@ -195,6 +195,24 @@ On Unix-like shells:
 This compiles every configured Stonecutter target and is the compatibility
 check to run before publishing.
 
+Run the full local/CI verification:
+
+```powershell
+.\gradlew.bat clean fullVerify --no-daemon
+```
+
+On Unix-like shells:
+
+```bash
+./gradlew clean fullVerify --no-daemon
+```
+
+`fullVerify` is the recommended pre-push and pre-release check. It runs the
+multiversion compatibility build, validates the release jars and validates
+grouped release metadata in a stable order. The GitHub Actions build workflow
+uses this task so pull requests fail if either compilation or release metadata
+breaks.
+
 Build only release artifacts:
 
 ```powershell
@@ -242,10 +260,16 @@ On Unix-like shells:
 This builds every grouped Stonecutter target and checks that each generated
 `fabric.mod.json` agrees with the configured release group.
 
+The release validators can still be run individually for targeted checks.
+When both release validators are requested in the same Gradle invocation,
+`validateReleaseArtifacts` is ordered before `validateReleaseGroups` so
+`build/libs` is validated before grouped-target builds can add more outputs.
+
 The older unqualified `buildAllVersions` workflow is still available through
 the per-version tasks, and `buildAndCollect` is kept as a compatibility alias
-for older workflows. Prefer `verifyAllVersions` for compatibility checks and
-`releaseBuild` for publishing.
+for older workflows. Prefer `fullVerify` for complete validation,
+`verifyAllVersions` for compilation-only compatibility checks and
+`releaseBuild` for producing release artifacts.
 
 The final remapped jars and sources jars are written directly to:
 

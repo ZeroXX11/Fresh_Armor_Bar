@@ -23,8 +23,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: build
-        run: ./gradlew clean buildAllVersions --no-daemon
+      - name: full verification
+        run: ./gradlew clean fullVerify --no-daemon
       - name: capture build artifacts
         uses: actions/upload-artifact@v4
         with:
