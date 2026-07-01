@@ -5,6 +5,8 @@ package com.fresharmorbar.client.config;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+//? if >=26.1.1
+//import org.jspecify.annotations.NullMarked;
 *///?} else {
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -76,7 +78,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
-        this.addRenderableWidget(Button.builder(text("gui.done"), button -> closeToParent())
+        this.addRenderableWidget(Button.builder(text("gui.done"), ignored -> closeToParent())
                 .bounds(this.width / 2 - 100, this.height - 28, 200, 20)
                 .build());
         *///?} else {
@@ -146,14 +148,20 @@ public final class FreshArmorBarConfigScreen extends Screen {
     }
 
     //? if >=26.1 {
-    /*@Override
+    /*//? if >=26.1.1
+    //@NullMarked
+    @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
     *///?} else {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
     //?}
         //? if >=26.1 {
-        /*this.extractBackground(context, mouseX, mouseY, delta);
+        /*//? if <26.2 {
+        context.fill(0, 0, this.width, this.height, 0x66000000);
+        //?} else {
+        /^this.extractBackground(context, mouseX, mouseY, delta);
+        ^///?}
         *///?} else {
         //? if >=1.21.6 {
         /*context.fill(0, 0, this.width, this.height, 0x66000000);
@@ -181,13 +189,17 @@ public final class FreshArmorBarConfigScreen extends Screen {
 
     private void closeToParent() {
         //? if >=26.1 {
-        /*if (this.minecraft != null) {
+        /*//? if <26.2 {
+        this.minecraft.setScreen(this.parent);
+        //?} else {
+        /^if (this.minecraft != null) {
             //? if >=26.2 {
-            /^this.minecraft.setScreenAndShow(this.parent);
-            ^///?} else {
+            /^¹this.minecraft.setScreenAndShow(this.parent);
+            ¹^///?} else {
             this.minecraft.setScreen(this.parent);
             //?}
         }
+        ^///?}
         *///?} else {
         if (this.client != null) {
             this.client.setScreen(this.parent);

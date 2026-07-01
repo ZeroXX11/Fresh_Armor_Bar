@@ -2,7 +2,24 @@ package com.fresharmorbar.client;
 
 import com.fresharmorbar.client.config.FreshArmorBarConfig;
 
-//? if <26.1 {
+//? if <26.2 {
+//? if >=26.1 {
+/*import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.util.Util;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantments;
+*///?} else {
 //? if <1.21.5
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
@@ -26,6 +43,7 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+//?}
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,7 +92,11 @@ public final class ArmorBarFeedback {
     private ArmorBarFeedback() {
     }
 
+    //? if >=26.1 {
+    /*public static void update(Player player) {
+    *///?} else {
     public static void update(PlayerEntity player) {
+    //?}
         if (FreshArmorBarConfig.allFeedbackEffectsDisabled()) {
             reset();
             return;
@@ -85,6 +107,9 @@ public final class ArmorBarFeedback {
             return;
         }
 
+        //? if >=26.1
+        //UUID playerUuid = player.getUUID();
+        //? if <26.1
         UUID playerUuid = player.getUuid();
         if (!initialized || lastPlayerUuid == null || !lastPlayerUuid.equals(playerUuid)) {
             resetFor(player);
@@ -94,15 +119,24 @@ public final class ArmorBarFeedback {
         int halfCursor = 0;
         boolean anyBlastDamage = false;
         boolean anyDurabilityDamage = false;
+        //? if >=26.1
+        //DamageSource source = player.getLastDamageSource();
+        //? if <26.1
         DamageSource source = player.getRecentDamageSource();
         DamageKind kind = classify(source);
         boolean newDamageEvent = source != null && player.hurtTime > lastHurtTime;
+        //? if >=26.1
+        //long now = Util.getMillis();
+        //? if <26.1
         long now = Util.getMeasuringTimeMs();
 
         // Confronta la durabilita attuale con quella del tick precedente:
         // aumento di damage = colpo assorbito, diminuzione = Mending appena attivato.
         for (int i = 0; i < ARMOR_ORDER.length; i++) {
             EquipmentSlot slot = ARMOR_ORDER[i];
+            //? if >=26.1
+            //ItemStack stack = player.getItemBySlot(slot);
+            //? if <26.1
             ItemStack stack = player.getEquippedStack(slot);
             //? if >=1.21.2 {
             /*int protection = getProtection(stack, slot);
@@ -116,15 +150,24 @@ public final class ArmorBarFeedback {
             lastHalfEnd[i] = halfEnd;
 
             //? if >=1.21.5 {
-            /*boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageable();
+            /*//? if >=26.1
+            //boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageableItem();
+            /^^///? if <26.1
+            boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageable();
             *///?} else {
             boolean validArmorStack = !stack.isEmpty() && stack.getItem() instanceof ArmorItem && stack.isDamageable();
             //?}
             if (!validArmorStack) {
                 rememberEmpty(i);
             } else {
+                //? if >=26.1
+                //int damage = stack.getDamageValue();
+                //? if <26.1
                 int damage = stack.getDamage();
                 int maxDamage = stack.getMaxDamage();
+                //? if >=26.1
+                //boolean firstSeenStack = !ItemStack.isSameItem(stack, LAST_STACKS[i]) || LAST_MAX_DAMAGE[i] != maxDamage || LAST_DAMAGE[i] < 0;
+                //? if <26.1
                 boolean firstSeenStack = !ItemStack.areItemsEqual(stack, LAST_STACKS[i]) || LAST_MAX_DAMAGE[i] != maxDamage || LAST_DAMAGE[i] < 0;
                 if (!firstSeenStack) {
                     int lostDurability = damage - LAST_DAMAGE[i];
@@ -152,6 +195,9 @@ public final class ArmorBarFeedback {
     }
 
     static void renderSlotFeedback(
+            //? if >=26.1
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1
             DrawContext ctx,
             int armorSlot,
             int x,
@@ -164,6 +210,9 @@ public final class ArmorBarFeedback {
 
         int leftHalf = armorSlot * 2;
         int rightHalf = leftHalf + 1;
+        //? if >=26.1
+        //long now = Util.getMillis();
+        //? if <26.1
         long now = Util.getMeasuringTimeMs();
 
         // Uno slot grafico contiene due mezzi-slot: possono appartenere allo stesso pezzo o a pezzi diversi.
@@ -192,6 +241,9 @@ public final class ArmorBarFeedback {
     }
 
     private static void renderMaskedFeedback(
+            //? if >=26.1
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1
             DrawContext ctx,
             ArmorBarRenderer.SlotData left,
             ArmorBarRenderer.SlotData right,
@@ -287,6 +339,7 @@ public final class ArmorBarFeedback {
             MASK_CACHE.clear();
             lastResourceManager = manager;
         }
+        //? if <26.1
         if (manager == null) return PixelMask.EMPTY;
 
         MaskKey key = new MaskKey(texture, u);
@@ -294,8 +347,12 @@ public final class ArmorBarFeedback {
     }
 
     private static ResourceManager currentResourceManager() {
+        //? if >=26.1 {
+        /*return Minecraft.getInstance().getResourceManager();
+        *///?} else {
         MinecraftClient client = MinecraftClient.getInstance();
         return client != null ? client.getResourceManager() : null;
+        //?}
     }
 
     private static PixelMask loadMask(ResourceManager manager, MaskKey key) {
@@ -303,12 +360,19 @@ public final class ArmorBarFeedback {
         if (resource.isEmpty()) return PixelMask.EMPTY;
 
         // Le texture della armor bar sono sprite 9x9 affiancati: u sceglie left, right o full icon.
+        //? if >=26.1 {
+        /*try (InputStream stream = resource.get().open(); NativeImage image = NativeImage.read(stream)) {
+        *///?} else {
         try (InputStream stream = resource.get().getInputStream(); NativeImage image = NativeImage.read(stream)) {
+        //?}
             boolean[] pixels = new boolean[ICON_SIZE * ICON_SIZE];
             for (int y = 0; y < ICON_SIZE; y++) {
                 for (int x = 0; x < ICON_SIZE; x++) {
                     int sourceX = key.u() + x;
                     if (sourceX < image.getWidth() && y < image.getHeight()) {
+                        //? if >=26.1
+                        //pixels[y * ICON_SIZE + x] = (image.getLuminanceOrAlpha(sourceX, y) & 0xFF) > 16;
+                        //? if <26.1
                         pixels[y * ICON_SIZE + x] = (image.getOpacity(sourceX, y) & 0xFF) > 16;
                     }
                 }
@@ -549,10 +613,17 @@ public final class ArmorBarFeedback {
     private static DamageKind classify(DamageSource source) {
         // I tag vanilla sono piu robusti dei confronti con singoli DamageType.
         if (source == null) return DamageKind.GENERIC;
+        //? if >=26.1 {
+        /*if (source.is(DamageTypeTags.IS_FIRE)) return DamageKind.FIRE;
+        if (source.is(DamageTypeTags.IS_EXPLOSION)) return DamageKind.BLAST;
+        if (source.is(DamageTypeTags.IS_PROJECTILE)) return DamageKind.PROJECTILE;
+        if (source.is(DamageTypes.FALL) || source.is(DamageTypes.FLY_INTO_WALL) || source.is(DamageTypes.STALAGMITE)) return DamageKind.FALL;
+        *///?} else {
         if (source.isIn(DamageTypeTags.IS_FIRE)) return DamageKind.FIRE;
         if (source.isIn(DamageTypeTags.IS_EXPLOSION)) return DamageKind.BLAST;
         if (source.isIn(DamageTypeTags.IS_PROJECTILE)) return DamageKind.PROJECTILE;
         if (source.isOf(DamageTypes.FALL) || source.isOf(DamageTypes.FLY_INTO_WALL) || source.isOf(DamageTypes.STALAGMITE)) return DamageKind.FALL;
+        //?}
         return DamageKind.GENERIC;
     }
 
@@ -561,14 +632,29 @@ public final class ArmorBarFeedback {
     }
 
     private static boolean hasMending(ItemStack stack) {
-        //? if >=1.21 {
+        //? if >=26.1 {
+        /*return stack.getEnchantments().keySet().stream().anyMatch(enchantment -> enchantment.is(Enchantments.MENDING));
+        *///?} else if >=1.21 {
         /*return stack.getEnchantments().getEnchantments().stream().anyMatch(enchantment -> enchantment.matchesKey(Enchantments.MENDING));
         *///?} else {
         return EnchantmentHelper.getLevel(Enchantments.MENDING, stack) > 0;
         //?}
     }
 
-    //? if >=1.21.2 {
+    //? if >=26.1 {
+    /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
+        var modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return 0;
+
+        final int[] protection = {0};
+        modifiers.forEach(slot, (attribute, modifier) -> {
+            if (attribute.equals(Attributes.ARMOR)) {
+                protection[0] += (int)Math.round(modifier.amount());
+            }
+        });
+        return protection[0];
+    }
+    *///?} else if >=1.21.2 {
     /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
         var modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers == null) return 0;
@@ -590,8 +676,15 @@ public final class ArmorBarFeedback {
     }
     //?}
 
+    //? if >=26.1 {
+    /*private static void resetFor(Player player) {
+    *///?} else {
     private static void resetFor(PlayerEntity player) {
+    //?}
         reset();
+        //? if >=26.1
+        //lastPlayerUuid = player.getUUID();
+        //? if <26.1
         lastPlayerUuid = player.getUuid();
         initialized = true;
         lastHurtTime = player.hurtTime;
@@ -599,6 +692,9 @@ public final class ArmorBarFeedback {
         int halfCursor = 0;
         for (int i = 0; i < ARMOR_ORDER.length; i++) {
             EquipmentSlot slot = ARMOR_ORDER[i];
+            //? if >=26.1
+            //ItemStack stack = player.getItemBySlot(slot);
+            //? if <26.1
             ItemStack stack = player.getEquippedStack(slot);
             //? if >=1.21.2 {
             /*int protection = getProtection(stack, slot);
@@ -609,9 +705,15 @@ public final class ArmorBarFeedback {
             halfCursor += protection;
             lastHalfEnd[i] = halfCursor;
 
+            //? if >=26.1
+            //if (stack.isEmpty() || !stack.isDamageableItem()) {
+            //? if <26.1
             if (stack.isEmpty() || !stack.isDamageable()) {
                 rememberEmpty(i);
             } else {
+                //? if >=26.1
+                //rememberStack(i, stack, stack.getDamageValue(), stack.getMaxDamage());
+                //? if <26.1
                 rememberStack(i, stack, stack.getDamage(), stack.getMaxDamage());
             }
         }
@@ -652,6 +754,9 @@ public final class ArmorBarFeedback {
     }
 
     private static void renderMendingOutline(
+            //? if >=26.1
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1
             DrawContext ctx,
             ArmorBarRenderer.SlotData left,
             ArmorBarRenderer.SlotData right,
