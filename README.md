@@ -27,7 +27,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 ## Installation
 
-1. Install Fabric Loader `0.19.2` or newer for your Minecraft version.
+1. Install Fabric Loader `0.19.3` or newer for your Minecraft version.
 2. Download the Fresh Armor Bar jar matching your game version.
 3. Put the jar in your Minecraft mods folder:
 
@@ -39,7 +39,7 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 Fabric API is not required. Trinkets and Trinkets Updated are optional and are only used when installed to detect Elytra in extra Elytra slots.
 
-Fresh Armor Bar declares `fabricloader >=0.19.2` in its generated `fabric.mod.json`. This keeps the mod aligned with the newest stable Fabric Loader and avoids older loader versions, such as `0.19.0`, being accepted by launchers or modpacks where newer mods require the latest loader.
+Fresh Armor Bar declares `fabricloader >=0.19.3` in its generated `fabric.mod.json`. This keeps the compiled, development and user-facing Loader requirements aligned to the centrally configured version.
 
 ## Mod Compatibility
 
