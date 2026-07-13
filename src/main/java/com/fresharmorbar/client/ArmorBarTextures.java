@@ -6,7 +6,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.ArmorMaterials;
 *///?} else {
-//? if >=1.21.8 {
+//? if >=1.21.11 {
 /*import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.equipment.ArmorMaterials;
@@ -39,7 +39,7 @@ final class ArmorBarTextures {
     private static final Identifier TURTLE_STRIP = id("textures/gui/armorbar/strips/turtle.png");
     private static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
     private static final Identifier CHAIN_STRIP = id("textures/gui/armorbar/strips/chainmail.png");
-    //? if >=1.21.10
+    //? if >=1.21.11
     //private static final Identifier COPPER_STRIP = id("textures/gui/armorbar/strips/copper.png");
     private static final Identifier IRON_STRIP = id("textures/gui/armorbar/strips/iron.png");
     private static final Identifier GOLD_STRIP = id("textures/gui/armorbar/strips/gold.png");
@@ -77,13 +77,13 @@ final class ArmorBarTextures {
         };
     }
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*static Identifier getMaterialTex(ItemStack stack) {
         //? if >=26.1.2
         //var equippable = stack.get(DataComponents.EQUIPPABLE);
         //? if <26.1.2
         var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
-        //? if >=1.21.8 {
+        //? if >=1.21.11 {
         /^var asset = equippable != null ? equippable.assetId().orElse(null) : null;
         if (asset == null) return BASE_STRIP;
 
@@ -94,7 +94,7 @@ final class ArmorBarTextures {
         ¹^///?} else {
         if (asset.equals(ArmorMaterials.CHAIN.assetId())) return CHAIN_STRIP;
         //?}
-        //? if >=1.21.10
+        //? if >=1.21.11
         //if (asset.equals(ArmorMaterials.COPPER.assetId())) return COPPER_STRIP;
         if (asset.equals(ArmorMaterials.IRON.assetId())) return IRON_STRIP;
         if (asset.equals(ArmorMaterials.GOLD.assetId())) return GOLD_STRIP;
@@ -148,7 +148,7 @@ final class ArmorBarTextures {
         }
         //?}
 
-        //? if >=1.21.8 {
+        //? if >=1.21.11 {
         /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
         *///?} else if >=1.21 {
         /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getIdAsString(), name -> {
@@ -164,7 +164,7 @@ final class ArmorBarTextures {
                     id = id("textures/gui/armorbar/strips/" + name + ".png");
                 }
             } catch (Exception e) {
-                //? if >=1.21.8 {
+                //? if >=1.21.11 {
                 /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 *///?} else {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
@@ -180,7 +180,7 @@ final class ArmorBarTextures {
             *///?} else {
             if (currentManager != null && currentManager.getResource(id).isPresent()) {
             //?}
-                //? if >=1.21.8 {
+                //? if >=1.21.11 {
                 /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 *///?} else {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
@@ -190,7 +190,7 @@ final class ArmorBarTextures {
                 }
                 return id;
             } else {
-                //? if >=1.21.8 {
+                //? if >=1.21.11 {
                 /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 *///?} else {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);

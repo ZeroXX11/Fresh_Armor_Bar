@@ -8,8 +8,6 @@ Fresh Armor Bar draws custom armor icons that reflect the armor you are actually
 
 - Minecraft 1.20.1
 - Minecraft 1.21.1
-- Minecraft 1.21.8
-- Minecraft 1.21.10
 - Minecraft 1.21.11
 - Minecraft 26.1.2
 - Minecraft 26.2
@@ -67,8 +65,6 @@ This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Ca
 | Minecraft |   Trinkets    | Trinkets Canary | Trinkets Updated |   Elytra Slot   | Elytra Trinket  |
 |  1.20.1   |       ✅       |        ❌        |        ❌         |        ✅        |        ✅        |
 |  1.21.1   |       ✅       |        ❌        |        ❌         |        ✅        |        ✅        |
-|  1.21.8   |       ❌       |        ✅        |        ❌         |        ❌        |        ✅        |
-|  1.21.10  |       ❌       |        ✅        |        ❌         |        ❌        |        ✅        |
 |  1.21.11  |       ❌       |        ✅        |        ✅         |        ❌        |        ✅        |
 |  26.1.2   |       ❌       |        ❌        |        ✅         |        ❌        |        ❌        |
 

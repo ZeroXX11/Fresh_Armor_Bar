@@ -19,16 +19,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 *///?} else {
 import net.minecraft.client.gui.DrawContext;
-//? if >=1.21.8 {
+//? if >=1.21.11 {
 /*import net.minecraft.client.gl.RenderPipelines;
 *///?} else {
 //?}
-//? if >=1.21.8 {
+//? if >=1.21.11 {
 /*import net.minecraft.entity.attribute.EntityAttributes;
 *///?}
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
-//? if <1.21.8
+//? if <1.21.11
 import net.minecraft.item.ArmorItem;
 //? if >=1.21 {
 /*import net.minecraft.component.DataComponentTypes;
@@ -38,7 +38,7 @@ import net.minecraft.item.trim.ArmorTrim;
 //?}
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
-//? if <1.21.8
+//? if <1.21.11
 import com.mojang.blaze3d.systems.RenderSystem;
 //?}
 
@@ -127,7 +127,7 @@ public class ArmorBarRenderer {
     public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra, boolean elytraEnchanted) {
     //?}
         if (armorValue <= 0 && !hasElytra) return;
-        //? if >=1.21.8
+        //? if >=1.21.11
         //if (slotIndex == 0) ArmorBarGlintRenderer.resetFrame();
 
         int renderArmorValue = Math.min(armorValue, CACHE.length);
@@ -150,7 +150,7 @@ public class ArmorBarRenderer {
                 renderSlotMaterialAndTrims(ctx, currentSlot, x, currentY);
 
                 // 3. Incantesimi
-                //? if >=1.21.8 {
+                //? if >=1.21.11 {
                 /*ArmorBarGlintRenderer.renderSlotEnchantments(ctx, CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1], x, currentY);
                 *///?} else {
                 ArmorBarGlintRenderer.renderSlotEnchantments(ctx, CACHE[currentSlot * 2].enchanted, CACHE[currentSlot * 2 + 1].enchanted, x, currentY);
@@ -250,14 +250,14 @@ public class ArmorBarRenderer {
 
     private static float ch(int rgb, int shift) { return ((rgb >> shift) & 0xFF) / 255f; }
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*//? if >=26.1.2 {
     /^private static void drawTexture(GuiGraphicsExtractor ctx, Identifier tex, int x, int y, int u, int texWidth, int argb) {
         ctx.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, u, 0, 9, 9, texWidth, 9, argb);
     }
     ^///?} else {
     private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth, int argb) {
-        //? if >=1.21.8 {
+        //? if >=1.21.11 {
         /^ctx.drawTexture(RenderPipelines.GUI_TEXTURED, tex, x, y, u, 0, 9, 9, texWidth, 9, argb);
         ^///?}
     }
@@ -270,14 +270,14 @@ public class ArmorBarRenderer {
     *///?} else {
     private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth) {
     //?}
-        //? if >=1.21.8 {
+        //? if >=1.21.11 {
         /*drawTexture(ctx, tex, x, y, u, texWidth, 0xFFFFFFFF);
         *///?} else {
         ctx.drawTexture(tex, x, y, u, 0, 9, 9, texWidth, 9);
         //?}
     }
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
         //? if >=26.1.2
         //var modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
@@ -329,7 +329,7 @@ public class ArmorBarRenderer {
             ItemStack stack = player.getEquippedStack(slot);
             LAST_STACKS[i] = stack.copy(); // Aggiorna cache con una copia per rilevare modifiche NBT in-place
 
-            //? if >=1.21.8 {
+            //? if >=1.21.11 {
             /*if (stack.isEmpty()) continue;
 
             int protection = getProtection(stack, slot);
@@ -354,7 +354,7 @@ public class ArmorBarRenderer {
 
             //? if >=1.21 {
             /*if (trimOpt != null) {
-                //? if >=1.21.8 {
+                //? if >=1.21.11 {
                 /^String asset = trimOpt.material().value().assets().base().suffix();
                 ^///?} else {
                 String asset = trimOpt.getMaterial().value().assetName();
@@ -376,7 +376,7 @@ public class ArmorBarRenderer {
             //boolean ench = stack.isEnchanted();
             //? if <26.1.2
             boolean ench = stack.hasEnchantments();
-            //? if >=1.21.8 {
+            //? if >=1.21.11 {
             /*Identifier tex = getMaterialTex(stack);
             *///?} else {
             Identifier tex = getMaterialTex(armor.getMaterial());
@@ -444,7 +444,7 @@ public class ArmorBarRenderer {
             drawSide(ctx, left, x, y, U_LEFT);
             drawSide(ctx, right, x, y, U_RIGHT);
         }
-        //? if <1.21.8
+        //? if <1.21.11
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
@@ -460,7 +460,7 @@ public class ArmorBarRenderer {
     *///?} else {
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow) {
     //?}
-        //? if >=1.21.8 {
+        //? if >=1.21.11 {
         /*int color = 0xFFFFFFFF;
         if (hasColor) {
             int ir = (int)(r * 255.0F);
@@ -503,7 +503,7 @@ public class ArmorBarRenderer {
             //ItemStack stack = player.getItemBySlot(slot);
             //? if <26.1.2
             ItemStack stack = player.getEquippedStack(slot);
-            //? if >=1.21.8 {
+            //? if >=1.21.11 {
             /*total += getProtection(stack, slot);
             *///?} else {
             if (stack.getItem() instanceof ArmorItem armor) {

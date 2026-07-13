@@ -17,7 +17,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 *///?} else {
-//? if >=1.21.8
+//? if >=1.21.11
 //import com.mojang.blaze3d.pipeline.RenderPipeline;
 //? if <1.21
 import net.minecraft.client.MinecraftClient;
@@ -180,7 +180,7 @@ public class InGameHudMixin {
         return fabApplyElytraArmorFallback(original);
     }
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /^@WrapOperation(
             method = "renderArmor",
             at = @At(

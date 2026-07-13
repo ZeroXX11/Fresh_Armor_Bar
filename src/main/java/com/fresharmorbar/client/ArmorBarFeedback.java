@@ -20,7 +20,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
 *///?} else {
-//? if <1.21.8
+//? if <1.21.11
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -29,14 +29,14 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
-//? if >=1.21.8 {
+//? if >=1.21.11 {
 /*import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.attribute.EntityAttributes;
 *///?}
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
-//? if <1.21.8
+//? if <1.21.11
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
@@ -138,7 +138,7 @@ public final class ArmorBarFeedback {
             //ItemStack stack = player.getItemBySlot(slot);
             //? if <26.1.2
             ItemStack stack = player.getEquippedStack(slot);
-            //? if >=1.21.8 {
+            //? if >=1.21.11 {
             /*int protection = getProtection(stack, slot);
             *///?} else {
             int protection = getProtection(stack);
@@ -149,7 +149,7 @@ public final class ArmorBarFeedback {
             lastHalfStart[i] = halfStart;
             lastHalfEnd[i] = halfEnd;
 
-            //? if >=1.21.8 {
+            //? if >=1.21.11 {
             /*//? if >=26.1.2
             //boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageableItem();
             /^^///? if <26.1.2
@@ -221,7 +221,7 @@ public final class ArmorBarFeedback {
         boolean hasRepairPulse = FreshArmorBarConfig.mendingEffectEnabled() && hasRepairPulse(leftHalf, rightHalf, now);
         if (!hasDamagePulse && !hasRepairPulse) return;
 
-        //? if <1.21.8 {
+        //? if <1.21.11 {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         //?}
@@ -236,7 +236,7 @@ public final class ArmorBarFeedback {
         if (hasRepairPulse) {
             renderMendingOutline(ctx, left, right, x, y, leftHalf, rightHalf, now);
         }
-        //? if <1.21.8
+        //? if <1.21.11
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
@@ -654,7 +654,7 @@ public final class ArmorBarFeedback {
         });
         return protection[0];
     }
-    *///?} else if >=1.21.8 {
+    *///?} else if >=1.21.11 {
     /*private static int getProtection(ItemStack stack, EquipmentSlot slot) {
         var modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
         if (modifiers == null) return 0;
@@ -696,7 +696,7 @@ public final class ArmorBarFeedback {
             //ItemStack stack = player.getItemBySlot(slot);
             //? if <26.1.2
             ItemStack stack = player.getEquippedStack(slot);
-            //? if >=1.21.8 {
+            //? if >=1.21.11 {
             /*int protection = getProtection(stack, slot);
             *///?} else {
             int protection = getProtection(stack);

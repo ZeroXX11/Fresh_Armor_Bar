@@ -1,6 +1,6 @@
 package com.fresharmorbar.client;
 
-//? if >=1.21.8
+//? if >=1.21.11
 //import static com.fresharmorbar.client.ArmorBarTextures.ELYTRA_TEX;
 
 //? if >=26.1.2 {
@@ -33,7 +33,7 @@ import org.joml.Matrix4f;
 
 //? if <26.2
 import java.util.Optional;
-*///?} else if >=1.21.8 {
+*///?} else if >=1.21.11 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
@@ -57,7 +57,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.Identifier;
 //?}
-//? if >=1.21.8 {
+//? if >=1.21.11 {
 /*import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,15 +67,15 @@ import java.lang.reflect.Field;
 *///?}
 
 final class ArmorBarGlintRenderer {
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*private static final Logger LOGGER = LoggerFactory.getLogger("fresh-armor-bar");
     *///?}
     private static final String MODID = "fresh-armor-bar";
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
     *///?}
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*//? if >=26.2 {
     /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
@@ -112,7 +112,7 @@ final class ArmorBarGlintRenderer {
             .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false, 0.0F, 0.0F))
             .withVertexFormat(DefaultVertexFormat.PARTICLE, VertexFormat.Mode.QUADS)
             .build();
-    ^///?} else if >=1.21.8 {
+    ^///?} else if >=1.21.11 {
     /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
             .withVertexShader(id("core/fab_gui_glint_mask"))
@@ -157,20 +157,20 @@ final class ArmorBarGlintRenderer {
     *///?} else {
     static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
     //?}
-        //? if >=1.21.8 {
+        //? if >=1.21.11 {
         /*renderGuiGlint(ctx, x, y, ELYTRA_TEX, ELYTRA_TEX, 0, 0, 0.0f, 9.0f);
         *///?} else {
         renderSlotEnchantments(ctx, true, true, x, y);
         //?}
     }
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*static void resetFrame() {
         glintTextureTransformReady = false;
     }
     *///?}
 
-    //? if <1.21.8 {
+    //? if <1.21.11 {
     static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
         if (!leftEnch && !rightEnch) return;
 
@@ -222,7 +222,7 @@ final class ArmorBarGlintRenderer {
     }
     //?}
 
-    //? if >=1.21.8 {
+    //? if >=1.21.11 {
     /*//? if >=26.1.2 {
     /^static void renderSlotEnchantments(GuiGraphicsExtractor ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
     ^///?} else {
@@ -327,9 +327,7 @@ final class ArmorBarGlintRenderer {
                 glintTexture.getGlTextureView(), leftMask.getGlTextureView(), rightMask.getGlTextureView(),
                 glintTexture.getSampler(), leftMask.getSampler(), rightMask.getSampler()
         );
-        ^///?} else {
-        TextureSetup textureSetup = new TextureSetup(glintTexture.getGlTextureView(), leftMask.getGlTextureView(), rightMask.getGlTextureView());
-        //?}
+        ^///?}
         GLINT_TEXTURE_SETUP_CACHE.add(new GlintTextureSetupEntry(leftMaskTexture, rightMaskTexture, textureSetup));
         return textureSetup;
     }
@@ -463,17 +461,12 @@ final class ArmorBarGlintRenderer {
             addGlintMaskQuad(vertexConsumer, 0.0f);
             addGlintMaskQuad(vertexConsumer, 0.5f);
         }
-        ^///?} else if >=1.21.10 {
+        ^///?} else if >=1.21.11 {
         /^public void setupVertices(VertexConsumer vertexConsumer) {
             addGlintMaskQuad(vertexConsumer, 0.0f);
             addGlintMaskQuad(vertexConsumer, 0.5f);
         }
-        ^///?} else {
-        public void setupVertices(VertexConsumer vertexConsumer, float z) {
-            addGlintMaskQuad(vertexConsumer, z, 0.0f);
-            addGlintMaskQuad(vertexConsumer, z, 0.5f);
-        }
-        //?}
+        ^///?}
 
         //? if >=26.1.2 {
         /^private void addGlintMaskQuad(VertexConsumer vertexConsumer, float offset) {
@@ -492,7 +485,7 @@ final class ArmorBarGlintRenderer {
                     .setColor(leftMaskU, rightMaskU, color & 0xFF, 255)
                     .setUv2(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
-        ^///?} else if >=1.21.10 {
+        ^///?} else if >=1.21.11 {
         /^private void addGlintMaskQuad(VertexConsumer vertexConsumer, float offset) {
             float minU = baseMinU + offset;
             float maxU = baseMaxU + offset;
@@ -509,24 +502,7 @@ final class ArmorBarGlintRenderer {
                     .color(leftMaskU, rightMaskU, color & 0xFF, 255)
                     .light(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
-        ^///?} else {
-        private void addGlintMaskQuad(VertexConsumer vertexConsumer, float z, float offset) {
-            float minU = baseMinU + offset;
-            float maxU = baseMaxU + offset;
-            float maxV = GLINT_UV_SCALE + offset;
-            addGlintMaskVertex(vertexConsumer, z, xStart, 9.0f, minU, maxV);
-            addGlintMaskVertex(vertexConsumer, z, xEnd, 9.0f, maxU, maxV);
-            addGlintMaskVertex(vertexConsumer, z, xEnd, 0.0f, maxU, offset);
-            addGlintMaskVertex(vertexConsumer, z, xStart, 0.0f, minU, offset);
-        }
-
-        private void addGlintMaskVertex(VertexConsumer vertexConsumer, float z, float localX, float localY, float u, float v) {
-            vertexConsumer.vertex(pose, x + localX, y + localY, z)
-                    .texture(transform.u(u, v), transform.v(u, v))
-                    .color(leftMaskU, rightMaskU, color & 0xFF, 255)
-                    .light(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
-        }
-        //?}
+        ^///?}
 
         @Override
         //? if >=26.1.2 {

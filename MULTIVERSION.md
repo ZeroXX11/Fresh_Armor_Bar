@@ -37,7 +37,7 @@ Only Minecraft API differences are guarded with Stonecutter comments:
 - Minecraft 1.21.2+ reads armor value from the item attribute component because `ArmorItem#getProtection()` is no longer exposed.
 - Minecraft 1.21.2+ uses `DrawContext` texture overloads that require a GUI `RenderLayer` factory.
 - Minecraft 1.21.2 and 1.21.3 use `EquippableComponent#model()` for equipment assets; Minecraft 1.21.4 uses `EquippableComponent#assetId()`.
-- Minecraft 1.21.8, 1.21.10 and 1.21.11 are configured as Fabric/Stonecutter build targets and continue to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
+- Minecraft 1.21.11 is configured as a Fabric/Stonecutter build target and continues to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
 - Minecraft 1.21.6+ uses the extracted `ArmorBarGlintRenderer` masked GUI glint path and includes shader resources for that path.
 - Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
 - Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
@@ -48,8 +48,6 @@ The per-version Gradle properties live in:
 
 - `versions/1.20.1/gradle.properties`
 - `versions/1.21.1/gradle.properties`
-- `versions/1.21.8/gradle.properties`
-- `versions/1.21.10/gradle.properties`
 - `versions/1.21.11/gradle.properties`
 - `versions/26.1.2/gradle.properties`
 - `versions/26.2/gradle.properties`
@@ -86,8 +84,6 @@ Current release jars are:
 
 - `FreshArmorBar-<mod_version>-1.20.1.jar`
 - `FreshArmorBar-<mod_version>-1.21.1.jar`
-- `FreshArmorBar-<mod_version>-1.21.8.jar`
-- `FreshArmorBar-<mod_version>-1.21.10.jar`
 - `FreshArmorBar-<mod_version>-1.21.11.jar`
 - `FreshArmorBar-<mod_version>-26.1.2.jar`
 - `FreshArmorBar-<mod_version>-26.2.jar`
