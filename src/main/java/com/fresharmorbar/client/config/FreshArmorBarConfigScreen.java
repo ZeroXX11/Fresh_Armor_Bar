@@ -1,12 +1,11 @@
 package com.fresharmorbar.client.config;
 
-//? if >=26.1 {
+//? if >=26.1.2 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-//? if >=26.1.1
-//import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NullMarked;
 *///?} else {
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -21,7 +20,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
 
     private final Screen parent;
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*private Button damageEffectsButton;
     private Button genericDamageButton;
     private Button fireDamageButton;
@@ -50,7 +49,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         int right = left + BUTTON_WIDTH + 8;
         int y = 66;
 
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*this.damageEffectsButton = addButton(left, y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
                 () -> FreshArmorBarConfig.setDamageEffectsEnabled(!FreshArmorBarConfig.damageEffectEnabled()));
@@ -115,7 +114,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //?}
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*private Button addButton(int x, int y, int width, Component message, Runnable action) {
         Button button = Button.builder(message, ignored -> {
                     action.run();
@@ -147,23 +146,22 @@ public final class FreshArmorBarConfigScreen extends Screen {
         this.mendingButton.setMessage(optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()));
     }
 
-    //? if >=26.1 {
-    /*//? if >=26.1.1
-    //@NullMarked
+    //? if >=26.1.2 {
+    /*@NullMarked
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
     *///?} else {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
     //?}
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*//? if <26.2 {
         context.fill(0, 0, this.width, this.height, 0x66000000);
         //?} else {
         /^this.extractBackground(context, mouseX, mouseY, delta);
         ^///?}
         *///?} else {
-        //? if >=1.21.6 {
+        //? if >=1.21.8 {
         /*context.fill(0, 0, this.width, this.height, 0x66000000);
         *///?} else if >=1.21 {
         /*this.renderBackground(context, mouseX, mouseY, delta);
@@ -172,7 +170,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //?}
         //?}
 
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*super.extractRenderState(context, mouseX, mouseY, delta);
         *///?} else {
         super.render(context, mouseX, mouseY, delta);
@@ -188,7 +186,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     }
 
     private void closeToParent() {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*//? if <26.2 {
         this.minecraft.setScreen(this.parent);
         //?} else {
@@ -207,7 +205,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //?}
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*@Override
     public void onClose() {
         closeToParent();
@@ -219,7 +217,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     }
     //?}
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*private static void drawDivider(GuiGraphicsExtractor context, int left, int right) {
         context.fill(left, 178, right, 179, 0x55FFFFFF);
     }

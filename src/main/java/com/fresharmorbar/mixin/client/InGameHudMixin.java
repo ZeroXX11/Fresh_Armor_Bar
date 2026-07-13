@@ -6,7 +6,7 @@ import com.fresharmorbar.client.ModCompat;
 //import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-//? if >=26.1 {
+//? if >=26.1.2 {
 /*import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //? if >=26.2 {
@@ -17,7 +17,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 *///?} else {
-//? if >=1.21.6
+//? if >=1.21.8
 //import com.mojang.blaze3d.pipeline.RenderPipeline;
 //? if <1.21
 import net.minecraft.client.MinecraftClient;
@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 //? if >=26.2 {
 /*@Mixin(Hud.class)
-*///?} else if >=26.1 {
+*///?} else if >=26.1.2 {
 /*@Mixin(Gui.class)
 *///?} else {
 @Mixin(InGameHud.class)
@@ -64,7 +64,7 @@ public class InGameHudMixin {
     private static boolean fabCachedElytraEnchanted = false;
 
     @Unique
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*private static void fabResetArmorState(Player player) {
     *///?} else {
     private static void fabResetArmorState(PlayerEntity player) {
@@ -92,7 +92,7 @@ public class InGameHudMixin {
     }
 
     @Unique
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*private static void fabRenderNextArmorSlot(GuiGraphicsExtractor ctx, int x, int y) {
     *///?} else {
     private static void fabRenderNextArmorSlot(DrawContext ctx, int x, int y) {
@@ -136,7 +136,7 @@ public class InGameHudMixin {
         }
         original.call(ctx, tex, x, y, u, v, w, h);
     }
-    //?} else if >=26.1 {
+    //?} else if >=26.1.2 {
     /*@Inject(method = "extractArmor", at = @At("HEAD"))
     private static void fabResetArmorSlot(GuiGraphicsExtractor graphics, Player player, int yLineBase, int numHealthRows, int healthRowHeight, int xLeft, CallbackInfo ci) {
         fabResetArmorState(player);
@@ -180,7 +180,7 @@ public class InGameHudMixin {
         return fabApplyElytraArmorFallback(original);
     }
 
-    //? if >=1.21.6 {
+    //? if >=1.21.8 {
     /^@WrapOperation(
             method = "renderArmor",
             at = @At(
@@ -189,17 +189,6 @@ public class InGameHudMixin {
             )
     )
     private static void fabReplaceVanillaArmorIcons(DrawContext ctx, RenderPipeline pipeline, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
-        fabRenderNextArmorSlot(ctx, x, y);
-    }
-    ^///?} else if >=1.21.2 {
-    /^@WrapOperation(
-            method = "renderArmor",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIII)V"
-            )
-    )
-    private static void fabReplaceVanillaArmorIcons(DrawContext ctx, java.util.function.Function<Identifier, net.minecraft.client.render.RenderLayer> renderLayers, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
         fabRenderNextArmorSlot(ctx, x, y);
     }
     ^///?} else {

@@ -1,12 +1,12 @@
 package com.fresharmorbar.client;
 
-//? if >=26.1 {
+//? if >=26.1.2 {
 /*import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.ArmorMaterials;
 *///?} else {
-//? if >=1.21.2 {
+//? if >=1.21.8 {
 /*import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.equipment.ArmorMaterials;
@@ -39,7 +39,7 @@ final class ArmorBarTextures {
     private static final Identifier TURTLE_STRIP = id("textures/gui/armorbar/strips/turtle.png");
     private static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
     private static final Identifier CHAIN_STRIP = id("textures/gui/armorbar/strips/chainmail.png");
-    //? if >=1.21.9
+    //? if >=1.21.10
     //private static final Identifier COPPER_STRIP = id("textures/gui/armorbar/strips/copper.png");
     private static final Identifier IRON_STRIP = id("textures/gui/armorbar/strips/iron.png");
     private static final Identifier GOLD_STRIP = id("textures/gui/armorbar/strips/gold.png");
@@ -49,9 +49,9 @@ final class ArmorBarTextures {
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
     private static final Set<Object> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
-    //? if >=26.1
+    //? if >=26.1.2
     //private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager = null;
-    //? if <26.1
+    //? if <26.1.2
     private static net.minecraft.resource.ResourceManager lastResourceManager = null;
 
     private ArmorBarTextures() {
@@ -77,45 +77,34 @@ final class ArmorBarTextures {
         };
     }
 
-    //? if >=1.21.2 {
+    //? if >=1.21.8 {
     /*static Identifier getMaterialTex(ItemStack stack) {
-        //? if >=26.1
+        //? if >=26.1.2
         //var equippable = stack.get(DataComponents.EQUIPPABLE);
-        //? if <26.1
+        //? if <26.1.2
         var equippable = stack.get(DataComponentTypes.EQUIPPABLE);
-        //? if >=1.21.4 {
+        //? if >=1.21.8 {
         /^var asset = equippable != null ? equippable.assetId().orElse(null) : null;
         if (asset == null) return BASE_STRIP;
 
         if (asset.equals(ArmorMaterials.TURTLE_SCUTE.assetId())) return TURTLE_STRIP;
         if (asset.equals(ArmorMaterials.LEATHER.assetId())) return LEATHER_STRIP;
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^¹if (asset.equals(ArmorMaterials.CHAINMAIL.assetId())) return CHAIN_STRIP;
         ¹^///?} else {
         if (asset.equals(ArmorMaterials.CHAIN.assetId())) return CHAIN_STRIP;
         //?}
-        //? if >=1.21.9
+        //? if >=1.21.10
         //if (asset.equals(ArmorMaterials.COPPER.assetId())) return COPPER_STRIP;
         if (asset.equals(ArmorMaterials.IRON.assetId())) return IRON_STRIP;
         if (asset.equals(ArmorMaterials.GOLD.assetId())) return GOLD_STRIP;
         if (asset.equals(ArmorMaterials.DIAMOND.assetId())) return DIAMOND_STRIP;
         if (asset.equals(ArmorMaterials.NETHERITE.assetId())) return NETHERITE_STRIP;
-        //? if >=26.1
+        //? if >=26.1.2
         //Identifier model = asset.identifier();
-        //? if <26.1
+        //? if <26.1.2
         Identifier model = asset.getValue();
-        ^///?} else {
-        Identifier model = equippable != null ? equippable.model().orElse(null) : null;
-        if (model == null) return BASE_STRIP;
-
-        if (model.equals(ArmorMaterials.TURTLE_SCUTE.modelId())) return TURTLE_STRIP;
-        if (model.equals(ArmorMaterials.LEATHER.modelId())) return LEATHER_STRIP;
-        if (model.equals(ArmorMaterials.CHAIN.modelId())) return CHAIN_STRIP;
-        if (model.equals(ArmorMaterials.IRON.modelId())) return IRON_STRIP;
-        if (model.equals(ArmorMaterials.GOLD.modelId())) return GOLD_STRIP;
-        if (model.equals(ArmorMaterials.DIAMOND.modelId())) return DIAMOND_STRIP;
-        if (model.equals(ArmorMaterials.NETHERITE.modelId())) return NETHERITE_STRIP;
-        //?}
+        ^///?}
     *///?} else if >=1.21 {
     /*static Identifier getMaterialTex(RegistryEntry<ArmorMaterial> mat) {
         if (mat.equals(ArmorMaterials.TURTLE)) return TURTLE_STRIP;
@@ -136,7 +125,7 @@ final class ArmorBarTextures {
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
     //?}
 
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
         net.minecraft.server.packs.resources.ResourceManager currentManager = client.getResourceManager();
         *///?} else {
@@ -144,7 +133,7 @@ final class ArmorBarTextures {
         net.minecraft.resource.ResourceManager currentManager = client != null ? client.getResourceManager() : null;
         //?}
 
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*if (currentManager != lastResourceManager) {
             MATERIAL_TEXTURE_CACHE.clear();
             UNKNOWN_MATERIALS_LOGGED.clear();
@@ -159,7 +148,7 @@ final class ArmorBarTextures {
         }
         //?}
 
-        //? if >=1.21.2 {
+        //? if >=1.21.8 {
         /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
         *///?} else if >=1.21 {
         /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getIdAsString(), name -> {
@@ -175,7 +164,7 @@ final class ArmorBarTextures {
                     id = id("textures/gui/armorbar/strips/" + name + ".png");
                 }
             } catch (Exception e) {
-                //? if >=1.21.2 {
+                //? if >=1.21.8 {
                 /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 *///?} else {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
@@ -186,12 +175,12 @@ final class ArmorBarTextures {
                 return BASE_STRIP;
             }
 
-            //? if >=26.1 {
+            //? if >=26.1.2 {
             /*if (currentManager.getResource(id).isPresent()) {
             *///?} else {
             if (currentManager != null && currentManager.getResource(id).isPresent()) {
             //?}
-                //? if >=1.21.2 {
+                //? if >=1.21.8 {
                 /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 *///?} else {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
@@ -201,7 +190,7 @@ final class ArmorBarTextures {
                 }
                 return id;
             } else {
-                //? if >=1.21.2 {
+                //? if >=1.21.8 {
                 /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
                 *///?} else {
                 boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
@@ -215,7 +204,7 @@ final class ArmorBarTextures {
     }
 
     private static Identifier id(String path) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*return Identifier.fromNamespaceAndPath(MODID, path);
         *///?} else if >=1.21 {
         /*return Identifier.of(MODID, path);
@@ -225,7 +214,7 @@ final class ArmorBarTextures {
     }
 
     private static Identifier id(String namespace, String path) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*return Identifier.fromNamespaceAndPath(namespace, path);
         *///?} else if >=1.21 {
         /*return Identifier.of(namespace, path);

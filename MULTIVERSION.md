@@ -37,7 +37,7 @@ Only Minecraft API differences are guarded with Stonecutter comments:
 - Minecraft 1.21.2+ reads armor value from the item attribute component because `ArmorItem#getProtection()` is no longer exposed.
 - Minecraft 1.21.2+ uses `DrawContext` texture overloads that require a GUI `RenderLayer` factory.
 - Minecraft 1.21.2 and 1.21.3 use `EquippableComponent#model()` for equipment assets; Minecraft 1.21.4 uses `EquippableComponent#assetId()`.
-- Minecraft 1.21.5 through 1.21.11 are configured as Fabric/Stonecutter build targets and continue to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
+- Minecraft 1.21.8, 1.21.10 and 1.21.11 are configured as Fabric/Stonecutter build targets and continue to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
 - Minecraft 1.21.6+ uses the extracted `ArmorBarGlintRenderer` masked GUI glint path and includes shader resources for that path.
 - Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
 - Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
@@ -48,18 +48,9 @@ The per-version Gradle properties live in:
 
 - `versions/1.20.1/gradle.properties`
 - `versions/1.21.1/gradle.properties`
-- `versions/1.21.2/gradle.properties`
-- `versions/1.21.3/gradle.properties`
-- `versions/1.21.4/gradle.properties`
-- `versions/1.21.5/gradle.properties`
-- `versions/1.21.6/gradle.properties`
-- `versions/1.21.7/gradle.properties`
 - `versions/1.21.8/gradle.properties`
-- `versions/1.21.9/gradle.properties`
 - `versions/1.21.10/gradle.properties`
 - `versions/1.21.11/gradle.properties`
-- `versions/26.1/gradle.properties`
-- `versions/26.1.1/gradle.properties`
 - `versions/26.1.2/gradle.properties`
 - `versions/26.2/gradle.properties`
 
@@ -83,39 +74,26 @@ Release grouping is configured once in:
 - `gradle/release-versions.gradle`
 
 `settings.gradle` uses that file to decide which Stonecutter targets exist and
-which representative versions `releaseBuild` should build. `build.gradle` uses
+which versions `releaseBuild` should build. `build.gradle` uses
 the same file to generate jar names and `fabric.mod.json` Minecraft metadata.
 
 ## Release Artifacts
 
-Stonecutter still compiles every configured Minecraft target. Release uploads
-are grouped only when the generated code and packaged resources are compatible
-across multiple Minecraft versions.
+Stonecutter compiles every configured Minecraft target and produces one release
+jar for each target.
 
 Current release jars are:
 
 - `FreshArmorBar-<mod_version>-1.20.1.jar`
 - `FreshArmorBar-<mod_version>-1.21.1.jar`
-- `FreshArmorBar-<mod_version>-1.21.2-3.jar`
-- `FreshArmorBar-<mod_version>-1.21.4.jar`
-- `FreshArmorBar-<mod_version>-1.21.5.jar`
-- `FreshArmorBar-<mod_version>-1.21.6-8.jar`
-- `FreshArmorBar-<mod_version>-1.21.9-10.jar`
+- `FreshArmorBar-<mod_version>-1.21.8.jar`
+- `FreshArmorBar-<mod_version>-1.21.10.jar`
 - `FreshArmorBar-<mod_version>-1.21.11.jar`
-- `FreshArmorBar-<mod_version>-26.1-1.2.jar`
+- `FreshArmorBar-<mod_version>-26.1.2.jar`
 - `FreshArmorBar-<mod_version>-26.2.jar`
 
-The grouped release jars declare all supported Minecraft versions in
-`fabric.mod.json`. For example, the `1.21.6-8` jar declares:
-
-```json
-{
-  "minecraft": ["1.21.6", "1.21.7", "1.21.8"]
-}
-```
-
-The `versions/<minecraft-version>` folders remain separate even for grouped
-release jars. They are build/test targets, not upload folders.
+The retained `versions/<minecraft-version>` folders are build/test targets, not
+upload folders.
 
 ## Changing Version
 
@@ -175,8 +153,6 @@ Build one target:
 ```powershell
 .\gradlew.bat :1.20.1:build --no-daemon
 .\gradlew.bat :1.21.11:build --no-daemon
-.\gradlew.bat :26.1:build --no-daemon
-.\gradlew.bat :26.1.1:build --no-daemon
 .\gradlew.bat :26.1.2:build --no-daemon
 ```
 
@@ -208,10 +184,9 @@ On Unix-like shells:
 ```
 
 `fullVerify` is the recommended pre-push and pre-release check. It runs the
-multiversion compatibility build, validates the release jars and validates
-grouped release metadata in a stable order. The GitHub Actions build workflow
-uses this task so pull requests fail if either compilation or release metadata
-breaks.
+multiversion compatibility build and validates the release jars. The GitHub
+Actions build workflow uses this task so pull requests fail if either
+compilation or release metadata breaks.
 
 Build only release artifacts:
 
@@ -225,9 +200,9 @@ On Unix-like shells:
 ./gradlew releaseBuild --no-daemon
 ```
 
-`releaseBuild` deletes the root `build/libs` folder first, then builds only one
-representative target per release artifact. This keeps `build/libs` free of
-stale jars from previous versioning or grouping schemes.
+`releaseBuild` deletes the root `build/libs` folder first, then builds each
+configured release target. This keeps `build/libs` free of stale jars from
+previous versioning schemes.
 
 Validate release artifacts:
 
@@ -244,26 +219,6 @@ On Unix-like shells:
 This runs `releaseBuild`, then checks collected jar names, sources jars and
 generated `fabric.mod.json` metadata. It also verifies that Fabric API is not
 declared as either a required or suggested dependency.
-
-Validate grouped release targets:
-
-```powershell
-.\gradlew.bat validateReleaseGroups --no-daemon
-```
-
-On Unix-like shells:
-
-```bash
-./gradlew validateReleaseGroups --no-daemon
-```
-
-This builds every grouped Stonecutter target and checks that each generated
-`fabric.mod.json` agrees with the configured release group.
-
-The release validators can still be run individually for targeted checks.
-When both release validators are requested in the same Gradle invocation,
-`validateReleaseArtifacts` is ordered before `validateReleaseGroups` so
-`build/libs` is validated before grouped-target builds can add more outputs.
 
 The older unqualified `buildAllVersions` workflow is still available through
 the per-version tasks, and `buildAndCollect` is kept as a compatibility alias
@@ -289,6 +244,5 @@ those jars as development/intermediate artifacts, not release jars.
 3. Switch to the new version with the Stonecutter Dev plugin or an official Stonecutter task, then compile `:<minecraft-version>:build`.
 4. If the new version only changes a method, import or type, add a small Stonecutter conditional in the existing shared file.
 5. If the new version changes a whole behavior area, extract a tiny adapter and keep the rest of the renderer/mixin shared.
-6. If the new version should share a published jar with another target, update the release grouping in `gradle/release-versions.gradle`.
 
 Do not duplicate the whole mod tree for a new version.

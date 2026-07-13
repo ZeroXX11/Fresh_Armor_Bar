@@ -184,43 +184,11 @@ gradle.rootProject { root ->
 			}
 		}
 
-		def validateReleaseGroups = root.tasks.register('validateReleaseGroups') {
-			group = 'verification'
-			description = 'Builds grouped targets and validates that their generated metadata agrees with release grouping.'
-			mustRunAfter(validateReleaseArtifacts)
-			dependsOn(releaseMinecraftVersionSets.findAll { List<String> versions -> versions.size() > 1 }.collectMany { List<String> versions ->
-				versions.collect { String version -> root.project(":${version}").tasks.named('build') }
-			})
-
-			doLast {
-				def modVersion = root.findProperty('mod_version').toString()
-				releaseMinecraftVersionSets.findAll { List<String> versions -> versions.size() > 1 }.each { List<String> versions ->
-					def artifactVersion = "${modVersion}-${expectedReleaseSuffix(versions)}"
-					versions.each { String version ->
-						def metadataFile = root.project(":${version}")
-								.layout.buildDirectory
-								.file('generated/resources/fabricModJson/fabric.mod.json')
-								.get()
-								.asFile
-						if (!metadataFile.isFile()) {
-							throw new GradleException("${version}: missing generated fabric.mod.json")
-						}
-						def metadata = new JsonSlurper().parse(metadataFile)
-						if (metadata.version != artifactVersion) {
-							throw new GradleException("${version}: expected grouped artifact version ${artifactVersion}, found ${metadata.version}")
-						}
-						assertMinecraftDependency(metadata.depends?.minecraft, versions, version)
-					}
-				}
-			}
-		}
-
 		root.tasks.register('fullVerify') {
 			group = 'verification'
 			description = 'Runs all compatibility and release validation checks in a stable order.'
 			dependsOn(verifyAllVersions)
 			dependsOn(validateReleaseArtifacts)
-			dependsOn(validateReleaseGroups)
 		}
 	}
 }

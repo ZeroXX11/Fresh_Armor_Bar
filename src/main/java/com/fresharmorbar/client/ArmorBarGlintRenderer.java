@@ -1,9 +1,9 @@
 package com.fresharmorbar.client;
 
-//? if >=1.21.6
+//? if >=1.21.8
 //import static com.fresharmorbar.client.ArmorBarTextures.ELYTRA_TEX;
 
-//? if >=26.1 {
+//? if >=26.1.2 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
 //? if >=26.2 {
 /^import com.mojang.blaze3d.PrimitiveTopology;
@@ -33,7 +33,7 @@ import org.joml.Matrix4f;
 
 //? if <26.2
 import java.util.Optional;
-*///?} else if >=1.21.6 {
+*///?} else if >=1.21.8 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
@@ -52,12 +52,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.RenderLayer;
 import org.joml.Matrix4f;
 //?}
-//? if <26.1 {
+//? if <26.1.2 {
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.Identifier;
 //?}
-//? if >=1.21.6 {
+//? if >=1.21.8 {
 /*import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,15 +67,15 @@ import java.lang.reflect.Field;
 *///?}
 
 final class ArmorBarGlintRenderer {
-    //? if >=1.21.6 {
+    //? if >=1.21.8 {
     /*private static final Logger LOGGER = LoggerFactory.getLogger("fresh-armor-bar");
     *///?}
     private static final String MODID = "fresh-armor-bar";
-    //? if >=1.21.6 {
+    //? if >=1.21.8 {
     /*private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
     *///?}
 
-    //? if >=1.21.6 {
+    //? if >=1.21.8 {
     /*//? if >=26.2 {
     /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
@@ -94,7 +94,7 @@ final class ArmorBarGlintRenderer {
             .withVertexBinding(0, DefaultVertexFormat.PARTICLE)
             .withPrimitiveTopology(PrimitiveTopology.QUADS)
             .build();
-    ^///?} else if >=26.1 {
+    ^///?} else if >=26.1.2 {
     /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
             .withVertexShader(id("core/fab_gui_glint_mask"))
@@ -112,7 +112,7 @@ final class ArmorBarGlintRenderer {
             .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false, 0.0F, 0.0F))
             .withVertexFormat(DefaultVertexFormat.PARTICLE, VertexFormat.Mode.QUADS)
             .build();
-    ^///?} else if >=1.21.6 {
+    ^///?} else if >=1.21.8 {
     /^private static final RenderPipeline FAB_GUI_GLINT = RenderPipeline.builder()
             .withLocation(id(MODID, "pipeline/gui_glint"))
             .withVertexShader(id("core/fab_gui_glint_mask"))
@@ -138,7 +138,7 @@ final class ArmorBarGlintRenderer {
     private static final int GLINT_MASK_COORD_SCALE = 256;
     private static final MethodHandle DRAW_CONTEXT_STATE_GETTER = findDrawContextStateGetter();
     private static final java.util.ArrayList<GlintTextureSetupEntry> GLINT_TEXTURE_SETUP_CACHE = new java.util.ArrayList<>();
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /^private static net.minecraft.server.packs.resources.ResourceManager lastGlintTextureSetupResourceManager = null;
     ^///?} else {
     private static net.minecraft.resource.ResourceManager lastGlintTextureSetupResourceManager = null;
@@ -152,41 +152,34 @@ final class ArmorBarGlintRenderer {
     private ArmorBarGlintRenderer() {
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*static void renderFullIconEnchantment(GuiGraphicsExtractor ctx, int x, int y) {
     *///?} else {
     static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
     //?}
-        //? if >=1.21.6 {
+        //? if >=1.21.8 {
         /*renderGuiGlint(ctx, x, y, ELYTRA_TEX, ELYTRA_TEX, 0, 0, 0.0f, 9.0f);
         *///?} else {
         renderSlotEnchantments(ctx, true, true, x, y);
         //?}
     }
 
-    //? if >=1.21.6 {
+    //? if >=1.21.8 {
     /*static void resetFrame() {
         glintTextureTransformReady = false;
     }
     *///?}
 
-    //? if <1.21.6 {
+    //? if <1.21.8 {
     static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
         if (!leftEnch && !rightEnch) return;
 
         // Abbassa l'intensità del colore per renderlo meno "forte" e meno "viola acceso"
-        //? if <1.21.5
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, 1.0f);
 
         // Usa il layer nativo getGlint() per le strisce animate
-        //? if >=1.21.2 {
-        /*ctx.draw(vertexConsumers -> {
-        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getGlint());
-        *///?} else {
-        
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
-        //?}
         Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
         // Scala dei fasci di luce animati
@@ -213,12 +206,8 @@ final class ArmorBarGlintRenderer {
             addGlintVertex(vertexConsumer, matrix, x1, y, minU, offset);
         }
 
-        //? if >=1.21.2 {
-        /*});
-        *///?} else {
         // Svuota il buffer per disegnare tutti i fasci di luce accumulati
         ctx.draw();
-        //?}
 
         // Ripristina il colore standard per la GUI
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -233,8 +222,8 @@ final class ArmorBarGlintRenderer {
     }
     //?}
 
-    //? if >=1.21.6 {
-    /*//? if >=26.1 {
+    //? if >=1.21.8 {
+    /*//? if >=26.1.2 {
     /^static void renderSlotEnchantments(GuiGraphicsExtractor ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
     ^///?} else {
     static void renderSlotEnchantments(DrawContext ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
@@ -254,7 +243,7 @@ final class ArmorBarGlintRenderer {
         }
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /^private static void renderGuiGlint(GuiGraphicsExtractor ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd) {
     ^///?} else {
     private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd) {
@@ -262,14 +251,14 @@ final class ArmorBarGlintRenderer {
         if (leftMaskTexture == null || rightMaskTexture == null) return;
 
         GlintTextureTransform transform = getGlintTextureTransform();
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^Matrix3x2f pose = new Matrix3x2f(ctx.pose());
         ^///?} else {
         Matrix3x2f pose = new Matrix3x2f(ctx.getMatrices());
         //?}
         int minX = x + (int)xStart;
         int maxX = x + ceilPositiveIconCoord(xEnd);
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^ScreenRectangle bounds = new ScreenRectangle(minX, y, maxX - minX, 9).transformMaxBounds(pose);
         ^///?} else {
         ScreenRect bounds = new ScreenRect(minX, y, maxX - minX, 9).transformEachVertex(pose);
@@ -281,7 +270,7 @@ final class ArmorBarGlintRenderer {
         float baseMinU = (xStart / 9.0f) * GLINT_UV_SCALE;
         float baseMaxU = (xEnd / 9.0f) * GLINT_UV_SCALE;
 
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^state.addGuiElement(new GlintMaskRenderState(
                 pose, bounds, textureSetup, x, y, leftMaskU, rightMaskU,
                 xStart, xEnd, baseMinU, baseMaxU,
@@ -302,7 +291,7 @@ final class ArmorBarGlintRenderer {
     }
 
     private static TextureSetup getGlintTextureSetup(Identifier leftMaskTexture, Identifier rightMaskTexture) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^var client = net.minecraft.client.Minecraft.getInstance();
         net.minecraft.server.packs.resources.ResourceManager currentManager = client.getResourceManager();
         ^///?} else {
@@ -321,14 +310,14 @@ final class ArmorBarGlintRenderer {
         }
 
         var textureManager = client.getTextureManager();
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^var glintTexture = textureManager.getTexture(ItemFeatureRenderer.ENCHANTED_GLINT_ITEM);
         ^///?} else {
         var glintTexture = textureManager.getTexture(ItemRenderer.ITEM_ENCHANTMENT_GLINT);
         //?}
         var leftMask = textureManager.getTexture(leftMaskTexture);
         var rightMask = textureManager.getTexture(rightMaskTexture);
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^TextureSetup textureSetup = new TextureSetup(
                 glintTexture.getTextureView(), leftMask.getTextureView(), rightMask.getTextureView(),
                 glintTexture.getSampler(), leftMask.getSampler(), rightMask.getSampler()
@@ -352,7 +341,7 @@ final class ArmorBarGlintRenderer {
     }
 
     private static MethodHandle findDrawContextStateGetter() {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^for (Field field : GuiGraphicsExtractor.class.getDeclaredFields()) {
         ^///?} else {
         for (Field field : DrawContext.class.getDeclaredFields()) {
@@ -371,7 +360,7 @@ final class ArmorBarGlintRenderer {
         return null;
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /^private static GuiRenderState getGuiRenderState(GuiGraphicsExtractor ctx) {
     ^///?} else {
     private static GuiRenderState getGuiRenderState(DrawContext ctx) {
@@ -386,7 +375,7 @@ final class ArmorBarGlintRenderer {
     }
 
     private static int getGlintColor() {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^double strength = net.minecraft.client.Minecraft.getInstance().options.glintStrength().get();
         ^///?} else {
         double strength = net.minecraft.client.MinecraftClient.getInstance().options.getGlintStrength().getValue();
@@ -411,7 +400,7 @@ final class ArmorBarGlintRenderer {
     }
 
     private static GlintTextureTransform createGlintTextureTransform() {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^double speed = net.minecraft.client.Minecraft.getInstance().options.glintSpeed().get();
         long time = (long)(Util.getMillis() * speed * 8.0D);
         ^///?} else {
@@ -433,11 +422,11 @@ final class ArmorBarGlintRenderer {
         }
     }
 
-    //? if >=26.1
+    //? if >=26.1.2
     //@NullMarked
     private record GlintMaskRenderState(
             Matrix3x2f pose,
-            //? if >=26.1 {
+            //? if >=26.1.2 {
             /^ScreenRectangle bounds,
             ^///?} else {
             ScreenRect bounds,
@@ -453,7 +442,7 @@ final class ArmorBarGlintRenderer {
             float baseMaxU,
             GlintTextureTransform transform,
             int color
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /^) implements GuiElementRenderState {
     ^///?} else {
     ) implements SimpleGuiElementRenderState {
@@ -469,12 +458,12 @@ final class ArmorBarGlintRenderer {
         }
 
         @Override
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^public void buildVertices(VertexConsumer vertexConsumer) {
             addGlintMaskQuad(vertexConsumer, 0.0f);
             addGlintMaskQuad(vertexConsumer, 0.5f);
         }
-        ^///?} else if >=1.21.9 {
+        ^///?} else if >=1.21.10 {
         /^public void setupVertices(VertexConsumer vertexConsumer) {
             addGlintMaskQuad(vertexConsumer, 0.0f);
             addGlintMaskQuad(vertexConsumer, 0.5f);
@@ -486,7 +475,7 @@ final class ArmorBarGlintRenderer {
         }
         //?}
 
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^private void addGlintMaskQuad(VertexConsumer vertexConsumer, float offset) {
             float minU = baseMinU + offset;
             float maxU = baseMaxU + offset;
@@ -503,7 +492,7 @@ final class ArmorBarGlintRenderer {
                     .setColor(leftMaskU, rightMaskU, color & 0xFF, 255)
                     .setUv2(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
-        ^///?} else if >=1.21.9 {
+        ^///?} else if >=1.21.10 {
         /^private void addGlintMaskQuad(VertexConsumer vertexConsumer, float offset) {
             float minU = baseMinU + offset;
             float maxU = baseMaxU + offset;
@@ -540,7 +529,7 @@ final class ArmorBarGlintRenderer {
         //?}
 
         @Override
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /^@Nullable
         public ScreenRectangle scissorArea() {
             return null;
@@ -555,7 +544,7 @@ final class ArmorBarGlintRenderer {
 
     @SuppressWarnings({"SameParameterValue", "unused"})
     private static Identifier id(String path) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*return Identifier.fromNamespaceAndPath(MODID, path);
         *///?} else if >=1.21 {
         /*return Identifier.of(MODID, path);
@@ -566,7 +555,7 @@ final class ArmorBarGlintRenderer {
 
     @SuppressWarnings({"SameParameterValue", "unused"})
     private static Identifier id(String namespace, String path) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*return Identifier.fromNamespaceAndPath(namespace, path);
         *///?} else if >=1.21 {
         /*return Identifier.of(namespace, path);

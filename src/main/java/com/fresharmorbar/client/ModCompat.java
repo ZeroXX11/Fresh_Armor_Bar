@@ -1,6 +1,6 @@
 package com.fresharmorbar.client;
 
-//? if >=26.1 {
+//? if >=26.1.2 {
 /*import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -34,14 +34,14 @@ public class ModCompat {
         public static final ElytraState NONE = new ElytraState(false, false);
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*public static ElytraState getElytraState(Player player) {
     *///?} else {
     public static ElytraState getElytraState(PlayerEntity player) {
     //?}
-        //? if >=26.1
+        //? if >=26.1.2
         //ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        //? if <26.1
+        //? if <26.1.2
         ItemStack chest = player.getEquippedStack(EquipmentSlot.CHEST);
         if (isElytra(chest)) {
             return new ElytraState(true, isEnchanted(chest));
@@ -54,7 +54,7 @@ public class ModCompat {
         return state;
     }
 
-    //? if >=26.1 {
+    //? if >=26.1.2 {
     /*private static ElytraState getApiElytraState(
             boolean loaded, Class<?> apiClass, String playerLookupMethod, Player player) {
     *///?} else {
@@ -94,7 +94,7 @@ public class ModCompat {
     }
 
     private static boolean isElytra(ItemStack stack) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*return stack.is(Items.ELYTRA);
         *///?} else {
         return stack.isOf(Items.ELYTRA);
@@ -102,7 +102,7 @@ public class ModCompat {
     }
 
     private static boolean isEnchanted(ItemStack stack) {
-        //? if >=26.1 {
+        //? if >=26.1.2 {
         /*return stack.isEnchanted();
         *///?} else {
         return stack.hasEnchantments();

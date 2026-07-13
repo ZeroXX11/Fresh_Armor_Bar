@@ -7,7 +7,7 @@ plugins {
 
 apply from: rootProject.file("gradle/release-versions.gradle")
 
-def isUnmappedMinecraft = stonecutter.eval(stonecutter.current.version, ">=26.1")
+def isUnmappedMinecraft = stonecutter.eval(stonecutter.current.version, ">=26.1.2")
 apply plugin: isUnmappedMinecraft ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
 List<String> releaseMinecraftVersions = (releaseMinecraftVersionSets.find {
@@ -166,10 +166,10 @@ tasks.register("generateFabricModJson") {
 }
 
 sourceSets.main.resources.setSrcDirs([generatedFabricModJson, rootProject.file("src/main/resources")])
-if (stonecutter.eval(stonecutter.current.version, "<1.21.6")) {
+if (stonecutter.eval(stonecutter.current.version, "<1.21.8")) {
     sourceSets.main.resources.exclude("assets/fresh-armor-bar/shaders/**")
 }
-if (stonecutter.eval(stonecutter.current.version, "<1.21.9")) {
+if (stonecutter.eval(stonecutter.current.version, "<1.21.10")) {
     sourceSets.main.resources.exclude("assets/fresh-armor-bar/textures/gui/armorbar/strips/copper.png")
 }
 
