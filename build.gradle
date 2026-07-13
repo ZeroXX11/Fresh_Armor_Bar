@@ -194,6 +194,9 @@ tasks.withType(JavaCompile).configureEach {
 tasks.named("sourcesJar").configure {
     dependsOn(tasks.named("generateFabricModJson"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(rootProject.file("LICENSE")) {
+        rename("LICENSE", "LICENSE_${project.archives_base_name}")
+    }
     if (isUnmappedMinecraft) {
         destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
     }
@@ -214,8 +217,8 @@ if (isUnmappedMinecraft) {
 }
 
 jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archives_base_name}"}
+    from(rootProject.file("LICENSE")) {
+        rename("LICENSE", "LICENSE_${project.archives_base_name}")
     }
 }
 

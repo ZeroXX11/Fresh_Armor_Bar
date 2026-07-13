@@ -47,6 +47,12 @@ gradle.rootProject { root ->
 			dependsOn(root.project(":${activeMinecraftVersion}").tasks.named('runClient'))
 		}
 
+		root.tasks.register('clean', Delete) {
+			group = 'build'
+			description = 'Deletes the root build directory, including collected release jars.'
+			delete(root.layout.buildDirectory)
+		}
+
 		def cleanCollectedJars = root.tasks.register('cleanCollectedJars', Delete) {
 			group = 'build'
 			description = 'Deletes collected release jars from build/libs.'
@@ -135,14 +141,20 @@ gradle.rootProject { root ->
 			description = 'Validates collected release jars, filenames and generated fabric.mod.json metadata.'
 			dependsOn(root.tasks.named('releaseBuild'))
 			mustRunAfter(verifyAllVersions)
+			inputs.dir(root.layout.buildDirectory.dir('libs'))
+			inputs.property('libsDirPath', root.layout.buildDirectory.dir('libs').get().asFile.absolutePath)
+			inputs.property('modVersion', providers.gradleProperty('mod_version'))
+			inputs.property('loaderVersion', providers.gradleProperty('loader_version'))
+			inputs.property('releaseMinecraftVersionSets', releaseMinecraftVersionSets)
 
-			doLast {
-				def libsDir = root.layout.buildDirectory.dir('libs').get().asFile
-				def modVersion = root.findProperty('mod_version').toString()
-				def loaderVersion = root.findProperty('loader_version').toString()
+			doLast { task ->
+				def libsDir = new File(task.inputs.properties.libsDirPath.toString())
+				def modVersion = task.inputs.properties.modVersion.toString()
+				def loaderVersion = task.inputs.properties.loaderVersion.toString()
+				List<List<String>> versionSets = task.inputs.properties.releaseMinecraftVersionSets as List<List<String>>
 				def expectedFiles = [] as Set
 
-				releaseMinecraftVersionSets.each { List<String> versions ->
+				versionSets.each { List<String> versions ->
 					def suffix = expectedReleaseSuffix(versions)
 					def artifactVersion = "${modVersion}-${suffix}"
 					def jarName = "FreshArmorBar-${artifactVersion}.jar"
