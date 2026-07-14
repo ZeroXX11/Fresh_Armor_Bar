@@ -1,0 +1,53 @@
+List<String> documentedMinecraftVersions = ext.stonecutterMinecraftVersions as List<String>
+List<List<String>> documentedReleaseVersionSets = ext.releaseMinecraftVersionSets as List<List<String>>
+
+gradle.rootProject { root ->
+	gradle.projectsEvaluated {
+		root.tasks.register('validateDocumentation') {
+			group = 'verification'
+			description = 'Checks that documented targets, artifacts and build scripts match the Gradle configuration.'
+
+			def readmeFile = root.file('README.md')
+			def multiversionFile = root.file('MULTIVERSION.md')
+			inputs.files(readmeFile, multiversionFile)
+			inputs.property('minecraftVersions', documentedMinecraftVersions)
+			inputs.property('releaseVersionSets', documentedReleaseVersionSets)
+			inputs.property('modVersion', providers.gradleProperty('mod_version'))
+			inputs.property('loaderVersion', providers.gradleProperty('loader_version'))
+			inputs.property('archivesBaseName', providers.gradleProperty('archives_base_name'))
+
+			doLast { task ->
+				def readme = readmeFile.getText('UTF-8')
+				def multiversion = multiversionFile.getText('UTF-8')
+				def modVersion = task.inputs.properties.modVersion.toString()
+				def loaderVersion = task.inputs.properties.loaderVersion.toString()
+				def archivesBaseName = task.inputs.properties.archivesBaseName.toString()
+
+				documentedMinecraftVersions.each { version ->
+					if (!readme.contains("| ${version}")) {
+						throw new GradleException("README.md does not document Minecraft target ${version}")
+					}
+				}
+
+				documentedReleaseVersionSets.each { versions ->
+					def suffix = versions.size() > 1 ? compactMinecraftVersionRange(versions) : versions.first()
+					def jarName = "${archivesBaseName}-${modVersion}-${suffix}.jar"
+					if (!readme.contains(jarName) || !multiversion.contains(jarName)) {
+						throw new GradleException("Documentation is missing release artifact ${jarName}")
+					}
+				}
+
+				if (!readme.contains(loaderVersion) || !multiversion.contains(loaderVersion)) {
+					throw new GradleException("Documentation is missing Fabric Loader version ${loaderVersion}")
+				}
+
+				root.file('gradle').listFiles({ File file -> file.name.endsWith('.gradle') } as FileFilter)
+						.each { script ->
+							if (!readme.contains(script.name) || !multiversion.contains(script.name)) {
+								throw new GradleException("Documentation is missing Gradle script ${script.name}")
+							}
+						}
+			}
+		}
+	}
+}

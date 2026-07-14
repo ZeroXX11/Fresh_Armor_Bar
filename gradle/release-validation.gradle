@@ -22,6 +22,18 @@ Closure<Map> readFabricModJson = { File jarFile ->
 	}
 }
 
+Closure<Void> assertJarContainsEntry = { File jarFile, String entryName ->
+	ZipFile zip = new ZipFile(jarFile)
+	try {
+		if (zip.getEntry(entryName) == null) {
+			throw new GradleException("${jarFile.name}: missing ${entryName}")
+		}
+	} finally {
+		zip.close()
+	}
+	null
+}
+
 Closure<Void> assertMinecraftDependency = { Object actual, List<String> expected, String context ->
 	if (expected.size() == 1) {
 		def expectedSingle = "~${expected.first()}"
@@ -45,12 +57,14 @@ gradle.rootProject { root ->
 			inputs.property('libsDirPath', root.layout.buildDirectory.dir('libs').get().asFile.absolutePath)
 			inputs.property('modVersion', providers.gradleProperty('mod_version'))
 			inputs.property('loaderVersion', providers.gradleProperty('loader_version'))
+			inputs.property('archivesBaseName', providers.gradleProperty('archives_base_name'))
 			inputs.property('releaseMinecraftVersionSets', releaseVersionSets)
 
 			doLast { task ->
 				def libsDir = new File(task.inputs.properties.libsDirPath.toString())
 				def modVersion = task.inputs.properties.modVersion.toString()
 				def loaderVersion = task.inputs.properties.loaderVersion.toString()
+				def licenseEntry = "LICENSE_${task.inputs.properties.archivesBaseName}"
 				List<List<String>> versionSets = task.inputs.properties.releaseMinecraftVersionSets as List<List<String>>
 				def expectedFiles = [] as Set
 
@@ -68,6 +82,8 @@ gradle.rootProject { root ->
 					if (!sourcesFile.isFile()) {
 						throw new GradleException("Missing release sources jar: ${sourcesName}")
 					}
+					assertJarContainsEntry(jarFile, licenseEntry)
+					assertJarContainsEntry(sourcesFile, licenseEntry)
 
 					def metadata = readFabricModJson(jarFile)
 					if (metadata.version != artifactVersion) {
@@ -98,6 +114,7 @@ gradle.rootProject { root ->
 			group = 'verification'
 			description = 'Runs all compatibility and release validation checks and restores Stonecutter IDE models.'
 			dependsOn(root.tasks.named('verifyAllVersions'))
+			dependsOn(root.tasks.named('validateDocumentation'))
 			dependsOn(validateReleaseArtifacts)
 			dependsOn(root.tasks.named('stonecutterSaveModels'))
 		}

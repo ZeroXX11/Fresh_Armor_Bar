@@ -32,4 +32,5 @@ stonecutter.create(getRootProject()) {
 rootProject.name = 'Fresh_Armor_Bar'
 
 apply from: 'gradle/root-tasks.gradle'
+apply from: 'gradle/documentation-validation.gradle'
 apply from: 'gradle/release-validation.gradle'

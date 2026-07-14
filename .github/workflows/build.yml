@@ -12,6 +12,22 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
+      - name: lint markdown documentation
+        uses: DavidAnson/markdownlint-cli2-action@v23
+        with:
+          globs: '**/*.md'
+      - name: check documentation links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --root-dir .
+            --no-progress
+            --max-retries 3
+            --accept 200,429
+            --exclude 'https://www.curseforge.com/.*'
+            --exclude 'https://img.shields.io/.*'
+            '**/*.md'
+          fail: true
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
       - name: setup jdk
