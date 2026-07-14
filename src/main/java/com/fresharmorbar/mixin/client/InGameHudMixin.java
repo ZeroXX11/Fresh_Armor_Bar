@@ -181,7 +181,7 @@ public class InGameHudMixin {
     }
 
     //? if >=1.21.11 {
-    /^@WrapOperation(
+    @WrapOperation(
             method = "renderArmor",
             at = @At(
                     value = "INVOKE",
@@ -191,8 +191,8 @@ public class InGameHudMixin {
     private static void fabReplaceVanillaArmorIcons(DrawContext ctx, RenderPipeline pipeline, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
         fabRenderNextArmorSlot(ctx, x, y);
     }
-    ^///?} else {
-    @WrapOperation(
+    //?} else {
+    /^@WrapOperation(
             method = "renderArmor",
             at = @At(
                     value = "INVOKE",
@@ -202,6 +202,6 @@ public class InGameHudMixin {
     private static void fabReplaceVanillaArmorIcons(DrawContext ctx, Identifier tex, int x, int y, int width, int height, Operation<Void> original) {
         fabRenderNextArmorSlot(ctx, x, y);
     }
-    //?}
+    ^///?}
     *///?}
 }

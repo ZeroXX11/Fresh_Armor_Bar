@@ -2,6 +2,8 @@ package com.fresharmorbar.client;
 
 import static com.fresharmorbar.client.ArmorBarTextures.ELYTRA_TEX;
 import static com.fresharmorbar.client.ArmorBarTextures.EMPTY_TEX;
+//? if >=1.21
+//import static com.fresharmorbar.client.ArmorBarTextures.LEATHER_STRIP;
 import static com.fresharmorbar.client.ArmorBarTextures.TRIM_BASE;
 import static com.fresharmorbar.client.ArmorBarTextures.TRIM_GLOW_TEX;
 import static com.fresharmorbar.client.ArmorBarTextures.getMaterialTex;
@@ -54,6 +56,8 @@ public class ArmorBarRenderer {
     private static final int U_LEFT = 0;
     private static final int U_RIGHT = 9;
     private static final int U_FULL = 18;
+    //? if >=1.21
+    //private static final int DEFAULT_LEATHER_COLOR = 0xA06540;
 
     // Cache per evitare ricalcoli inutili ad ogni frame
     private static final SlotData[] CACHE = new SlotData[60];
@@ -388,15 +392,15 @@ public class ArmorBarRenderer {
             float mb = 1f;
             //? if >=26.1.2 {
             /*var dyedColor = stack.get(DataComponents.DYED_COLOR);
-            if (dyedColor != null) {
-                color = dyedColor.rgb();
+            if (dyedColor != null || LEATHER_STRIP.equals(tex)) {
+                color = dyedColor != null ? dyedColor.rgb() : DEFAULT_LEATHER_COLOR;
                 float darken = 0.8f;
                 mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }
             *///?} else if >=1.21 {
             /*var dyedColor = stack.get(DataComponentTypes.DYED_COLOR);
-            if (dyedColor != null) {
-                color = dyedColor.rgb();
+            if (dyedColor != null || LEATHER_STRIP.equals(tex)) {
+                color = dyedColor != null ? dyedColor.rgb() : DEFAULT_LEATHER_COLOR;
                 float darken = 0.8f;
                 mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
             }

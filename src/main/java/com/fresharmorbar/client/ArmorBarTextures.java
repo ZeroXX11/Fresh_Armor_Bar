@@ -37,7 +37,7 @@ final class ArmorBarTextures {
     static final Identifier ELYTRA_TEX = id("textures/gui/armorbar/elytra.png");
 
     private static final Identifier TURTLE_STRIP = id("textures/gui/armorbar/strips/turtle.png");
-    private static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
+    static final Identifier LEATHER_STRIP = id("textures/gui/armorbar/strips/leather.png");
     private static final Identifier CHAIN_STRIP = id("textures/gui/armorbar/strips/chainmail.png");
     //? if >=1.21.11
     //private static final Identifier COPPER_STRIP = id("textures/gui/armorbar/strips/copper.png");

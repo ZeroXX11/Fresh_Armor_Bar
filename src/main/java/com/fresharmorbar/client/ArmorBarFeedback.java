@@ -2,7 +2,6 @@ package com.fresharmorbar.client;
 
 import com.fresharmorbar.client.config.FreshArmorBarConfig;
 
-//? if <26.2 {
 //? if >=26.1.2 {
 /*import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
@@ -892,15 +891,3 @@ public final class ArmorBarFeedback {
         }
     }
 }
-//?} else {
-/*public final class ArmorBarFeedback {
-    private ArmorBarFeedback() {
-    }
-
-    public static void update(Object player) {
-    }
-
-    static void renderSlotFeedback(Object ctx, int armorSlot, int x, int y, int armorValue, Object left, Object right) {
-    }
-}
-*///?}
