@@ -1,0 +1,14 @@
+loom {
+    fabricModJsonPath = rootProject.file('src/main/resources/fabric.mod.json')
+
+    mods {
+        'fresh-armor-bar' {
+            sourceSet(sourceSets.main)
+        }
+    }
+
+    runConfigs.configureEach {
+        ideConfigGenerated = false
+        runDir = '../../run'
+    }
+}

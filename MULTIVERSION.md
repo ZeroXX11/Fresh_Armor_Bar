@@ -1,244 +1,268 @@
-# Fresh Armor Bar Multiversion
+# Fresh Armor Bar: multiversion guide
 
-Fresh Armor Bar is a Fabric-only multiversion project managed with Stonecutter. The repository keeps one shared source tree and builds version targets from it; Stonecutter is only a development/build-time tool and is not required by the final jar.
+This guide explains how one Fresh Armor Bar repository builds several Minecraft versions. No previous Stonecutter knowledge is required.
 
-## Common Code
+## How the project works
 
-The shared source lives in the normal Fabric main source set:
+The mod has one shared source tree:
 
-- `src/main/java/com/fresharmorbar/client/ModCompat.java`
-- `src/main/java/com/fresharmorbar/client/ArmorBarRenderer.java`
-- `src/main/java/com/fresharmorbar/client/ArmorBarTextures.java`
-- `src/main/java/com/fresharmorbar/client/ArmorBarGlintRenderer.java`
-- `src/main/java/com/fresharmorbar/mixin/client/InGameHudMixin.java`
-- `src/main/resources/fresh-armor-bar.client.mixins.json`
-- `src/main/resources/fabric.mod.json`
-- `src/main/resources/assets/**`
-- `src/main/resources/icon.png`
-
-This is still a client-only mod. `fabric.mod.json` declares `"environment": "client"` and loads only `fresh-armor-bar.client.mixins.json`; that mixin config uses the `client` mixin section for `InGameHudMixin`. There is no main or server entrypoint, so the HUD/rendering classes are not exposed as a generic server/common initializer.
-
-Assets, metadata, mod id, package names, renderer flow, elytra compatibility, trim color table and texture lookup cache are shared.
-
-The armor HUD code is split by responsibility:
-
-- `ArmorBarRenderer` coordinates HUD slot rendering and cached armor visual state.
-- `ArmorBarTextures` contains texture identifiers, material texture lookup, trim colors and glow-trim selection.
-- `ArmorBarGlintRenderer` contains the enchantment glint rendering paths, including the 1.21.6+ masked GUI glint implementation.
-
-## Version-Specific Code
-
-Only Minecraft API differences are guarded with Stonecutter comments:
-
-- Minecraft 1.20.1 uses `new Identifier(...)`; Minecraft 1.21.x uses `Identifier.of(...)`; Minecraft 26.1 uses `Identifier.fromNamespaceAndPath(...)`.
-- Minecraft 1.20.1 reads armor trims from NBT/registry APIs; Minecraft 1.21.x reads trim and dyed color from data components.
-- Minecraft 1.20.1 uses `ArmorMaterial` directly; Minecraft 1.21.1 uses `RegistryEntry<ArmorMaterial>`.
-- Minecraft 1.21.2+ moved armor material classes to `net.minecraft.item.equipment`.
-- Minecraft 1.21.2+ reads armor value from the item attribute component because `ArmorItem#getProtection()` is no longer exposed.
-- Minecraft 1.21.2+ uses `DrawContext` texture overloads that require a GUI `RenderLayer` factory.
-- Minecraft 1.21.2 and 1.21.3 use `EquippableComponent#model()` for equipment assets; Minecraft 1.21.4 uses `EquippableComponent#assetId()`.
-- Minecraft 1.21.11 is configured as a Fabric/Stonecutter build target and continues to use the 1.21.4+ equipment asset path unless a later guarded API difference is needed.
-- Minecraft 1.21.6+ uses the extracted `ArmorBarGlintRenderer` masked GUI glint path and includes shader resources for that path.
-- Minecraft 1.20.1 `VertexConsumer` vertices end with `.next()`; Minecraft 1.21.x does not.
-- Minecraft 1.20.1 hooks `InGameHud.renderStatusBars`; Minecraft 1.21.x hooks the extracted static `InGameHud.renderArmor`.
-- Minecraft 26.1+ uses official mappings, Java 25 bytecode, `GuiGraphicsExtractor`/`GuiRenderState` APIs, and hooks `Gui.extractArmor`.
-- Minecraft 26.1+ does not compile directly against Trinkets. Optional Elytra slot detection is handled through guarded reflection for Trinkets Updated and classic Trinkets-compatible APIs when present; if no compatible API is installed, detection remains chest-slot based.
-
-The per-version Gradle properties live in:
-
-- `versions/1.20.1/gradle.properties`
-- `versions/1.21.1/gradle.properties`
-- `versions/1.21.11/gradle.properties`
-- `versions/26.1.2/gradle.properties`
-- `versions/26.2/gradle.properties`
-
-The shared mod version is configured once in the root `gradle.properties`:
-
-```properties
-mod_version=2.1
+```text
+src/main/java
+src/main/resources
 ```
 
-Per-version `gradle.properties` files should only contain Minecraft, mappings,
-Mod Menu, Trinkets and MixinExtras values needed to compile that target. They
-should not duplicate `mod_version`. `dev_fabric_api_version` is for the
-development classpath/runtime, so optional test mods in `run/mods` can depend on
-Fabric API and newer unmapped Minecraft targets can compile signatures that
-reference Fabric API types. Fresh Armor Bar source itself still does not import
-`net.fabricmc.fabric.api.*` classes, and Fabric API is not declared in the
-published mod metadata.
+Stonecutter adapts that source for each Minecraft target. Fabric Loom then compiles each target and places the release jars in `build/libs`.
 
-Release grouping is configured once in:
-
-- `gradle/release-versions.gradle`
-
-`settings.gradle` uses that file to decide which Stonecutter targets exist and
-which versions `releaseBuild` should build. `build.gradle` uses
-the same file to generate jar names and `fabric.mod.json` Minecraft metadata.
-
-## Release Artifacts
-
-Stonecutter compiles every configured Minecraft target and produces one release
-jar for each target.
-
-Current release jars are:
-
-- `FreshArmorBar-<mod_version>-1.20.1.jar`
-- `FreshArmorBar-<mod_version>-1.21.1.jar`
-- `FreshArmorBar-<mod_version>-1.21.11.jar`
-- `FreshArmorBar-<mod_version>-26.1.2.jar`
-- `FreshArmorBar-<mod_version>-26.2.jar`
-
-The retained `versions/<minecraft-version>` folders are build/test targets, not
-upload folders.
-
-## Changing Version
-
-Use the Stonecutter Dev plugin in IntelliJ IDEA, or the official Stonecutter Gradle tasks, to change the active version. Do not use custom switch-only IntelliJ run configurations.
-
-The VCS/default active version is `1.20.1`.
-
-Stonecutter's generated IntelliJ switch actions are disabled with:
-
-```properties
-dev.kikugie.stonecutter.generate_switch_actions=false
+```text
+shared source -> Stonecutter target -> Loom build -> release jar
 ```
 
-This keeps the IDE run dropdown focused on the single Gradle `Minecraft Client`
-configuration. The underlying Stonecutter Gradle switch tasks still exist because
-they are part of Stonecutter itself.
+This avoids maintaining five copies of the same mod. Stonecutter and Loom are build tools only; players do not need them.
 
-## Running The Client
+Useful terms:
 
-In IntelliJ IDEA:
+- **Target:** one supported Minecraft version.
+- **Active version:** the target currently selected for editing and `runClient`.
+- **Directive:** a Stonecutter comment that selects code for particular versions.
+- **Model:** generated JSON used by Stonecutter and the IDE. Every target has a `node.json`.
+- **Artifact:** a final binary jar or sources jar.
 
-1. Select the active Minecraft version with the Stonecutter Dev plugin.
-2. Run `Minecraft Client`.
+## Supported targets
 
-The `.run` folder intentionally contains only this one client configuration. It calls the root `minecraftClient` task, which resolves to `runClient` for `stonecutter.current.version`.
+| Minecraft | Mappings          | Bytecode | Direct Trinkets compile dependency |
+|-----------|-------------------|---------:|------------------------------------|
+| 1.20.1    | Yarn              |  Java 17 | Trinkets 3.7.2                     |
+| 1.21.1    | Yarn              |  Java 21 | Trinkets 3.10.0                    |
+| 1.21.11   | Yarn              |  Java 21 | Trinkets 3.10.0                    |
+| 26.1.2    | Official mappings |  Java 25 | None                               |
+| 26.2      | Official mappings |  Java 25 | None                               |
 
-It does not run `stonecutterSwitchTo...` and it does not call custom per-version `client1_*` launcher tasks.
+The committed default active version is `1.20.1`.
 
-From the terminal:
+## Where versions are configured
+
+Shared values are defined once:
+
+- `gradle.properties`: Loader `0.19.3`, mod name, group and mod version.
+- `stonecutter.gradle`: Loom `1.17-SNAPSHOT` and the active-version marker.
+- `gradle/wrapper/gradle-wrapper.properties`: Gradle `9.6.1`.
+- `gradle/release-versions.gradle`: targets and release groups.
+
+Target-specific values live in:
+
+```text
+versions/<minecraft-version>/gradle.properties
+```
+
+They contain only values that change between targets: Minecraft, mappings, development Fabric API, Mod Menu, Trinkets and MixinExtras versions.
+
+Do not duplicate shared values such as `mod_version`, `loader_version` or Loom in those files.
+
+`dev_fabric_api_version` is only for the development environment. Fabric API is not a required or suggested dependency in the published mod metadata.
+
+## Shared and version-specific code
+
+Rendering, textures, trims, glint, feedback effects, configuration, Elytra lookup and resources are shared.
+
+Stonecutter directives cover only Minecraft API differences, for example:
+
+- `Identifier` creation;
+- armor trim and dyed-color access;
+- armor material and equipment asset types;
+- HUD hook methods;
+- GUI drawing and vertex APIs;
+- Yarn versus official mappings;
+- the newer masked glint path.
+
+A simplified directive looks like this:
+
+```java
+//? if >=1.21 {
+// code for newer versions
+//?} else {
+// code for older versions
+//?}
+```
+
+Do not reformat or move these comments unless you are intentionally changing version behavior.
+
+Fresh Armor Bar remains client-side on every target. Mod Menu and Trinkets-family integrations are optional. Targets 26.1.2+ discover compatible Elytra-slot APIs through guarded reflection instead of compiling directly against Trinkets.
+
+## Changing the active version
+
+### IntelliJ IDEA
+
+1. Install the Stonecutter Dev plugin.
+2. Import or reload the repository as a Gradle project.
+3. Select a version with the Stonecutter selector.
+4. Wait for the Gradle refresh.
+5. Run `Minecraft Client`.
+
+The client configuration starts the active version; it does not switch versions.
+
+Generated IntelliJ switch actions are disabled to keep the run list clean, but the official Gradle switch tasks still exist.
+
+### Terminal
+
+Example:
+
+```powershell
+.\gradlew.bat stonecutterSwitchTo1.21.11 --no-daemon
+```
+
+On Unix-like systems:
+
+```bash
+./gradlew stonecutterSwitchTo1.21.11 --no-daemon
+```
+
+The selected version is written to the `stonecutter.active(...)` marker in `stonecutter.gradle`.
+
+## Running the client
+
+Select a version first, then run:
 
 ```powershell
 .\gradlew.bat minecraftClient
 ```
 
-On Unix-like shells:
+On Unix-like systems, replace `.\gradlew.bat` with `./gradlew`.
 
-```bash
-./gradlew minecraftClient
-```
+The root task delegates to `runClient` in the active target. Every target uses the shared `run` directory.
 
-## Building
+## Java requirements
 
-This project requires Gradle itself to run on Java 21 or newer because the build plugins used by the multiversion setup, including modern Fabric Loom/Stonecutter dependencies, may be compiled for Java 21.
+- Use the included Gradle Wrapper.
+- Gradle itself needs Java 21 or newer.
+- Minecraft 26.1.2 and 26.2 need a Java 25 toolchain.
+- Target bytecode remains Java 17, 21 or 25 as shown in the target table.
 
-The Gradle Daemon JVM is pinned with the versioned file `gradle/gradle-daemon-jvm.properties`, generated by Gradle's `updateDaemonJvm` task. This avoids hardcoding a local `JAVA_HOME` path in `gradle.properties` and lets Gradle/IntelliJ use or provision a compatible Java 21 runtime.
+The Gradle daemon JVM is described by `gradle/gradle-daemon-jvm.properties`. In IntelliJ, choose Java 21 or the wrapper/daemon JVM option for Gradle; do not select Java 17 as the Gradle JVM.
 
-Compilation uses version-specific Java toolchains. The emitted bytecode is still version-specific:
+## Build commands
 
-- Minecraft 1.20.1: Java 17 bytecode, because that Minecraft version targets Java 17.
-- Minecraft 1.21.x: Java 21 bytecode.
-- Minecraft 26.1+: Java 25 bytecode.
+| Goal                        | Windows command                                      |
+|-----------------------------|------------------------------------------------------|
+| Run the active client       | `.\gradlew.bat minecraftClient`                      |
+| Build one target            | `.\gradlew.bat :1.21.11:build --no-daemon`           |
+| Compile all targets         | `.\gradlew.bat verifyAllVersions --no-daemon`        |
+| Create clean release jars   | `.\gradlew.bat releaseBuild --no-daemon`             |
+| Validate jars and metadata  | `.\gradlew.bat validateReleaseArtifacts --no-daemon` |
+| Run every check             | `.\gradlew.bat fullVerify --no-daemon`               |
+| Clean, then run every check | `.\gradlew.bat clean fullVerify --no-daemon`         |
 
-In IntelliJ IDEA, reload the Gradle project after checkout. If IDEA asks for a Gradle JVM, choose a Java 21 JDK or the Gradle wrapper/daemon JVM option; do not choose a Java 17 Gradle JVM.
+What the main tasks do:
 
-Build one target:
+- `verifyAllVersions` compiles all five targets.
+- `releaseBuild` clears `build/libs` and rebuilds the configured release jars.
+- `validateReleaseArtifacts` checks jar names, sources jars and generated metadata. It also rejects unexpected jars and Fabric API metadata dependencies.
+- `fullVerify` combines compilation, release validation and Stonecutter model generation.
 
-```powershell
-.\gradlew.bat :1.20.1:build --no-daemon
-.\gradlew.bat :1.21.11:build --no-daemon
-.\gradlew.bat :26.1.2:build --no-daemon
-```
+`buildAllVersions` and `buildAndCollect` remain only as compatibility aliases for older workflows.
 
-Verify all configured Stonecutter targets:
-
-```powershell
-.\gradlew.bat verifyAllVersions --no-daemon
-```
-
-On Unix-like shells:
-
-```bash
-./gradlew verifyAllVersions --no-daemon
-```
-
-This compiles every configured Stonecutter target and is the compatibility
-check to run before publishing.
-
-Run the full local/CI verification:
+The recommended pre-push and pre-release command is:
 
 ```powershell
 .\gradlew.bat clean fullVerify --no-daemon
 ```
 
-On Unix-like shells:
+It cleans the project, builds every target, validates the artifacts and restores all Stonecutter models in one invocation. GitHub Actions runs the same command.
 
-```bash
-./gradlew clean fullVerify --no-daemon
+## Stonecutter models and `clean`
+
+Stonecutter uses these generated files:
+
+```text
+build/stonecutter-cache/branch.json
+build/stonecutter-cache/tree.json
+versions/1.20.1/build/stonecutter-cache/node.json
+versions/1.21.1/build/stonecutter-cache/node.json
+versions/1.21.11/build/stonecutter-cache/node.json
+versions/26.1.2/build/stonecutter-cache/node.json
+versions/26.2/build/stonecutter-cache/node.json
 ```
 
-`fullVerify` is the recommended pre-push and pre-release check. It runs the
-multiversion compatibility build and validates the release jars. The GitHub
-Actions build workflow uses this task so pull requests fail if either
-compilation or release metadata breaks.
+Do not edit or commit them. `clean` removes them, and `fullVerify` recreates them through `stonecutterSaveModels`.
 
-Build only release artifacts:
+This is why `clean fullVerify` must finish before using the Stonecutter selector again. If IntelliJ still shows old information after a successful build, reload the Gradle project.
 
-```powershell
-.\gradlew.bat releaseBuild --no-daemon
-```
+## Release artifacts and metadata
 
-On Unix-like shells:
-
-```bash
-./gradlew releaseBuild --no-daemon
-```
-
-`releaseBuild` deletes the root `build/libs` folder first, then builds each
-configured release target. This keeps `build/libs` free of stale jars from
-previous versioning schemes.
-
-Validate release artifacts:
-
-```powershell
-.\gradlew.bat validateReleaseArtifacts --no-daemon
-```
-
-On Unix-like shells:
-
-```bash
-./gradlew validateReleaseArtifacts --no-daemon
-```
-
-This runs `releaseBuild`, then checks collected jar names, sources jars and
-generated `fabric.mod.json` metadata. It also verifies that Fabric API is not
-declared as either a required or suggested dependency.
-
-The older unqualified `buildAllVersions` workflow is still available through
-the per-version tasks, and `buildAndCollect` is kept as a compatibility alias
-for older workflows. Prefer `fullVerify` for complete validation,
-`verifyAllVersions` for compilation-only compatibility checks and
-`releaseBuild` for producing release artifacts.
-
-The final remapped jars and sources jars are written directly to:
+Final binary and sources jars are written to:
 
 ```text
 build/libs
 ```
 
-The project intentionally does not use `versions/<minecraft-version>/build/libs`
-as a distribution location. Those version folders are Gradle/Loom working
-directories. If Loom creates `versions/<minecraft-version>/build/devlibs`, treat
-those jars as development/intermediate artifacts, not release jars.
+Current binary names are:
 
-## Adding A New Version
+```text
+FreshArmorBar-2.1-1.20.1.jar
+FreshArmorBar-2.1-1.21.1.jar
+FreshArmorBar-2.1-1.21.11.jar
+FreshArmorBar-2.1-26.1.2.jar
+FreshArmorBar-2.1-26.2.jar
+```
 
-1. Add a new entry to `settings.gradle` under `stonecutter { create(...) { versions ... } }`.
-2. Create `versions/<minecraft-version>/gradle.properties` with the matching Minecraft and MixinExtras values. Add Yarn/Trinkets values only for targets that still use those dependencies.
-3. Switch to the new version with the Stonecutter Dev plugin or an official Stonecutter task, then compile `:<minecraft-version>:build`.
-4. If the new version only changes a method, import or type, add a small Stonecutter conditional in the existing shared file.
-5. If the new version changes a whole behavior area, extract a tiny adapter and keep the rest of the renderer/mixin shared.
+Do not publish jars from `versions/<version>/build` or `build/devlibs`; those are working artifacts.
 
-Do not duplicate the whole mod tree for a new version.
+`src/main/resources/fabric.mod.json` is a template. Each target generates its own version, Minecraft requirement, Java requirement and Loader requirement.
+
+Every final jar currently declares:
+
+```json
+{
+  "fabricloader": ">=0.19.3"
+}
+```
+
+The same central `loader_version=0.19.3` is used for development, compilation and the minimum published requirement.
+
+## Configuration cache
+
+Configuration cache is disabled by default because IntelliJ and Fabric Loom integration may still require the traditional configuration path. The build can be checked explicitly with:
+
+```powershell
+.\gradlew.bat fullVerify --configuration-cache --configuration-cache-problems=fail --no-daemon
+```
+
+A second identical run should report that the cache entry was reused.
+
+## Adding a target
+
+1. Add the version to `stonecutterMinecraftVersions` in `gradle/release-versions.gradle`.
+2. Add its release group to `releaseMinecraftVersionSets`.
+3. Create `versions/<version>/gradle.properties` with only target-specific values.
+4. Switch to the new target and build it by itself.
+5. Add the smallest necessary Stonecutter directives for API differences.
+6. Run `clean fullVerify`.
+7. Check the jar, sources jar, generated metadata and new `node.json`.
+
+Do not copy the whole source tree. Normal behavior stays in `src/`; only genuine API differences use directives.
+
+## Quick troubleshooting
+
+- **Stonecutter cannot switch versions after `clean`:** run `clean fullVerify` to recreate every model, then reload Gradle in IntelliJ.
+
+- **The wrong Minecraft version starts:** switch the active version first, wait for refresh, then run `minecraftClient` again.
+
+- **Old jars remain in `build/libs`:** run `releaseBuild` or `clean fullVerify`.
+
+- **Gradle compiles but IntelliJ shows errors:** reload the Gradle project and confirm that IntelliJ uses Java 21 for Gradle and can find all required toolchains.
+
+## Key files
+
+| Path                                   | Purpose                                |
+|----------------------------------------|----------------------------------------|
+| `src/main/java`                        | Shared Java source                     |
+| `src/main/resources`                   | Shared metadata, mixins and assets     |
+| `versions/<version>/gradle.properties` | Target-specific versions               |
+| `gradle/release-versions.gradle`       | Target and release lists               |
+| `gradle.properties`                    | Shared Loader and mod values           |
+| `stonecutter.gradle`                   | Loom and active version                |
+| `settings.gradle`                      | Stonecutter and root workflow tasks    |
+| `build.gradle`                         | Dependencies, toolchains and artifacts |
+| `.run/Minecraft Client.run.xml`        | Shared IntelliJ launcher               |
+| `build/libs`                           | Final release artifacts                |
+
+The safest rule is simple: shared behavior belongs in `src/`, version numbers belong in properties, and Stonecutter directives are only for real Minecraft API differences.

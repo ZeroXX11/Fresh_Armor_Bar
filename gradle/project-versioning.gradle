@@ -1,0 +1,27 @@
+import groovy.json.JsonOutput
+
+ext.isUnmappedMinecraftTarget = stonecutter.eval(stonecutter.current.version, '>=26.1.2')
+
+List<String> currentReleaseMinecraftVersions = (releaseMinecraftVersionSets.find {
+    it.contains(stonecutter.current.version)
+} ?: [stonecutter.current.version]) as List<String>
+ext.releaseMinecraftVersions = currentReleaseMinecraftVersions
+
+def minecraftVersionSuffix = currentReleaseMinecraftVersions.size() > 1
+        ? compactMinecraftVersionRange(currentReleaseMinecraftVersions)
+        : stonecutter.current.version
+
+version = "${project.mod_version}-${minecraftVersionSuffix}"
+group = project.maven_group
+
+ext.minecraftDependencyJson = currentReleaseMinecraftVersions.size() > 1
+        ? JsonOutput.toJson(currentReleaseMinecraftVersions as Object)
+        : JsonOutput.toJson("~${stonecutter.current.version}")
+ext.runtimeJavaVersion = isUnmappedMinecraftTarget ? 25 : 21
+ext.targetJavaVersion = isUnmappedMinecraftTarget
+        ? 25
+        : (stonecutter.eval(stonecutter.current.version, '>=1.20.5') ? 21 : 17)
+
+base {
+    archivesName = project.archives_base_name
+}

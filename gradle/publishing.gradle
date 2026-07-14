@@ -1,0 +1,20 @@
+tasks.register('buildAllVersions') {
+    group = 'build'
+    description = 'Legacy per-version build alias. Prefer root verifyAllVersions for compatibility checks.'
+    dependsOn(tasks.named('build'))
+}
+
+tasks.register('buildAndCollect') {
+    group = 'build'
+    description = 'Legacy compatibility alias for buildAllVersions. Prefer root releaseBuild for publishing.'
+    dependsOn(tasks.named('buildAllVersions'))
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.archives_base_name
+            from(components.java)
+        }
+    }
+}

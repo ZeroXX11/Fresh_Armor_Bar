@@ -1,0 +1,105 @@
+import groovy.json.JsonSlurper
+import java.util.zip.ZipFile
+
+List<List<String>> releaseVersionSets = ext.releaseMinecraftVersionSets as List<List<String>>
+
+Closure<String> expectedReleaseSuffix = { List<String> versions ->
+	versions.size() > 1 ? compactMinecraftVersionRange(versions) : versions.first()
+}
+
+Closure<Map> readFabricModJson = { File jarFile ->
+	ZipFile zip = new ZipFile(jarFile)
+	try {
+		def entry = zip.getEntry('fabric.mod.json')
+		if (entry == null) {
+			throw new GradleException("Missing fabric.mod.json in ${jarFile.name}")
+		}
+		zip.getInputStream(entry).withCloseable { input ->
+			new JsonSlurper().parse(input) as Map
+		}
+	} finally {
+		zip.close()
+	}
+}
+
+Closure<Void> assertMinecraftDependency = { Object actual, List<String> expected, String context ->
+	if (expected.size() == 1) {
+		def expectedSingle = "~${expected.first()}"
+		if (actual != expectedSingle) {
+			throw new GradleException("${context}: expected minecraft ${expectedSingle}, found ${actual}")
+		}
+	} else if (actual != expected) {
+		throw new GradleException("${context}: expected minecraft ${expected}, found ${actual}")
+	}
+	null
+}
+
+gradle.rootProject { root ->
+	gradle.projectsEvaluated {
+		def validateReleaseArtifacts = root.tasks.register('validateReleaseArtifacts') {
+			group = 'verification'
+			description = 'Validates collected release jars, filenames and generated fabric.mod.json metadata.'
+			dependsOn(root.tasks.named('releaseBuild'))
+			mustRunAfter(root.tasks.named('verifyAllVersions'))
+			inputs.dir(root.layout.buildDirectory.dir('libs'))
+			inputs.property('libsDirPath', root.layout.buildDirectory.dir('libs').get().asFile.absolutePath)
+			inputs.property('modVersion', providers.gradleProperty('mod_version'))
+			inputs.property('loaderVersion', providers.gradleProperty('loader_version'))
+			inputs.property('releaseMinecraftVersionSets', releaseVersionSets)
+
+			doLast { task ->
+				def libsDir = new File(task.inputs.properties.libsDirPath.toString())
+				def modVersion = task.inputs.properties.modVersion.toString()
+				def loaderVersion = task.inputs.properties.loaderVersion.toString()
+				List<List<String>> versionSets = task.inputs.properties.releaseMinecraftVersionSets as List<List<String>>
+				def expectedFiles = [] as Set
+
+				versionSets.each { List<String> versions ->
+					def artifactVersion = "${modVersion}-${expectedReleaseSuffix(versions)}"
+					def jarName = "FreshArmorBar-${artifactVersion}.jar"
+					def sourcesName = "FreshArmorBar-${artifactVersion}-sources.jar"
+					expectedFiles.addAll(jarName, sourcesName)
+
+					def jarFile = new File(libsDir, jarName)
+					def sourcesFile = new File(libsDir, sourcesName)
+					if (!jarFile.isFile()) {
+						throw new GradleException("Missing release jar: ${jarName}")
+					}
+					if (!sourcesFile.isFile()) {
+						throw new GradleException("Missing release sources jar: ${sourcesName}")
+					}
+
+					def metadata = readFabricModJson(jarFile)
+					if (metadata.version != artifactVersion) {
+						throw new GradleException("${jarName}: expected version ${artifactVersion}, found ${metadata.version}")
+					}
+					if (metadata.depends?.fabricloader != ">=${loaderVersion}") {
+						throw new GradleException("${jarName}: expected fabricloader >=${loaderVersion}, found ${metadata.depends?.fabricloader}")
+					}
+					if (metadata.depends?.containsKey('fabric-api')) {
+						throw new GradleException("${jarName}: fabric-api must not be a hard dependency")
+					}
+					if (metadata.suggests?.containsKey('fabric-api')) {
+						throw new GradleException("${jarName}: fabric-api must not be suggested")
+					}
+					assertMinecraftDependency(metadata.depends?.minecraft, versions, jarName)
+				}
+
+				def actualFiles = libsDir.listFiles({ File file -> file.name.endsWith('.jar') } as FileFilter)
+						.collect { it.name } as Set
+				def unexpectedFiles = actualFiles - expectedFiles
+				if (!unexpectedFiles.isEmpty()) {
+					throw new GradleException("Unexpected jar(s) in build/libs: ${unexpectedFiles.sort()}")
+				}
+			}
+		}
+
+		root.tasks.register('fullVerify') {
+			group = 'verification'
+			description = 'Runs all compatibility and release validation checks and restores Stonecutter IDE models.'
+			dependsOn(root.tasks.named('verifyAllVersions'))
+			dependsOn(validateReleaseArtifacts)
+			dependsOn(root.tasks.named('stonecutterSaveModels'))
+		}
+	}
+}

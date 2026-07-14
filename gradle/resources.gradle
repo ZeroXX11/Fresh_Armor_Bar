@@ -1,0 +1,41 @@
+import groovy.text.SimpleTemplateEngine
+
+def fabricModJsonProps = [
+        version               : project.version,
+        mod_name              : project.mod_name,
+        minecraft_dependency : minecraftDependencyJson,
+        loader_version        : project.loader_version,
+        java_version          : targetJavaVersion
+]
+def generatedFabricModJson = layout.buildDirectory.dir('generated/resources/fabricModJson')
+def generatedFabricModJsonFile = generatedFabricModJson.map { it.file('fabric.mod.json') }
+String minecraftDependency = minecraftDependencyJson as String
+
+tasks.register('generateFabricModJson') {
+    def fabricModJsonTemplate = rootProject.file('src/main/resources/fabric.mod.json')
+
+    inputs.file(fabricModJsonTemplate)
+    inputs.properties(fabricModJsonProps)
+    outputs.file(generatedFabricModJsonFile)
+
+    doLast {
+        def outputFile = generatedFabricModJsonFile.get().asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.text = new SimpleTemplateEngine()
+                .createTemplate(fabricModJsonTemplate)
+                .make(fabricModJsonProps)
+                .toString()
+                .replace('"__minecraft_dependency__"', minecraftDependency)
+    }
+}
+
+sourceSets.main.resources.setSrcDirs([generatedFabricModJson, rootProject.file('src/main/resources')])
+if (stonecutter.eval(stonecutter.current.version, '<1.21.11')) {
+    sourceSets.main.resources.exclude('assets/fresh-armor-bar/shaders/**')
+    sourceSets.main.resources.exclude('assets/fresh-armor-bar/textures/gui/armorbar/strips/copper.png')
+}
+
+tasks.named('processResources').configure {
+    dependsOn(tasks.named('generateFabricModJson'))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

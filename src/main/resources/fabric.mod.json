@@ -10,7 +10,7 @@
   "contact": {
     "sources": "https://github.com/ZeroXX11/Fresh_Armor_Bar"
   },
-  "license": "MIT",
+  "license": "LGPL-3.0-only",
   "icon": "icon.png",
   "environment": "client",
   "entrypoints": {

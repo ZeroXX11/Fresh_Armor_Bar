@@ -1,90 +1,110 @@
 # Fresh Armor Bar
 
-> A polished Fabric client-side mod that replaces Minecraft's vanilla armor bar with a cleaner, texture-based HUD.
+Fresh Armor Bar is a client-side Fabric mod that replaces Minecraft's vanilla armor bar with clearer, texture-based icons.
 
-Fresh Armor Bar draws custom armor icons that reflect the armor you are actually wearing, including materials, trims, dyed leather, enchantments, and Elytra state.
+The icons show what the player is actually wearing. Armor materials, dyed leather, trims, enchantments and Elytra are represented directly on the HUD.
 
-## Supported Versions
+## Supported Minecraft versions
 
-- Minecraft 1.20.1
-- Minecraft 1.21.1
-- Minecraft 1.21.11
-- Minecraft 26.1.2
-- Minecraft 26.2
+- 1.20.1
+- 1.21.1
+- 1.21.11
+- 26.1.2
+- 26.2
 
-## Features
+Use the jar whose filename ends with your Minecraft version.
 
-- Custom texture-based armor bar icons.
-- Material-aware visuals for vanilla armor sets.
-- Dyed leather armor color support.
-- Armor trim overlays with trim colors.
-- Subtle glow overlay for selected shiny trim materials.
-- Enchantment glint rendering.
-- Elytra indicator when an Elytra is equipped.
-- Optional Trinkets and Trinkets Updated integration for Elytra slot detection.
-- Support for high armor values with additional HUD rows.
-- Shared multi-version codebase with minimal duplication.
+## Main features
+
+- Different textures for vanilla armor materials.
+- Correct colors for dyed leather armor.
+- Colored armor-trim overlays.
+- A glow effect for selected shiny trim materials.
+- Enchantment glint on the custom icons.
+- An Elytra icon when an Elytra is equipped.
+- Optional support for Elytra slots provided through Trinkets-compatible APIs.
+- Extra HUD rows when the armor value is higher than one normal row can display.
+- Short visual feedback when armor takes damage.
+- A repair flash when Mending restores armor durability.
+- A configuration screen when Mod Menu is installed.
+- Resource-pack support for replacing the built-in textures or adding textures for modded armor materials.
 
 ## Installation
 
-1. Install Fabric Loader `0.19.3` or newer for your Minecraft version.
-2. Download the Fresh Armor Bar jar matching your game version.
-3. Put the jar in your Minecraft mods folder:
+You need:
+
+- one of the supported Minecraft versions;
+- Fabric Loader 0.19.3 or newer;
+- the Fresh Armor Bar jar made for that Minecraft version.
+
+Installation steps:
+
+1. Install Fabric Loader for your Minecraft version.
+2. Download the matching Fresh Armor Bar jar.
+3. Place the jar in the Minecraft mods folder:
 
    ```text
    .minecraft/mods
    ```
 
-4. Launch Minecraft with the Fabric profile.
+4. Start Minecraft with the Fabric profile.
 
-Fabric API is not required. Trinkets and Trinkets Updated are optional and are only used when installed to detect Elytra in extra Elytra slots.
+Fabric API is not required.
 
-Fresh Armor Bar declares `fabricloader >=0.19.3` in its generated `fabric.mod.json`. This keeps the compiled, development and user-facing Loader requirements aligned to the centrally configured version.
+Fresh Armor Bar is client-side only. It does not need to be installed on a server.
 
-## Mod Compatibility
+## Configuration
 
-Fresh Armor Bar always detects Elytra in the vanilla chest slot. When optional Trinkets-family slot APIs are installed, it also checks Elytra slot mods that store Elytra through those APIs without requiring them as hard dependencies.
+All visual feedback options are enabled by default.
 
-There are two different kinds of compatibility:
+If Mod Menu is installed, open Fresh Armor Bar from the Mod Menu screen. You can enable or disable:
 
-- Slot APIs/libraries provide the inventory system that stores extra equipment slots. Trinkets and Trinkets Updated are in this category. On their own, they do not necessarily add an Elytra slot.
-- Elytra slot mods add the actual wearable Elytra slot. Elytra Slot and Elytra Trinket are in this category, and they usually depend on one of the slot APIs/libraries.
+- all damage feedback at once;
+- normal-hit feedback;
+- fire-damage feedback;
+- explosion-damage feedback;
+- projectile-damage feedback;
+- fall-damage feedback;
+- the Mending repair flash.
 
-Supported optional slot API lookups:
+The settings are stored in:
 
-- Trinkets API (`dev.emi.trinkets.api`) for classic Trinkets-compatible slots.
-- Trinkets Canary, which exposes the same `trinkets` mod id and classic `dev.emi.trinkets.api` API.
-- Trinkets Updated (`eu.pb4.trinkets.api`) for newer Trinkets Updated slots, including 26.1.2+ targets where available.
+```text
+config/fresh-armor-bar.properties
+```
 
-This covers Elytra slot mods that store the Elytra through Trinkets, Trinkets Canary or Trinkets Updated. If no compatible slot API is installed, Fresh Armor Bar falls back to vanilla chest-slot detection.
+Mod Menu is optional. Without it, the armor bar still works normally and the properties file can be edited manually.
 
-### Optional Mod Compatibility Table
+## Elytra and optional mod support
 
-|   Type    | API / Library |  API / Library  |  API / Library   | Elytra Slot Mod | Elytra Slot Mod |
-|:---------:|:-------------:|:---------------:|:----------------:|:---------------:|:---------------:|
-| Minecraft |   Trinkets    | Trinkets Canary | Trinkets Updated |   Elytra Slot   | Elytra Trinket  |
-|  1.20.1   |       ✅       |        ❌        |        ❌         |        ✅        |        ✅        |
-|  1.21.1   |       ✅       |        ❌        |        ❌         |        ✅        |        ✅        |
-|  1.21.11  |       ❌       |        ✅        |        ✅         |        ❌        |        ✅        |
-|  26.1.2   |       ❌       |        ❌        |        ✅         |        ❌        |        ❌        |
+Fresh Armor Bar always checks the normal chest slot for an Elytra.
 
-✅ means the optional API or slot mod has a Fabric release for that Minecraft version. ❌ means no matching Fabric release was found.
+It can also check extra equipment slots when a compatible API is present:
 
-For API / Library columns, ✅ only means Fresh Armor Bar can read Elytra data from that API if another mod stores an Elytra there. The API alone does not add an Elytra slot. For example, Trinkets Updated is available on 26.1.2+, but no matching Elytra Slot or Elytra Trinket Fabric release is currently listed for those versions in this table.
+- classic Trinkets API (`dev.emi.trinkets.api`);
+- Trinkets Canary, which uses the classic Trinkets API and mod id;
+- Trinkets Updated (`eu.pb4.trinkets.api`).
 
-The Trinkets Canary column is listed separately for clarity, even though Trinkets Canary declares the same runtime mod id and API package as classic Trinkets.
+These integrations are optional. Fresh Armor Bar does not require any of those mods to start.
 
-## Resource Pack Textures
+There is an important difference between a slot API and an Elytra-slot mod:
 
-Fresh Armor Bar textures can be replaced with a normal Minecraft resource pack. You do not need to edit the mod jar.
+- a slot API supplies the inventory system used by extra equipment slots;
+- an Elytra-slot mod creates the actual slot in which the Elytra can be worn.
 
-The mod loads its built-in HUD textures from this namespace and folder:
+Fresh Armor Bar can display an Elytra stored by another mod when that mod exposes it through one of the supported APIs. Availability of third-party mods depends on the Minecraft version, so check their own download pages before installing them.
+
+## Using a resource pack
+
+The built-in HUD textures are stored under:
 
 ```text
 assets/fresh-armor-bar/textures/gui/armorbar/
 ```
 
-To override them, create a resource pack with the same folder structure and place your replacement PNG files there. For example:
+A normal Minecraft resource pack can replace them. The resource pack must repeat the same path and filenames; the mod jar does not need to be edited.
+
+Example layout:
 
 ```text
 FreshArmorBar_ResourcePack/
@@ -111,7 +131,7 @@ FreshArmorBar_ResourcePack/
                      `- trim_glow_tex.png
 ```
 
-Use the `pack_format` required by your Minecraft version in `pack.mcmeta`. The file should use this shape:
+Use the `pack_format` required by the Minecraft version you are playing:
 
 ```json
 {
@@ -122,189 +142,86 @@ Use the `pack_format` required by your Minecraft version in `pack.mcmeta`. The f
 }
 ```
 
-Replace `0` with the correct resource-pack format for the version you are playing; do not leave the placeholder value in a real pack.
+Replace `0` with the correct value. It is only a placeholder in this example.
 
-### Texture Layout
+### Texture sizes
 
-- `empty.png` and `elytra.png` are `9x9` icons.
-- Material strip textures are `27x9` PNGs.
-- Trim overlay textures are `27x9` PNGs.
-- `base.png` is the fallback `27x9` strip used when no material-specific texture is available.
+- `empty.png` and `elytra.png`: `9x9` pixels.
+- Material strips: `27x9` pixels.
+- Trim overlays: `27x9` pixels.
+- `base.png`: `27x9` pixels and used as the fallback material strip.
 
-The `27x9` strip layout is split into three `9x9` regions:
+Every `27x9` strip contains three `9x9` areas:
 
 ```text
 left half | right half | full icon
 0..8      | 9..17      | 18..26
 ```
 
-The renderer uses the left and right regions when one armor icon is made from two different armor halves, and the full-icon region when both halves have the same visual state.
+The first two areas are used when one HUD icon contains halves from different armor pieces. The third area is used when the whole icon has the same appearance.
 
-### Adding Textures For Custom Armor Materials
+### Textures for modded armor
 
-Fresh Armor Bar also looks for resource-pack textures for armor materials that are not built into vanilla.
-
-For a material with no namespace, add:
+For a material without a namespace, use:
 
 ```text
 assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png
 ```
 
-For a namespaced material such as `examplemod:ruby`, add:
+For a namespaced material such as `examplemod:ruby`, use:
 
 ```text
 assets/examplemod/textures/gui/armorbar/strips/ruby.png
 ```
 
-If the texture exists, Fresh Armor Bar uses it automatically. If it does not exist, the material falls back to `base.png` and a warning is written to the log.
+If the file exists, Fresh Armor Bar uses it automatically. Otherwise it uses `base.png` and writes a warning to the game log.
 
-## Development
+## For developers
 
-### Requirements
+The repository uses one shared source tree and Stonecutter to build all five Minecraft targets.
 
-- Java 21 or newer for the Gradle JVM.
-- Java 25 toolchain support for the Minecraft 26.1.2+ targets.
-- The included Gradle wrapper.
-- IntelliJ IDEA with the Stonecutter Dev plugin, or another Gradle-capable Java IDE.
+Requirements:
 
-Minecraft-specific bytecode targets are handled by the build configuration.
+- the included Gradle Wrapper;
+- Java 21 or newer for Gradle;
+- Java 25 toolchain support for Minecraft 26.1.2 and 26.2;
+- IntelliJ IDEA with the Stonecutter Dev plugin, or another Gradle-capable IDE.
 
-### Version Workflow
-
-Use the Stonecutter Dev plugin in IntelliJ IDEA, or the official Stonecutter Gradle tasks, to change the active version. The VCS/default active version is `1.20.1`.
-
-The IntelliJ run configuration does not switch versions. Pick the active version first, then launch the client.
-
-### Run Client
-
-In IntelliJ IDEA:
-
-1. Select the active Minecraft version with the Stonecutter Dev plugin.
-2. Run `Minecraft Client`.
-
-From the terminal:
-
-```bash
-./gradlew minecraftClient
-```
-
-On Windows:
+Run the client for the active Stonecutter version:
 
 ```powershell
 .\gradlew.bat minecraftClient
 ```
 
-`minecraftClient` runs `runClient` for the current active Stonecutter version.
-
-### Build
-
-Build one target:
-
-```bash
-./gradlew :1.20.1:build --no-daemon
-./gradlew :1.21.11:build --no-daemon
-./gradlew :26.1.2:build --no-daemon
-```
-
-Build all supported targets:
-
-```bash
-./gradlew buildAllVersions --no-daemon
-```
-
-On Windows:
+Run the complete clean verification:
 
 ```powershell
-.\gradlew.bat buildAllVersions --no-daemon
+.\gradlew.bat clean fullVerify --no-daemon
 ```
 
-The unqualified `buildAllVersions` task name is intentional: Gradle runs the matching task in each Stonecutter version project.
+Final release jars and sources jars are written to:
 
-Final jars are written directly to the root `build/libs` folder. Per-version
-`versions/<minecraft-version>/build` folders are Gradle/Loom working output, not
-the distribution location.
+```text
+build/libs
+```
 
-`buildAndCollect` is kept as a compatibility alias.
+For version switching, individual build commands, task descriptions, generated Stonecutter models and instructions for adding a new target, read [MULTIVERSION.md](MULTIVERSION.md).
 
-## Multi-Version System
-
-Fresh Armor Bar uses Stonecutter to support multiple Minecraft versions from one shared source tree.
-
-Most code lives in `src/main/java` and `src/main/resources`. Version-specific differences are kept small and local with Stonecutter comments around Minecraft API changes, such as:
-
-- `Identifier` creation.
-- Official-mapping package/name changes for Minecraft 26.1.
-- Armor trim access.
-- Dyed armor color access.
-- Armor material type differences.
-- Equipment asset/component differences.
-- HUD hook differences.
-- GUI extraction/render-state differences.
-- Vertex API differences.
-
-There are no separate long-lived branches per Minecraft version. The project is designed around a common renderer, common assets, and small compatibility patches where the Minecraft API changes.
-
-## Project Structure
+## Project layout
 
 ```text
 Fresh_Armor_Bar/
-|- src/                  Shared client-side mod source and resources
-|- versions/             Per-version Gradle properties
-|- .run/                 IntelliJ Gradle run configurations
-|- build.gradle          Fabric Loom, dependencies, Java, resources, output layout
-|- settings.gradle       Stonecutter setup
-|- stonecutter.gradle    Active Stonecutter version marker
-`- MULTIVERSION.md       Developer notes for the version workflow
+|- src/                         Shared Java code and resources
+|- versions/                    Properties and generated work for each target
+|- gradle/release-versions.gradle
+|                               Target and release lists
+|- build.gradle                 Fabric Loom, dependencies and target build logic
+|- settings.gradle              Stonecutter setup and root verification tasks
+|- stonecutter.gradle           Active-version marker and Loom version
+|- gradle.properties            Shared Loader and mod properties
+`- MULTIVERSION.md              Complete developer workflow
 ```
-
-### Key Areas
-
-- `src/main/java/.../ArmorBarRenderer.java`  
-  Coordinates the custom armor HUD, caches visual armor state, and renders each armor slot.
-
-- `src/main/java/.../ArmorBarTextures.java`
-  Owns armor bar texture identifiers, material texture lookup, custom material fallback, trim colors, and glow-trim selection.
-
-- `src/main/java/.../ArmorBarGlintRenderer.java`
-  Owns enchantment glint rendering, including the newer masked GUI glint path used by recent Minecraft versions.
-
-- `src/main/java/.../ModCompat.java`  
-  Handles optional mod compatibility, including Trinkets and Trinkets Updated Elytra lookup.
-
-- `src/main/java/.../mixin/client/InGameHudMixin.java`  
-  Hooks the vanilla HUD and replaces armor icon rendering.
-
-- `src/main/resources/fabric.mod.json`  
-  Declares the mod as Fabric-only and client-side with `"environment": "client"`.
-
-- `src/main/resources/fresh-armor-bar.client.mixins.json`  
-  Registers the HUD mixin in the client mixin section.
-
-- `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/`  
-  Contains the armor bar textures, material strips, Elytra icon, and trim overlays.
-
-## Technical Overview
-
-Fresh Armor Bar reads the player's equipped armor directly, builds a cached visual representation of each armor half-point, and renders custom HUD icons in place of the vanilla armor bar.
-
-The renderer is intentionally split into small client-side helpers:
-
-- `ArmorBarRenderer` owns the HUD flow and cached slot data.
-- `ArmorBarTextures` owns material, trim, and fallback texture decisions.
-- `ArmorBarGlintRenderer` owns enchantment glint drawing.
-
-The renderer updates only when relevant visual state changes:
-
-- Equipped armor stacks.
-- Armor value.
-- Enchantment state.
-- Trim data.
-- Dyed armor color.
-- Elytra state.
-- Player identity.
-
-Unknown armor materials fall back to `base.png`. See [Resource Pack Textures](#resource-pack-textures) for the full override layout and custom material texture paths.
 
 ## License
 
-Fresh Armor Bar is licensed under the MIT License.
+Fresh Armor Bar is licensed under the LGPL-3.0-only License. See [LICENSE](LICENSE).

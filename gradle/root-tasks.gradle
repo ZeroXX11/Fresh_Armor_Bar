@@ -1,0 +1,51 @@
+List<String> minecraftVersions = ext.stonecutterMinecraftVersions as List<String>
+List<String> releaseVersions = ext.releaseBuildMinecraftVersions as List<String>
+
+gradle.rootProject { root ->
+	gradle.projectsEvaluated {
+		def activeMinecraftVersion = stonecutter.current.version
+
+		root.tasks.register('minecraftClient') {
+			group = 'Minecraft Client'
+			description = "Runs the Fabric client for the active Stonecutter version (${activeMinecraftVersion})."
+			dependsOn(root.project(":${activeMinecraftVersion}").tasks.named('runClient'))
+		}
+
+		root.tasks.register('clean', Delete) {
+			group = 'build'
+			description = 'Deletes the root build directory, including collected release jars.'
+			delete(root.layout.buildDirectory)
+		}
+
+		def cleanCollectedJars = root.tasks.register('cleanCollectedJars', Delete) {
+			group = 'build'
+			description = 'Deletes collected release jars from build/libs.'
+			delete(root.layout.buildDirectory.dir('libs'))
+		}
+
+		root.tasks.register('verifyAllVersions') {
+			group = 'verification'
+			description = 'Builds every configured Stonecutter target to verify compatibility.'
+			dependsOn(minecraftVersions.collect { version ->
+				root.project(":${version}").tasks.named('build')
+			})
+		}
+
+		def releaseBuildTasks = releaseVersions.collect { version ->
+			def releaseProject = root.project(":${version}")
+			releaseProject.tasks.matching {
+				it.name in ['jar', 'remapJar', 'sourcesJar', 'remapSourcesJar']
+			}.configureEach {
+				mustRunAfter(cleanCollectedJars)
+			}
+			releaseProject.tasks.named('build')
+		}
+
+		root.tasks.register('releaseBuild') {
+			group = 'build'
+			description = 'Cleans build/libs, then builds only the targets that produce release artifacts.'
+			dependsOn(cleanCollectedJars)
+			dependsOn(releaseBuildTasks)
+		}
+	}
+}

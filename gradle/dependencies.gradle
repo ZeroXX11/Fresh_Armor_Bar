@@ -1,0 +1,53 @@
+repositories {
+    // Loom adds the essential Minecraft repositories automatically.
+    maven {
+        name = 'TerraformersMC'
+        url = 'https://maven.terraformersmc.com/'
+    }
+    maven {
+        name = 'Ladysnake Libs'
+        url = 'https://maven.ladysnake.org/releases'
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    if (!isUnmappedMinecraftTarget) {
+        mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    }
+
+    if (isUnmappedMinecraftTarget) {
+        implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    } else {
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    }
+
+    // Fabric API is only useful for optional test mods in the development runtime.
+    if (project.hasProperty('dev_fabric_api_version')) {
+        if (isUnmappedMinecraftTarget) {
+            compileOnly "net.fabricmc.fabric-api:fabric-api:${project.dev_fabric_api_version}"
+            runtimeOnly "net.fabricmc.fabric-api:fabric-api:${project.dev_fabric_api_version}"
+        } else {
+            modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.dev_fabric_api_version}"
+        }
+    }
+
+    // Optional compatibility APIs.
+    if (isUnmappedMinecraftTarget) {
+        compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    } else {
+        modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+        modCompileOnly "dev.emi:trinkets:${project.trinkets_version}"
+    }
+
+    if (stonecutter.eval(stonecutter.current.version, '>=1.21')) {
+        compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    }
+
+    if (isUnmappedMinecraftTarget) {
+        implementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
+    } else {
+        modImplementation "io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}"
+    }
+    annotationProcessor "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
+}

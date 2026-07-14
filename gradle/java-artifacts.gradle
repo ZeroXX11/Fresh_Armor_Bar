@@ -1,0 +1,41 @@
+java {
+    withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(runtimeJavaVersion as int)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release.set(targetJavaVersion as Integer)
+}
+
+def addLicense = { Jar jarTask ->
+    jarTask.from(rootProject.file('LICENSE')) {
+        rename('LICENSE', "LICENSE_${project.archives_base_name}")
+    }
+}
+
+tasks.named('jar', Jar).configure(addLicense)
+
+tasks.named('sourcesJar', Jar).configure {
+    dependsOn(tasks.named('generateFabricModJson'))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    addLicense(delegate as Jar)
+    if (isUnmappedMinecraftTarget) {
+        destinationDirectory = rootProject.layout.buildDirectory.dir('libs')
+    }
+}
+
+if (isUnmappedMinecraftTarget) {
+    tasks.named('jar', Jar).configure {
+        destinationDirectory = rootProject.layout.buildDirectory.dir('libs')
+    }
+} else {
+    tasks.named('remapJar').configure {
+        destinationDirectory = rootProject.layout.buildDirectory.dir('libs')
+    }
+    tasks.named('remapSourcesJar').configure {
+        destinationDirectory = rootProject.layout.buildDirectory.dir('libs')
+    }
+}
