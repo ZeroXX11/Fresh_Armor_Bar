@@ -1,7 +1,6 @@
 # Fresh Armor Bar
 
 [![Build](https://github.com/ZeroXX11/Fresh_Armor_Bar/actions/workflows/build.yml/badge.svg)](https://github.com/ZeroXX11/Fresh_Armor_Bar/actions/workflows/build.yml)
-[![GitHub release](https://img.shields.io/github/v/release/ZeroXX11/Fresh_Armor_Bar?logo=github)](https://github.com/ZeroXX11/Fresh_Armor_Bar/releases/latest)
 [![Modrinth](https://img.shields.io/modrinth/dt/vO9IpKuK?logo=modrinth&label=Modrinth)](https://modrinth.com/mod/fresh-armor-bar)
 [![CurseForge](https://img.shields.io/curseforge/dt/1418688?logo=curseforge&label=CurseForge)](https://www.curseforge.com/minecraft/mc-mods/fresh-armor-bar)
 [![License: LGPL-3.0-only](https://img.shields.io/badge/license-LGPL--3.0--only-blue)](LICENSE)
