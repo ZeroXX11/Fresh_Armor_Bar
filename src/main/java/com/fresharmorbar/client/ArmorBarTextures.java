@@ -17,6 +17,8 @@ import net.minecraft.registry.entry.RegistryEntry;
 *///?} else {
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 //?}
 import net.minecraft.util.Identifier;
 //?}
@@ -47,7 +49,7 @@ final class ArmorBarTextures {
     private static final Identifier NETHERITE_STRIP = id("textures/gui/armorbar/strips/netherite.png");
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
-    private static final Set<Object> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
+    private static final Set<String> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     //? if >=26.1.2
     //private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager = null;
@@ -115,7 +117,7 @@ final class ArmorBarTextures {
         if (mat.equals(ArmorMaterials.DIAMOND)) return DIAMOND_STRIP;
         if (mat.equals(ArmorMaterials.NETHERITE)) return NETHERITE_STRIP;
     *///?} else {
-    static Identifier getMaterialTex(ArmorMaterial mat) {
+    static Identifier getMaterialTex(ItemStack stack, ArmorMaterial mat) {
         if (mat == ArmorMaterials.TURTLE) return TURTLE_STRIP;
         if (mat == ArmorMaterials.LEATHER) return LEATHER_STRIP;
         if (mat == ArmorMaterials.CHAIN) return CHAIN_STRIP;
@@ -124,6 +126,26 @@ final class ArmorBarTextures {
         if (mat == ArmorMaterials.DIAMOND) return DIAMOND_STRIP;
         if (mat == ArmorMaterials.NETHERITE) return NETHERITE_STRIP;
     //?}
+
+        //? if >=1.21.11 {
+        /*String namespace = model.getNamespace();
+        String material = model.getPath();
+        *///?} else if >=1.21 {
+        /*String materialId = mat.getIdAsString();
+        int separator = materialId.indexOf(':');
+        String namespace = separator >= 0 ? materialId.substring(0, separator) : "minecraft";
+        String material = separator >= 0 ? materialId.substring(separator + 1) : materialId;
+        *///?} else {
+        Identifier itemId = Registries.ITEM.getId(stack.getItem());
+        String materialId = mat.getName();
+        int separator = materialId.indexOf(':');
+        String namespace = separator >= 0
+                ? materialId.substring(0, separator)
+                : itemId.getNamespace();
+        String material = separator >= 0
+                ? materialId.substring(separator + 1)
+                : materialId;
+        //?}
 
         //? if >=26.1.2 {
         /*net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
@@ -148,62 +170,68 @@ final class ArmorBarTextures {
         }
         //?}
 
-        //? if >=1.21.11 {
-        /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(model.toString(), name -> {
-        *///?} else if >=1.21 {
-        /*return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getIdAsString(), name -> {
-        *///?} else {
-        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(mat.getName(), name -> {
-        //?}
-            Identifier id;
+        String cacheKey = namespace + ":" + material;
+        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored -> {
+            boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(cacheKey);
+            Identifier externalTexture;
+            Identifier genericTexture;
             try {
-                if (name.contains(":")) {
-                    String[] parts = name.split(":");
-                    id = id(parts[0], "textures/gui/armorbar/strips/" + parts[1] + ".png");
-                } else {
-                    id = id("textures/gui/armorbar/strips/" + name + ".png");
+                Identifier bundledModTexture = ArmorBarModTextures.findTexture(
+                        currentManager, namespace, material);
+                if (bundledModTexture != null) {
+                    if (shouldLog) {
+                        LOGGER.info(
+                                "Found bundled modded armor texture for '{}:{}' at {}",
+                                namespace,
+                                material,
+                                bundledModTexture);
+                    }
+                    return bundledModTexture;
                 }
+
+                externalTexture = id(namespace, "textures/gui/armorbar/strips/" + material + ".png");
+                genericTexture = id("textures/gui/armorbar/strips/" + material + ".png");
             } catch (Exception e) {
-                //? if >=1.21.11 {
-                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
-                *///?} else {
-                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
-                //?}
                 if (shouldLog) {
-                    LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", name);
+                    LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", cacheKey);
                 }
                 return BASE_STRIP;
             }
 
             //? if >=26.1.2 {
-            /*if (currentManager.getResource(id).isPresent()) {
+            /*if (currentManager.getResource(externalTexture).isPresent()) {
             *///?} else {
-            if (currentManager != null && currentManager.getResource(id).isPresent()) {
+            if (currentManager != null && currentManager.getResource(externalTexture).isPresent()) {
             //?}
-                //? if >=1.21.11 {
-                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
-                *///?} else {
-                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
-                //?}
                 if (shouldLog) {
-                    LOGGER.info("Found custom texture for armor material '{}' at {}", name, id);
+                    LOGGER.info("Found custom texture for armor material '{}' at {}", cacheKey, externalTexture);
                 }
-                return id;
-            } else {
-                //? if >=1.21.11 {
-                /*boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(model);
-                *///?} else {
-                boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(mat);
-                //?}
-                if (shouldLog) {
-                    LOGGER.warn("Unknown armor material '{}' and no custom texture found at {}. Falling back to base texture.", name, id);
-                }
-                return BASE_STRIP;
+                return externalTexture;
             }
+
+            //? if >=26.1.2 {
+            /*if (currentManager.getResource(genericTexture).isPresent()) {
+            *///?} else {
+            if (currentManager != null && currentManager.getResource(genericTexture).isPresent()) {
+            //?}
+                if (shouldLog) {
+                    LOGGER.info("Found generic texture for armor material '{}' at {}", cacheKey, genericTexture);
+                }
+                return genericTexture;
+            }
+
+            if (shouldLog) {
+                LOGGER.warn(
+                        "Unknown armor material '{}'; no texture found at {} or {}. Falling back to base texture.",
+                        cacheKey,
+                        externalTexture,
+                        genericTexture);
+            }
+            return BASE_STRIP;
         });
     }
 
-    private static Identifier id(String path) {
+    static Identifier id(String path) {
         //? if >=26.1.2 {
         /*return Identifier.fromNamespaceAndPath(MODID, path);
         *///?} else if >=1.21 {
@@ -213,7 +241,7 @@ final class ArmorBarTextures {
         //?}
     }
 
-    private static Identifier id(String namespace, String path) {
+    static Identifier id(String namespace, String path) {
         //? if >=26.1.2 {
         /*return Identifier.fromNamespaceAndPath(namespace, path);
         *///?} else if >=1.21 {

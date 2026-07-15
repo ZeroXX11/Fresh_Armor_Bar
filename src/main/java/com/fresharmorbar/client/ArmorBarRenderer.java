@@ -382,8 +382,10 @@ public class ArmorBarRenderer {
             boolean ench = stack.hasEnchantments();
             //? if >=1.21.11 {
             /*Identifier tex = getMaterialTex(stack);
+            *///?} else if >=1.21 {
+            /*Identifier tex = getMaterialTex(armor.getMaterial());
             *///?} else {
-            Identifier tex = getMaterialTex(armor.getMaterial());
+            Identifier tex = getMaterialTex(stack, armor.getMaterial());
             //?}
 
             int color = -1;
