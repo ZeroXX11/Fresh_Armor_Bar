@@ -448,29 +448,16 @@ For every release candidate:
 
 ## Key files
 
-| Path                                     | Purpose                              |
-|------------------------------------------|--------------------------------------|
-| `src/main/java`                          | Shared Java source                   |
-| `src/main/resources`                     | Shared metadata, mixins and assets   |
-| `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips` | Official armor-mod textures |
-| `versions/<version>/gradle.properties`   | Target-specific versions             |
-| `gradle/release-versions.gradle`         | Target and release lists             |
-| `gradle/version-utils.gradle`            | Minecraft version-range helpers      |
-| `gradle/root-tasks.gradle`               | Root lifecycle and build tasks       |
-| `gradle/documentation-validation.gradle` | Documentation/build consistency      |
-| `gradle/release-validation.gradle`       | Release JAR and metadata checks      |
-| `gradle/project-versioning.gradle`       | Artifact and Java target values      |
-| `gradle/loom.gradle`                     | Loom mod and run configuration       |
-| `gradle/dependencies.gradle`             | Repositories and target dependencies |
-| `gradle/resources.gradle`                | Metadata and resource generation     |
-| `gradle/java-artifacts.gradle`           | Java toolchains and JAR outputs      |
-| `gradle/publishing.gradle`               | Publication and legacy aliases       |
-| `gradle.properties`                      | Shared Loader and mod values         |
-| `stonecutter.gradle`                     | Loom and active version              |
-| `settings.gradle`                        | Settings script coordinator          |
-| `build.gradle`                           | Target script coordinator            |
-| `.run/Minecraft Client.run.xml`          | Shared IntelliJ launcher             |
-| `build/libs`                             | Final release artifacts              |
+| Path                                                                            | Purpose                            |
+|---------------------------------------------------------------------------------|------------------------------------|
+| `src/main/java`                                                                 | Shared Java source                 |
+| `src/main/resources`                                                            | Shared metadata, mixins and assets |
+| `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips` | Official armor-mod textures        |
+| `versions/<version>/gradle.properties`                                          | Target-specific versions           |
+| `gradle/release-versions.gradle`                                                | Target and release lists           |
+| `gradle/version-utils.gradle`                                                   | Minecraft version-range helpers    |
+| `gradle/root-tasks.gradle`                                                      | Root lifecycle and build tasks     |
+| `gradle/documentation-validation.gradle`                                        | Documentation/build consistency    |
 
 `settings.gradle` applies `release-versions.gradle`, `version-utils.gradle`, `root-tasks.gradle`, `documentation-validation.gradle` and `release-validation.gradle`. `build.gradle` is the target-build coordinator for the dedicated versioning, Loom, dependency, resource, Java/artifact and publishing scripts.
 
