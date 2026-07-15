@@ -30,7 +30,7 @@ Fresh Armor Bar is a client-side Fabric mod that replaces Minecraft's vanilla ar
 - Distinct textures for vanilla armor materials and mixed armor sets.
 - Correct colors for dyed leather armor and colored armor-trim overlays.
 - Glow for selected shiny trim materials and glint for enchanted armor.
-- Elytra detection in the chest slot and optional Trinkets-family slots.
+- Vanilla and modded Elytra detection in the chest slot and optional Trinkets-family slots.
 - Extra HUD rows for armor values above the normal vanilla row.
 - Configurable feedback for damage and Mending repairs.
 - A configuration screen when Mod Menu is installed.
@@ -94,6 +94,7 @@ config/fresh-armor-bar.properties
 - Officially supported armor mods: Advanced Netherite.
 - Other modded materials can provide a namespaced or generic strip through Minecraft's resource system.
 - Unknown materials fall back to `base.png` only after every supported texture location has been checked.
+- Modded Elytra use their item id for custom `9x9` textures and report missing texture paths in `latest.log`.
 - Elytra integrations are best-effort and depend on the slot API exposed by the other mod.
 - Fresh Armor Bar supports the classic Trinkets API, Trinkets Canary and Trinkets Updated when present.
 - Mods that completely replace or reposition the vanilla armor HUD may conflict with Fresh Armor Bar.

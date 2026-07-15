@@ -1,21 +1,27 @@
 package com.fresharmorbar.client;
 
 //? if >=26.1.2 {
-/*import net.minecraft.world.entity.EquipmentSlot;
+/*import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 *///?} else {
+//? if >=1.21.11
+//import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
+//? if <1.21.11
+import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.util.Identifier;
 //?}
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class ModCompat {
     private static final FabricLoader LOADER = FabricLoader.getInstance();
@@ -27,11 +33,13 @@ public class ModCompat {
             TRINKETS_LOADED ? classOrNull("dev.emi.trinkets.api.TrinketsApi") : null;
     private static final Class<?> TRINKETS_UPDATED_API =
             TRINKETS_UPDATED_LOADED ? classOrNull("eu.pb4.trinkets.api.TrinketsApi") : null;
+    private static final Class<?> FABRIC_ELYTRA_ITEM =
+            classOrNull("net.fabricmc.fabric.api.entity.event.v1.FabricElytraItem");
     private static final String[] STACK_ACCESSORS =
             {"stack", "getStack", "getRight", "getB", "getSecond", "right", "second"};
 
-    public record ElytraState(boolean equipped, boolean enchanted) {
-        public static final ElytraState NONE = new ElytraState(false, false);
+    public record ElytraState(boolean equipped, boolean enchanted, Identifier texture) {
+        public static final ElytraState NONE = new ElytraState(false, false, null);
     }
 
     //? if >=26.1.2 {
@@ -44,7 +52,7 @@ public class ModCompat {
         //? if <26.1.2
         ItemStack chest = player.getEquippedStack(EquipmentSlot.CHEST);
         if (isElytra(chest)) {
-            return new ElytraState(true, isEnchanted(chest));
+            return stateFromStack(chest);
         }
 
         ElytraState state = getApiElytraState(TRINKETS_LOADED, TRINKETS_API, "getTrinketComponent", player);
@@ -66,7 +74,9 @@ public class ModCompat {
         Object slotContainer = unwrapOptional(invokeSingleArg(apiClass, null, playerLookupMethod, player));
         if (slotContainer == null) return ElytraState.NONE;
 
-        return stateFromEntries(invokeSingleArg(slotContainer.getClass(), slotContainer, "getEquipped", Items.ELYTRA));
+        Predicate<ItemStack> elytraPredicate = ModCompat::isElytra;
+        return stateFromEntries(invokeSingleArg(
+                slotContainer.getClass(), slotContainer, "getEquipped", elytraPredicate));
     }
 
     private static ElytraState stateFromEntries(Object entriesObject) {
@@ -74,12 +84,16 @@ public class ModCompat {
 
         for (Object entry : entries) {
             ItemStack stack = extractStack(entry);
-            if (stack != null && isEnchanted(stack)) {
-                return new ElytraState(true, true);
+            if (stack != null && isElytra(stack)) {
+                return stateFromStack(stack);
             }
         }
 
-        return new ElytraState(true, false);
+        return ElytraState.NONE;
+    }
+
+    private static ElytraState stateFromStack(ItemStack stack) {
+        return new ElytraState(true, isEnchanted(stack), ArmorBarTextures.getElytraTex(stack));
     }
 
     private static ItemStack extractStack(Object entry) {
@@ -95,9 +109,13 @@ public class ModCompat {
 
     private static boolean isElytra(ItemStack stack) {
         //? if >=26.1.2 {
-        /*return stack.is(Items.ELYTRA);
+        /*return !stack.isEmpty() && stack.has(DataComponents.GLIDER);
+        *///?} else if >=1.21.11 {
+        /*return !stack.isEmpty() && stack.contains(DataComponentTypes.GLIDER);
         *///?} else {
-        return stack.isOf(Items.ELYTRA);
+        return !stack.isEmpty()
+                && (stack.getItem() instanceof ElytraItem
+                || (FABRIC_ELYTRA_ITEM != null && FABRIC_ELYTRA_ITEM.isInstance(stack.getItem())));
         //?}
     }
 
@@ -121,7 +139,7 @@ public class ModCompat {
         try {
             Method method = target.getClass().getMethod(methodName);
             return method.invoke(target);
-        } catch (ReflectiveOperationException | SecurityException ignored) {
+        } catch (ReflectiveOperationException | LinkageError | SecurityException ignored) {
             return null;
         }
     }
@@ -147,7 +165,7 @@ public class ModCompat {
     private static Class<?> classOrNull(String name) {
         try {
             return Class.forName(name, false, ModCompat.class.getClassLoader());
-        } catch (ReflectiveOperationException | SecurityException ignored) {
+        } catch (ReflectiveOperationException | LinkageError | SecurityException ignored) {
             return null;
         }
     }

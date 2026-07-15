@@ -167,8 +167,14 @@ public class ArmorBarRenderer {
         // 4. Elytra
         if (slotIndex == 0 && hasElytra) {
             int elytraY = renderArmorValue > 0 ? y - (maxRows * 10) : y;
-            drawTexture(ctx, ELYTRA_TEX, x, elytraY, 0, 9);
+            Identifier elytraTexture = lastElytraState.texture() != null
+                    ? lastElytraState.texture()
+                    : ELYTRA_TEX;
+            drawTexture(ctx, elytraTexture, x, elytraY, 0, 9);
             if (elytraEnchanted) {
+                //? if >=1.21.11
+                /*ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, elytraY, elytraTexture);
+                *///? if <1.21.11
                 ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, elytraY);
             }
         }

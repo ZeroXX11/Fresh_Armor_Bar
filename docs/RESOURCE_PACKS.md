@@ -10,6 +10,7 @@ Fresh Armor Bar loads its HUD textures through Minecraft's resource system. A no
 - [Material-strip format](#material-strip-format)
 - [Official mod support](#official-mod-support)
 - [Other modded armor materials](#other-modded-armor-materials)
+- [Modded Elytra](#modded-elytra)
 - [Lookup order](#lookup-order)
 - [Troubleshooting](#troubleshooting)
 
@@ -39,7 +40,11 @@ FreshArmorBar_ResourcePack/
    |           |  `- copper.png
    |           |- modded_strips/
    |           |  `- <modid>/
-   |           |     `- <material>.png
+   |           |     |- <material>.png
+   |           |     `- elytra/
+   |           |        `- <item>.png
+   |           |- elytras/
+   |           |  `- <item>.png
    |           `- overlays/
    |              `- trim/
    |                 |- trim_base.png
@@ -48,11 +53,13 @@ FreshArmorBar_ResourcePack/
       `- textures/
          `- gui/
             `- armorbar/
-               `- strips/
-                  `- <material>.png
+               |- strips/
+               |  `- <material>.png
+               `- elytras/
+                  `- <item>.png
 ```
 
-The `fresh-armor-bar` namespace contains the built-in textures and the overrides for official integrations. The separate `<modid>` namespace is for armor materials from mods that Fresh Armor Bar does not integrate directly.
+The `fresh-armor-bar` namespace contains the built-in textures and the overrides for official integrations. The separate `<modid>` namespace is for armor materials and Elytra items supplied by other mods.
 
 ## Pack metadata
 
@@ -134,6 +141,24 @@ Use the namespaced path for new mod support because it prevents two mods with th
 
 If no matching texture exists at any supported location, Fresh Armor Bar uses `base.png` and writes a warning to the game log.
 
+## Modded Elytra
+
+Fresh Armor Bar identifies a modded Elytra from its item id and writes that id and the attempted texture paths to `latest.log`. Mod-specific Elytra textures stay inside that mod's folder under `modded_strips/<modid>/elytra/`.
+
+For Deeper and Darker's `deeperdarker:soul_elytra`, the `9x9` PNG belongs at:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/deeperdarker/elytra/soul_elytra.png
+```
+
+The generic compatibility fallback is:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/elytras/<item>.png
+```
+
+This `modded_strips/<modid>/elytra/<item>.png` location has priority. If no custom texture exists at any supported location, the mod renders the normal `elytra.png` icon and logs the exact filenames it checked.
+
 ## Lookup order
 
 For a material identified as `<modid>:<material>`, Fresh Armor Bar checks:
@@ -142,6 +167,13 @@ For a material identified as `<modid>:<material>`, Fresh Armor Bar checks:
 2. `assets/<modid>/textures/gui/armorbar/strips/<material>.png`;
 3. `assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png`;
 4. `assets/fresh-armor-bar/textures/gui/armorbar/base.png` as the fallback.
+
+For a modded Elytra identified as `<modid>:<item>`, the equivalent order is:
+
+1. `assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/elytra/<item>.png`;
+2. `assets/<modid>/textures/gui/armorbar/elytras/<item>.png`;
+3. `assets/fresh-armor-bar/textures/gui/armorbar/elytras/<item>.png`;
+4. `assets/fresh-armor-bar/textures/gui/armorbar/elytra.png` as the fallback.
 
 The first existing resource wins. Resource-pack priority still applies when multiple packs provide the same exact resource identifier.
 
@@ -152,6 +184,7 @@ The first existing resource wins. Resource-pack priority still applies when mult
 - For Deeper and Darker, confirm that the path ends in `modded_strips/deeperdarker/warden.png`, not `strips/warden.png`.
 - Confirm that every strip is exactly `27x9` pixels.
 - Read `latest.log` to find the `modid:material` requested by Fresh Armor Bar and compare it with the lookup order above.
+- For an Elytra, search `latest.log` for `modded Elytra`; the warning includes its complete item id and both custom paths.
 - Reload resources after changing files.
 
 Return to the [main README](../README.md).

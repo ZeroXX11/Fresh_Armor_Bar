@@ -1,8 +1,5 @@
 package com.fresharmorbar.client;
 
-//? if >=1.21.11
-//import static com.fresharmorbar.client.ArmorBarTextures.ELYTRA_TEX;
-
 //? if >=26.1.2 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
 //? if >=26.2 {
@@ -153,12 +150,14 @@ final class ArmorBarGlintRenderer {
     }
 
     //? if >=26.1.2 {
-    /*static void renderFullIconEnchantment(GuiGraphicsExtractor ctx, int x, int y) {
+    /*static void renderFullIconEnchantment(GuiGraphicsExtractor ctx, int x, int y, Identifier texture) {
+    *///?} else if >=1.21.11 {
+    /*static void renderFullIconEnchantment(DrawContext ctx, int x, int y, Identifier texture) {
     *///?} else {
     static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
     //?}
         //? if >=1.21.11 {
-        /*renderGuiGlint(ctx, x, y, ELYTRA_TEX, ELYTRA_TEX, 0, 0, 0.0f, 9.0f);
+        /*renderGuiGlint(ctx, x, y, texture, texture, 0, 0, 0.0f, 9.0f);
         *///?} else {
         renderSlotEnchantments(ctx, true, true, x, y);
         //?}

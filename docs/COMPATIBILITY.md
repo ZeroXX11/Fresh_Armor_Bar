@@ -25,7 +25,15 @@ See the [resource-pack guide](RESOURCE_PACKS.md) for filenames and namespaces.
 
 ## Elytra and equipment slots
 
-Fresh Armor Bar always checks the vanilla chest slot for an Elytra. It can also inspect extra equipment slots when one of these compatible APIs is present:
+Fresh Armor Bar checks the vanilla chest slot for vanilla and modded Elytra. It recognizes Elytra item subclasses on older Minecraft versions and the glider data component on newer versions. A modded item is resolved by its registry id, can use its own `9x9` HUD texture, and is recorded in `latest.log` when the texture is missing.
+
+For example, Deeper and Darker's `deeperdarker:soul_elytra` uses:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/deeperdarker/elytra/soul_elytra.png
+```
+
+Fresh Armor Bar can also inspect extra equipment slots when one of these compatible APIs is present:
 
 - classic Trinkets API (`dev.emi.trinkets.api`);
 - Trinkets Canary, which exposes the classic Trinkets API and mod id;

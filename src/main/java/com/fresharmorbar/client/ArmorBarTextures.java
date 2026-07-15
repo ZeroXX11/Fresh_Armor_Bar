@@ -2,13 +2,13 @@ package com.fresharmorbar.client;
 
 //? if >=26.1.2 {
 /*import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.ArmorMaterials;
 *///?} else {
 //? if >=1.21.11 {
 /*import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.equipment.ArmorMaterials;
 *///?} else if >=1.21 {
 /*import net.minecraft.item.ArmorMaterial;
@@ -17,9 +17,9 @@ import net.minecraft.registry.entry.RegistryEntry;
 *///?} else {
 import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ArmorMaterials;
+//?}
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
-//?}
 import net.minecraft.util.Identifier;
 //?}
 import org.slf4j.Logger;
@@ -50,7 +50,9 @@ final class ArmorBarTextures {
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
     private static final Set<String> LOGGED_MATERIALS = new HashSet<>();
+    private static final Set<String> LOGGED_ELYTRAS = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, Identifier> ELYTRA_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     //? if >=26.1.2
     //private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager = null;
     //? if <26.1.2
@@ -158,14 +160,18 @@ final class ArmorBarTextures {
         //? if >=26.1.2 {
         /*if (currentManager != lastResourceManager) {
             MATERIAL_TEXTURE_CACHE.clear();
+            ELYTRA_TEXTURE_CACHE.clear();
             LOGGED_MATERIALS.clear();
+            LOGGED_ELYTRAS.clear();
             lastResourceManager = currentManager;
         }
         *///?} else {
         
         if (currentManager != null && currentManager != lastResourceManager) {
             MATERIAL_TEXTURE_CACHE.clear();
+            ELYTRA_TEXTURE_CACHE.clear();
             LOGGED_MATERIALS.clear();
+            LOGGED_ELYTRAS.clear();
             lastResourceManager = currentManager;
         }
         //?}
@@ -228,6 +234,83 @@ final class ArmorBarTextures {
                         genericTexture);
             }
             return BASE_STRIP;
+        });
+    }
+
+    static Identifier getElytraTex(ItemStack stack) {
+        //? if >=26.1.2 {
+        /*Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+        net.minecraft.server.packs.resources.ResourceManager currentManager = client.getResourceManager();
+        *///?} else {
+        Identifier itemId = Registries.ITEM.getId(stack.getItem());
+        net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
+        net.minecraft.resource.ResourceManager currentManager = client != null ? client.getResourceManager() : null;
+        //?}
+
+        String namespace = itemId.getNamespace();
+        String item = itemId.getPath();
+        if ("minecraft".equals(namespace) && "elytra".equals(item)) return ELYTRA_TEX;
+
+        if (currentManager != null && currentManager != lastResourceManager) {
+            MATERIAL_TEXTURE_CACHE.clear();
+            ELYTRA_TEXTURE_CACHE.clear();
+            LOGGED_MATERIALS.clear();
+            LOGGED_ELYTRAS.clear();
+            lastResourceManager = currentManager;
+        }
+
+        String cacheKey = namespace + ":" + item;
+        return ELYTRA_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored -> {
+            boolean shouldLog = LOGGED_ELYTRAS.add(cacheKey);
+            Identifier bundledTexturePath;
+            Identifier externalTexture;
+            Identifier genericTexture;
+            try {
+                bundledTexturePath = id(
+                        "textures/gui/armorbar/modded_strips/" + namespace + "/elytra/" + item + ".png");
+                Identifier bundledTexture = ArmorBarModTextures.findElytraTexture(
+                        currentManager, namespace, item);
+                if (bundledTexture != null) {
+                    if (shouldLog) {
+                        LOGGER.info("Found bundled modded Elytra texture for '{}' at {}", cacheKey, bundledTexture);
+                    }
+                    return bundledTexture;
+                }
+
+                externalTexture = id(namespace, "textures/gui/armorbar/elytras/" + item + ".png");
+                genericTexture = id("textures/gui/armorbar/elytras/" + item + ".png");
+            } catch (Exception e) {
+                if (shouldLog) {
+                    LOGGER.warn("Invalid modded Elytra item id '{}'. Falling back to the vanilla Elytra texture.", cacheKey);
+                }
+                return ELYTRA_TEX;
+            }
+
+            if (currentManager != null && currentManager.getResource(externalTexture).isPresent()) {
+                if (shouldLog) {
+                    LOGGER.info("Found custom texture for modded Elytra '{}' at {}", cacheKey, externalTexture);
+                }
+                return externalTexture;
+            }
+
+            if (currentManager != null && currentManager.getResource(genericTexture).isPresent()) {
+                if (shouldLog) {
+                    LOGGER.info("Found generic texture for modded Elytra '{}' at {}", cacheKey, genericTexture);
+                }
+                return genericTexture;
+            }
+
+            if (shouldLog) {
+                LOGGER.warn(
+                        "Unknown modded Elytra '{}'; no 9x9 texture found at {}, {} or {}. Falling back to {}.",
+                        cacheKey,
+                        bundledTexturePath,
+                        externalTexture,
+                        genericTexture,
+                        ELYTRA_TEX);
+            }
+            return ELYTRA_TEX;
         });
     }
 

@@ -32,4 +32,16 @@ final class ArmorBarModTextures {
                 "textures/gui/armorbar/modded_strips/" + namespace + "/" + material + ".png");
         return resourceManager.getResource(texture).isPresent() ? texture : null;
     }
+
+    static Identifier findElytraTexture(ResourceManager resourceManager, String namespace, String item) {
+        if (resourceManager == null
+                || namespace == null
+                || item == null) {
+            return null;
+        }
+
+        Identifier texture = ArmorBarTextures.id(
+                "textures/gui/armorbar/modded_strips/" + namespace + "/elytra/" + item + ".png");
+        return resourceManager.getResource(texture).isPresent() ? texture : null;
+    }
 }

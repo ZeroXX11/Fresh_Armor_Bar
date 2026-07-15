@@ -17,8 +17,8 @@ Armor can now visually react when it takes damage.
 
 ## 🛡️ MOD COMPATIBILITY
 
-- Added support for Advanced Netherite armor;
-- Added support for Deeper and Darker's Warden armor.
+- Added support for Advanced Netherite armors;
+- Added support for Deeper and Darker's armors and Elytra.
 
 ## 🔧 FIXES
 
