@@ -12,7 +12,10 @@ import java.util.Set;
 
 /** Resolves textures bundled by Fresh Armor Bar for armor materials from supported mods. */
 final class ArmorBarModTextures {
-    private static final Set<String> SUPPORTED_MODS = Set.of("advancednetherite");
+    private static final Set<String> SUPPORTED_MODS = Set.of(
+            "advancednetherite",
+            "deeperdarker"
+    );
 
     private ArmorBarModTextures() {
     }
