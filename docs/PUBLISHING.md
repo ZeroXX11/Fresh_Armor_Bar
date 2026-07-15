@@ -19,7 +19,7 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 1. Set `mod_version` in `gradle.properties`. Every Minecraft group uses this same platform version number; the Minecraft group remains part of the JAR name and display title.
 2. Review the single source of truth in `gradle/release-versions.gradle`. Each entry maps its Stonecutter project, platform Minecraft versions, display label, artifact task, and changelog role.
-3. Write or update `CHANGELOG.md` with the real release notes. Every level-two section must contain content. The title must be `# FRESH ARMOR BAR <current mod_version>`.
+3. Write or update `CHANGELOG.md` with the real release notes. Every level-two section must contain content. The title must be `# <current mod_version> | CHANGELOG`.
 4. Commit the completed `CHANGELOG.md` with the release changes.
 
 `CHANGELOG.md` may not contain `<MOD_VERSION>`, `TODO`, HTML comments, template instructions, empty sections, or a version different from `mod_version`.

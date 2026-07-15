@@ -224,9 +224,9 @@ gradle.rootProject { root ->
 				if (changelog.trim().isEmpty()) {
 					throw new GradleException('CHANGELOG.md is empty. Add real release notes before publishing.')
 				}
-				def expectedTitle = "# ${modVersion} | CHANGELOG:".toString()
+				def expectedTitle = "# ${modVersion} | CHANGELOG".toString()
 				if (changelog.readLines().first().trim() != expectedTitle) {
-					throw new GradleException("CHANGELOG.md must start with '# ${modVersion} | CHANGELOG:'")
+					throw new GradleException("CHANGELOG.md must start with '# ${modVersion} | CHANGELOG'")
 				}
 				def forbiddenPatterns = [
 						'(?i)<MOD_VERSION>',

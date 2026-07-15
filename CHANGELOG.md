@@ -1,4 +1,4 @@
-# 2.1 | CHANGELOG:
+# 2.1 | CHANGELOG
 
 ## ✨ ARMOR FEEDBACK
 
