@@ -9,6 +9,7 @@ Vanilla armor materials are supported directly. Modded armor can be supported th
 ## Official armor mod support
 
 - Advanced Netherite
+- Deeper and Darker
 
 Official integrations are bundled in the main Fresh Armor Bar JAR under:
 

@@ -15,38 +15,44 @@ Fresh Armor Bar loads its HUD textures through Minecraft's resource system. A no
 
 ## Directory layout
 
-Repeat the built-in path inside the resource pack:
+Repeat only the paths that the resource pack needs to replace or add. The complete layout supported by Fresh Armor Bar is:
 
 ```text
 FreshArmorBar_ResourcePack/
 |- pack.mcmeta
 `- assets/
-   `- fresh-armor-bar/
+   |- fresh-armor-bar/
+   |  `- textures/
+   |     `- gui/
+   |        `- armorbar/
+   |           |- empty.png
+   |           |- base.png
+   |           |- elytra.png
+   |           |- strips/
+   |           |  |- turtle.png
+   |           |  |- leather.png
+   |           |  |- chainmail.png
+   |           |  |- iron.png
+   |           |  |- gold.png
+   |           |  |- diamond.png
+   |           |  |- netherite.png
+   |           |  `- copper.png
+   |           |- modded_strips/
+   |           |  `- <modid>/
+   |           |     `- <material>.png
+   |           `- overlays/
+   |              `- trim/
+   |                 |- trim_base.png
+   |                 `- trim_glow_tex.png
+   `- <modid>/
       `- textures/
          `- gui/
             `- armorbar/
-               |- empty.png
-               |- base.png
-               |- elytra.png
-               |- strips/
-               |  |- turtle.png
-               |  |- leather.png
-               |  |- chainmail.png
-               |  |- iron.png
-               |  |- gold.png
-               |  |- diamond.png
-               |  |- netherite.png
-               |  `- copper.png
-               |- modded_strips/
-               |  `- <modid>/
-               |     `- <material>.png
-               `- overlays/
-                  `- trim/
-                     |- trim_base.png
-                     `- trim_glow_tex.png
+               `- strips/
+                  `- <material>.png
 ```
 
-Only include files that the pack actually changes.
+The `fresh-armor-bar` namespace contains the built-in textures and the overrides for official integrations. The separate `<modid>` namespace is for armor materials from mods that Fresh Armor Bar does not integrate directly.
 
 ## Pack metadata
 
@@ -88,49 +94,64 @@ The first two areas are used when one HUD icon combines halves from different ar
 
 Fresh Armor Bar bundles textures for officially supported armor mods in its own JAR. The current list is:
 
-- Advanced Netherite
+- Advanced Netherite (`advancednetherite`):
+  - `netherite_diamond`
+  - `netherite_emerald`
+  - `netherite_gold`
+  - `netherite_iron`
+- Deeper and Darker (`deeperdarker`):
+  - `warden`
 
-Every supported mod uses the same scalable path:
+Official integrations use this path inside the `fresh-armor-bar` namespace:
 
 ```text
 assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png
 ```
 
-`<modid>` is the mod namespace and `<material>` is the material identifier without the namespace. A resource pack can override an official integration by repeating the same path. Each new official integration uses another mod-id folder and its strips.
+For example, the new Deeper and Darker compatibility texture is:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/deeperdarker/warden.png
+```
+
+`<modid>` is the armor material's namespace and `<material>` is its identifier without the namespace. To replace an official integration, put the custom PNG at exactly the same path and give the resource pack higher priority than Fresh Armor Bar's built-in resources.
 
 ## Other modded armor materials
 
-For a material without a namespace, use:
-
-```text
-assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png
-```
-
-For a namespaced material such as `examplemod:ruby`, use its namespace:
+For a namespaced material such as `examplemod:ruby`, use the material owner's namespace:
 
 ```text
 assets/examplemod/textures/gui/armorbar/strips/ruby.png
 ```
 
-If no matching texture exists, Fresh Armor Bar uses `base.png` and writes a warning to the game log.
+Fresh Armor Bar also checks this generic path in its own namespace as a compatibility fallback:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png
+```
+
+Use the namespaced path for new mod support because it prevents two mods with the same material name from colliding. The generic path is primarily for older packs or material data that cannot provide a useful namespace.
+
+If no matching texture exists at any supported location, Fresh Armor Bar uses `base.png` and writes a warning to the game log.
 
 ## Lookup order
 
-For a modded material, Fresh Armor Bar checks:
+For a material identified as `<modid>:<material>`, Fresh Armor Bar checks:
 
-1. `assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png` for a directly supported mod;
+1. `assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png`, but only when `<modid>` is an official integration;
 2. `assets/<modid>/textures/gui/armorbar/strips/<material>.png`;
 3. `assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png`;
-4. the built-in `base.png` fallback.
+4. `assets/fresh-armor-bar/textures/gui/armorbar/base.png` as the fallback.
 
-The first path is the current system for official integrations. The other paths remain compatible fallbacks for textures supplied by mods or older resource packs.
+The first existing resource wins. Resource-pack priority still applies when multiple packs provide the same exact resource identifier.
 
 ## Troubleshooting
 
 - Confirm that the pack is enabled and above conflicting packs.
 - Check spelling, namespace, lowercase filenames and the complete directory path.
+- For Deeper and Darker, confirm that the path ends in `modded_strips/deeperdarker/warden.png`, not `strips/warden.png`.
 - Confirm that every strip is exactly `27x9` pixels.
-- Read `latest.log` to find the `modid:material` requested by Fresh Armor Bar and the paths it checked.
+- Read `latest.log` to find the `modid:material` requested by Fresh Armor Bar and compare it with the lookup order above.
 - Reload resources after changing files.
 
 Return to the [main README](../README.md).
