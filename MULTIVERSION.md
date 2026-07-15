@@ -458,7 +458,8 @@ For every release candidate:
 | `gradle/version-utils.gradle`                                                   | Minecraft version-range helpers    |
 | `gradle/root-tasks.gradle`                                                      | Root lifecycle and build tasks     |
 | `gradle/documentation-validation.gradle`                                        | Documentation/build consistency    |
+| `gradle/release-publishing.gradle`                                              | Publication aggregates and guards  |
 
-`settings.gradle` applies `release-versions.gradle`, `version-utils.gradle`, `root-tasks.gradle`, `documentation-validation.gradle` and `release-validation.gradle`. `build.gradle` is the target-build coordinator for the dedicated versioning, Loom, dependency, resource, Java/artifact and publishing scripts.
+`settings.gradle` applies `release-versions.gradle`, `version-utils.gradle`, `root-tasks.gradle`, `documentation-validation.gradle`, `release-validation.gradle` and `release-publishing.gradle`. `build.gradle` is the target-build coordinator for the dedicated versioning, Loom, dependency, resource, Java/artifact and `publishing.gradle` scripts. The guarded release commands are documented in `docs/PUBLISHING.md`.
 
 The safest rule is simple: shared behavior belongs in `src/`, version numbers belong in properties, and Stonecutter directives are only for real Minecraft API differences.

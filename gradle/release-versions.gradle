@@ -1,17 +1,65 @@
-ext.stonecutterMinecraftVersions = [
-        '1.20.1',
-        '1.21.1',
-        '1.21.11',
-        '26.1.2',
-        '26.2'
+// Every publishable Stonecutter group is declared here exactly once. Platform-specific
+// Minecraft lists are intentionally separate because Modrinth and CurseForge may use
+// different identifiers for snapshots.
+ext.releaseTargets = [
+        [
+                id                         : 'minecraft_1_20_1',
+                projectPath                : ':1.20.1',
+                stonecutterTarget          : '1.20.1',
+                minecraftVersionsModrinth  : ['1.20.1'],
+                minecraftVersionsCurseForge: ['1.20.1'],
+                displayMinecraft           : '1.20.1',
+                artifactTask               : 'remapJar',
+                primaryChangelogTarget     : true
+        ],
+        [
+                id                         : 'minecraft_1_21_1',
+                projectPath                : ':1.21.1',
+                stonecutterTarget          : '1.21.1',
+                minecraftVersionsModrinth  : ['1.21.1'],
+                minecraftVersionsCurseForge: ['1.21.1'],
+                displayMinecraft           : '1.21.1',
+                artifactTask               : 'remapJar',
+                primaryChangelogTarget     : false
+        ],
+        [
+                id                         : 'minecraft_1_21_11',
+                projectPath                : ':1.21.11',
+                stonecutterTarget          : '1.21.11',
+                minecraftVersionsModrinth  : ['1.21.11'],
+                minecraftVersionsCurseForge: ['1.21.11'],
+                displayMinecraft           : '1.21.11',
+                artifactTask               : 'remapJar',
+                primaryChangelogTarget     : false
+        ],
+        [
+                id                         : 'minecraft_26_1_2',
+                projectPath                : ':26.1.2',
+                stonecutterTarget          : '26.1.2',
+                minecraftVersionsModrinth  : ['26.1.2'],
+                minecraftVersionsCurseForge: ['26.1.2'],
+                displayMinecraft           : '26.1.2',
+                artifactTask               : 'jar',
+                primaryChangelogTarget     : false
+        ],
+        [
+                id                         : 'minecraft_26_2',
+                projectPath                : ':26.2',
+                stonecutterTarget          : '26.2',
+                minecraftVersionsModrinth  : ['26.2'],
+                minecraftVersionsCurseForge: ['26.2'],
+                displayMinecraft           : '26.2',
+                artifactTask               : 'jar',
+                primaryChangelogTarget     : false
+        ]
 ]
 
-ext.releaseMinecraftVersionSets = [
-        ['1.20.1'],
-        ['1.21.1'],
-        ['1.21.11'],
-        ['26.1.2'],
-        ['26.2']
-]
-
-ext.releaseBuildMinecraftVersions = ext.releaseMinecraftVersionSets.collect { it.first() }
+ext.stonecutterMinecraftVersions = ext.releaseTargets.collectMany { target ->
+    ([target.stonecutterTarget] + target.minecraftVersionsModrinth + target.minecraftVersionsCurseForge) as List<String>
+}.unique()
+ext.releaseMinecraftVersionSets = ext.releaseTargets.collect { target ->
+    target.minecraftVersionsModrinth as List<String>
+}
+ext.releaseBuildMinecraftVersions = ext.releaseTargets.collect { target ->
+    target.stonecutterTarget as String
+}

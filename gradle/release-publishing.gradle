@@ -1,0 +1,264 @@
+import groovy.json.JsonOutput
+
+List<Map> publicationTargets = ext.releaseTargets as List<Map>
+
+gradle.rootProject { root ->
+    gradle.projectsEvaluated {
+        def confirmRelease = root.providers.gradleProperty('confirmRelease')
+                .map { value -> value.equalsIgnoreCase('true') }
+                .orElse(false)
+        def modVersion = root.providers.gradleProperty('mod_version')
+        def changelogFile = root.layout.projectDirectory.file('CHANGELOG.md')
+        def dryRunChangelogText = modVersion.map { version ->
+            "# Fresh Armor Bar ${version}\n\nDry-run preview only. Prepare CHANGELOG.md before a real release."
+        }
+        def reportChangelogText = root.providers.fileContents(changelogFile).asText.orElse(dryRunChangelogText)
+        def modrinthTokenPresent = root.providers.environmentVariable('MODRINTH_TOKEN')
+                .map { token -> !token.trim().isEmpty() }
+                .orElse(false)
+        def curseForgeTokenPresent = root.providers.environmentVariable('CURSEFORGE_TOKEN')
+                .map { token -> !token.trim().isEmpty() }
+                .orElse(false)
+
+        root.tasks.register('prepareRelease') {
+            group = 'publishing'
+            description = 'Checks that CHANGELOG.md is present before release validation.'
+            inputs.file(changelogFile)
+
+            doLast {
+                if (!changelogFile.asFile.exists()) {
+                    throw new GradleException('CHANGELOG.md is missing. Create it with the real notes for the current mod_version before validating a release.')
+                }
+                logger.lifecycle('CHANGELOG.md is present. Run validateRelease to validate its title and content.')
+            }
+        }
+
+        def requireDryRun = root.tasks.register('requirePublicationDryRun') {
+            group = 'publishing'
+            description = 'Prevents dry-run aggregates from being used with real-release confirmation.'
+            doLast {
+                if (confirmRelease.get()) {
+                    throw new GradleException('Dry-run tasks must be executed without -PconfirmRelease=true.')
+                }
+            }
+        }
+
+        def requireModrinthRelease = root.tasks.register('requireModrinthReleaseConfirmation') {
+            group = 'publishing'
+            description = 'Requires explicit confirmation and a Modrinth token before any real Modrinth upload.'
+            doLast {
+                if (!confirmRelease.get()) {
+                    throw new GradleException('Real publication is locked. Re-run with -PconfirmRelease=true after completing every dry-run check.')
+                }
+                if (!modrinthTokenPresent.get()) {
+                    throw new GradleException('MODRINTH_TOKEN is required for a real Modrinth publication.')
+                }
+            }
+        }
+
+        def requireCurseForgeRelease = root.tasks.register('requireCurseForgeReleaseConfirmation') {
+            group = 'publishing'
+            description = 'Requires explicit confirmation and a CurseForge token before any real CurseForge upload.'
+            doLast {
+                if (!confirmRelease.get()) {
+                    throw new GradleException('Real publication is locked. Re-run with -PconfirmRelease=true after completing every dry-run check.')
+                }
+                if (!curseForgeTokenPresent.get()) {
+                    throw new GradleException('CURSEFORGE_TOKEN is required for a real CurseForge publication.')
+                }
+            }
+        }
+        root.tasks.named('validateRelease').configure {
+            mustRunAfter(requireModrinthRelease)
+            mustRunAfter(requireCurseForgeRelease)
+        }
+
+        def modrinthTasks = publicationTargets.collect { target ->
+            root.project(target.projectPath as String).tasks.named('publishModrinth')
+        }
+        def curseForgeTasks = publicationTargets.collect { target ->
+            root.project(target.projectPath as String).tasks.named('publishCurseforge')
+        }
+        [modrinthTasks, curseForgeTasks].each { orderedTasks ->
+            orderedTasks.eachWithIndex { taskProvider, index ->
+                if (index > 0) {
+                    taskProvider.configure {
+                        mustRunAfter(orderedTasks[index - 1])
+                    }
+                }
+            }
+        }
+
+        def writePublicationDryRunReport = root.tasks.register('writePublicationDryRunReport') {
+            group = 'publishing'
+            description = 'Writes a complete, secret-free JSON preview of every publication destination.'
+            dependsOn(root.tasks.named('validateReleaseConfiguration'))
+            dependsOn(root.tasks.named('validateReleaseArtifacts'))
+            inputs.property('releaseTargets', publicationTargets)
+            inputs.property('modVersion', modVersion)
+            inputs.property('modName', root.providers.gradleProperty('mod_name'))
+            inputs.property('modrinthProjectId', root.providers.gradleProperty('modrinth_project_id'))
+            inputs.property('curseforgeProjectId', root.providers.gradleProperty('curseforge_project_id'))
+            inputs.property('changelogText', reportChangelogText)
+            inputs.property('confirmationSet', confirmRelease)
+            inputs.property('archivesBaseName', root.providers.gradleProperty('archives_base_name'))
+            inputs.property('libsDirPath', root.layout.buildDirectory.dir('libs').map { directory -> directory.asFile.absolutePath })
+            inputs.files(publicationTargets.collect { target ->
+                root.project(target.projectPath as String).tasks.named(target.artifactTask as String).flatMap { archiveTask ->
+                    archiveTask.archiveFile
+                }
+            })
+            outputs.file(root.layout.buildDirectory.file('reports/publishing/dry-run-plan.json'))
+
+            doLast { task ->
+                List<Map> targets = task.inputs.properties.releaseTargets as List<Map>
+                def productionChangelog = task.inputs.properties.changelogText.toString()
+                def entries = []
+
+                targets.each { target ->
+                    List<String> versions = target.minecraftVersionsModrinth as List<String>
+                    def suffix = versions.first()
+                    if (versions.size() > 1) {
+                        def firstParts = versions.first().split('\\.')
+                        def lastParts = versions.last().split('\\.')
+                        def commonPartCount = 0
+                        while (commonPartCount < firstParts.length
+                                && commonPartCount < lastParts.length
+                                && firstParts[commonPartCount] == lastParts[commonPartCount]) {
+                            commonPartCount++
+                        }
+                        def dropCount = firstParts.length == lastParts.length
+                                ? commonPartCount
+                                : Math.max(0, commonPartCount - 1)
+                        suffix = "${versions.first()}-${lastParts.drop(dropCount).join('.')}"
+                    }
+                    def artifact = new File(
+                            task.inputs.properties.libsDirPath.toString(),
+                            "${task.inputs.properties.archivesBaseName}-${task.inputs.properties.modVersion}-${suffix}.jar"
+                    )
+                    if (!artifact.isFile()) {
+                        throw new GradleException("Dry-run artifact is missing: ${artifact}")
+                    }
+                    def displayName = "${task.inputs.properties.modName} ${task.inputs.properties.modVersion} | ${target.displayMinecraft}"
+                    entries << [
+                            platform        : 'curseforge',
+                            task            : "${target.projectPath}:publishCurseforge",
+                            projectId       : task.inputs.properties.curseforgeProjectId,
+                            stonecutterTarget: target.stonecutterTarget,
+                            artifactTask    : target.artifactTask,
+                            artifact        : artifact.absolutePath,
+                            displayName     : displayName,
+                            version         : task.inputs.properties.modVersion,
+                            minecraftVersions: target.minecraftVersionsCurseForge,
+                            modLoaders      : ['fabric'],
+                            environment     : [client: true, server: false],
+                            changelog       : productionChangelog,
+                            changelogMode   : 'full',
+                            changelogFormat : 'markdown',
+                            publicationOrder: targets.indexOf(target) + 1,
+                            dependencies    : [[slug: 'modmenu', type: 'optional']]
+                    ]
+                    entries << [
+                            platform        : 'modrinth',
+                            task            : "${target.projectPath}:publishModrinth",
+                            projectId       : task.inputs.properties.modrinthProjectId,
+                            stonecutterTarget: target.stonecutterTarget,
+                            artifactTask    : target.artifactTask,
+                            artifact        : artifact.absolutePath,
+                            displayName     : displayName,
+                            version         : task.inputs.properties.modVersion,
+                            minecraftVersions: target.minecraftVersionsModrinth,
+                            modLoaders      : ['fabric'],
+                            environment     : 'client-only',
+                            changelog       : target.primaryChangelogTarget ? productionChangelog : '',
+                            changelogMode   : target.primaryChangelogTarget ? 'full' : 'empty',
+                            publicationOrder: targets.indexOf(target) + 1,
+                            dependencies    : [[slug: 'modmenu', type: 'optional']]
+                    ]
+                }
+
+                def reportFile = task.outputs.files.singleFile
+                reportFile.parentFile.mkdirs()
+                reportFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson([
+                        dryRun         : true,
+                        confirmationSet: task.inputs.properties.confirmationSet,
+                        entries        : entries
+                ])), 'UTF-8')
+                task.logger.lifecycle("Publication dry-run report: ${reportFile}")
+            }
+        }
+        modrinthTasks.each { taskProvider -> taskProvider.configure { mustRunAfter(writePublicationDryRunReport) } }
+        curseForgeTasks.each { taskProvider -> taskProvider.configure { mustRunAfter(writePublicationDryRunReport) } }
+
+        def publishModrinthDryRun = root.tasks.register('publishModrinthDryRun') {
+            group = 'publishing'
+            description = 'Builds and exercises every Modrinth destination using the plugin dry-run mode.'
+            dependsOn(requireDryRun)
+            dependsOn(root.tasks.named('validateReleaseConfiguration'))
+            dependsOn(root.tasks.named('validateReleaseArtifacts'))
+            dependsOn(writePublicationDryRunReport)
+            dependsOn(modrinthTasks)
+        }
+
+        def publishCurseForgeDryRun = root.tasks.register('publishCurseForgeDryRun') {
+            group = 'publishing'
+            description = 'Builds and exercises every CurseForge destination using the plugin dry-run mode.'
+            dependsOn(requireDryRun)
+            dependsOn(root.tasks.named('validateReleaseConfiguration'))
+            dependsOn(root.tasks.named('validateReleaseArtifacts'))
+            dependsOn(writePublicationDryRunReport)
+            dependsOn(curseForgeTasks)
+        }
+
+        root.tasks.register('publishAllDryRun') {
+            group = 'publishing'
+            description = 'Runs safe local dry-runs for Modrinth and CurseForge.'
+            dependsOn(publishModrinthDryRun)
+            dependsOn(publishCurseForgeDryRun)
+        }
+
+        def publishModrinth = root.tasks.register('publishModrinth') {
+            group = 'publishing'
+            description = 'Publishes every target to Modrinth after explicit confirmation and validation.'
+            dependsOn(requireModrinthRelease)
+            dependsOn(root.tasks.named('validateRelease'))
+            dependsOn(modrinthTasks)
+        }
+        modrinthTasks.each { taskProvider ->
+            taskProvider.configure { mustRunAfter(requireModrinthRelease) }
+        }
+
+        def publishCurseForge = root.tasks.register('publishCurseForge') {
+            group = 'publishing'
+            description = 'Publishes every target to CurseForge after explicit confirmation and validation.'
+            dependsOn(requireCurseForgeRelease)
+            dependsOn(root.tasks.named('validateRelease'))
+            dependsOn(curseForgeTasks)
+        }
+        curseForgeTasks.each { taskProvider ->
+            taskProvider.configure { mustRunAfter(requireCurseForgeRelease) }
+        }
+
+        root.tasks.register('publishAll') {
+            group = 'publishing'
+            description = 'Publishes every target to Modrinth and CurseForge after explicit confirmation.'
+            dependsOn(publishModrinth)
+            dependsOn(publishCurseForge)
+        }
+
+        if (confirmRelease.get()) {
+            modrinthTasks.each { taskProvider ->
+                taskProvider.configure {
+                    dependsOn(root.tasks.named('validateRelease'))
+                    dependsOn(requireModrinthRelease)
+                }
+            }
+            curseForgeTasks.each { taskProvider ->
+                taskProvider.configure {
+                    dependsOn(root.tasks.named('validateRelease'))
+                    dependsOn(requireCurseForgeRelease)
+                }
+            }
+        }
+    }
+}

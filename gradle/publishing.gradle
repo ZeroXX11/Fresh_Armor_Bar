@@ -1,3 +1,69 @@
+apply plugin: 'me.modmuss50.mod-publish-plugin'
+
+Map releaseTarget = (releaseTargets as List<Map>).find { target ->
+    target.projectPath == project.path
+} as Map
+if (releaseTarget == null) {
+    throw new GradleException("No release target is configured for ${project.path}")
+}
+
+def publishArtifactTask = tasks.named(releaseTarget.artifactTask as String)
+def confirmRelease = providers.gradleProperty('confirmRelease')
+        .map { value -> value.equalsIgnoreCase('true') }
+        .orElse(false)
+def releaseDryRun = confirmRelease.map { confirmed -> !confirmed }
+def modVersion = providers.gradleProperty('mod_version')
+def releaseTitle = "${providers.gradleProperty('mod_name').get()} ${modVersion.get()} | ${releaseTarget.displayMinecraft}"
+
+if (!rootProject.ext.has('releaseChangelogTextProvider')) {
+    def changelogFile = rootProject.layout.projectDirectory.file('CHANGELOG.md')
+    def dryRunChangelog = modVersion.map { version ->
+        "# Fresh Armor Bar ${version}\n\nDry-run preview only. Prepare CHANGELOG.md before a real release."
+    }
+    rootProject.ext.releaseChangelogTextProvider = rootProject.providers
+            .fileContents(changelogFile)
+            .asText
+            .orElse(dryRunChangelog)
+}
+def releaseChangelog = rootProject.ext.releaseChangelogTextProvider
+
+publishMods {
+    file = publishArtifactTask.flatMap { task -> task.archiveFile }
+    version = modVersion
+    displayName = releaseTitle
+    type = STABLE
+    modLoaders.add('fabric')
+    dryRun = releaseDryRun
+
+    modrinth {
+        projectId = providers.gradleProperty('modrinth_project_id')
+        accessToken = providers.environmentVariable('MODRINTH_TOKEN')
+        minecraftVersions.addAll(releaseTarget.minecraftVersionsModrinth as List<String>)
+        environment = CLIENT_ONLY
+        changelog = releaseTarget.primaryChangelogTarget ? releaseChangelog : ''
+        optional('modmenu')
+    }
+
+    curseforge {
+        projectId = providers.gradleProperty('curseforge_project_id')
+        accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+        minecraftVersions.addAll(releaseTarget.minecraftVersionsCurseForge as List<String>)
+        client = true
+        server = false
+        changelog = releaseChangelog
+        changelogType = 'markdown'
+        optional('modmenu')
+    }
+}
+
+tasks.named('publishModrinth').configure {
+    dependsOn(publishArtifactTask)
+}
+
+tasks.named('publishCurseforge').configure {
+    dependsOn(publishArtifactTask)
+}
+
 tasks.register('buildAllVersions') {
     group = 'build'
     description = 'Legacy per-version build alias. Prefer root verifyAllVersions for compatibility checks.'

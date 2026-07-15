@@ -2,6 +2,7 @@ import groovy.json.JsonSlurper
 import java.util.zip.ZipFile
 
 List<List<String>> releaseVersionSets = ext.releaseMinecraftVersionSets as List<List<String>>
+List<Map> configuredReleaseTargets = ext.releaseTargets as List<Map>
 
 Closure<String> expectedReleaseSuffix = { List<String> versions ->
 	versions.size() > 1 ? compactMinecraftVersionRange(versions) : versions.first()
@@ -48,6 +49,103 @@ Closure<Void> assertMinecraftDependency = { Object actual, List<String> expected
 
 gradle.rootProject { root ->
 	gradle.projectsEvaluated {
+		def configuredProjectPaths = root.allprojects.collect { project -> project.path }
+		def configuredProjectTaskNames = configuredReleaseTargets.collectEntries { target ->
+			[(target.projectPath): root.project(target.projectPath as String).tasks.names.toList().sort()]
+		}
+		def configuredExpectedJarNames = configuredReleaseTargets.collect { target ->
+			def suffix = expectedReleaseSuffix(target.minecraftVersionsModrinth as List<String>)
+			"${root.providers.gradleProperty('archives_base_name').get()}-${root.providers.gradleProperty('mod_version').get()}-${suffix}.jar"
+		}
+		def validateReleaseConfiguration = root.tasks.register('validateReleaseConfiguration') {
+			group = 'verification'
+			description = 'Validates the centralized Stonecutter-to-publication target mapping.'
+			inputs.property('releaseTargets', configuredReleaseTargets)
+			inputs.property('modVersion', root.providers.gradleProperty('mod_version'))
+			inputs.property('modrinthProjectId', root.providers.gradleProperty('modrinth_project_id'))
+			inputs.property('curseforgeProjectId', root.providers.gradleProperty('curseforge_project_id'))
+			inputs.property('configuredProjectPaths', configuredProjectPaths)
+			inputs.property('configuredProjectTaskNames', configuredProjectTaskNames)
+			inputs.property('expectedJarNames', configuredExpectedJarNames)
+
+			doLast { task ->
+				List<Map> targets = task.inputs.properties.releaseTargets as List<Map>
+				def assertUnique = { String field ->
+					def duplicates = targets.groupBy { it[field] }.findAll { value, entries ->
+						value == null || value.toString().trim().isEmpty() || entries.size() > 1
+					}.keySet()
+					if (!duplicates.isEmpty()) {
+						throw new GradleException("Release target field '${field}' is missing or duplicated: ${duplicates}")
+					}
+				}
+
+				['id', 'projectPath', 'stonecutterTarget', 'displayMinecraft'].each(assertUnique)
+				if (task.inputs.properties.modVersion.toString().trim().isEmpty()) {
+					throw new GradleException('mod_version must not be empty')
+				}
+				if (task.inputs.properties.modrinthProjectId.toString().trim().isEmpty()) {
+					throw new GradleException('modrinth_project_id must not be empty')
+				}
+				if (task.inputs.properties.curseforgeProjectId.toString().trim().isEmpty()) {
+					throw new GradleException('curseforge_project_id must not be empty')
+				}
+
+				def primaryTargets = targets.findAll { it.primaryChangelogTarget == true }
+				if (primaryTargets.size() != 1) {
+					throw new GradleException("Exactly one primary changelog target is required; found ${primaryTargets.size()}")
+				}
+				def primary = primaryTargets.first()
+				if (primary.minecraftVersionsModrinth != ['1.20.1']
+						|| primary.minecraftVersionsCurseForge != ['1.20.1']) {
+					throw new GradleException('The primary changelog target must be the standalone Minecraft 1.20.1 group')
+				}
+
+				['minecraftVersionsModrinth', 'minecraftVersionsCurseForge'].each { field ->
+					def owners = [:].withDefault { [] }
+					targets.each { target ->
+						List<String> versions = target[field] as List<String>
+						if (versions == null || versions.isEmpty() || versions.any { it == null || it.trim().isEmpty() }) {
+							throw new GradleException("${target.id}: ${field} must contain at least one non-empty Minecraft version")
+						}
+						if (versions.size() != versions.unique().size()) {
+							throw new GradleException("${target.id}: ${field} contains duplicate Minecraft versions")
+						}
+						versions.each { version -> owners[version] << target.id }
+					}
+					def overlaps = owners.findAll { version, targetIds -> targetIds.size() > 1 }
+					if (!overlaps.isEmpty()) {
+						throw new GradleException("${field} assigns Minecraft versions to multiple targets: ${overlaps}")
+					}
+				}
+
+				List<String> projectPaths = task.inputs.properties.configuredProjectPaths as List<String>
+				Map<String, List<String>> projectTaskNames = task.inputs.properties.configuredProjectTaskNames as Map<String, List<String>>
+				targets.each { target ->
+					if (!projectPaths.contains(target.projectPath as String)) {
+						throw new GradleException("${target.id}: missing Gradle project ${target.projectPath}")
+					}
+					if (target.projectPath != ":${target.stonecutterTarget}") {
+						throw new GradleException("${target.id}: projectPath and stonecutterTarget do not match")
+					}
+					if (!(target.minecraftVersionsModrinth as List).contains(target.stonecutterTarget)
+							|| !(target.minecraftVersionsCurseForge as List).contains(target.stonecutterTarget)) {
+						throw new GradleException("${target.id}: the representative Stonecutter target must be present on both platforms")
+					}
+					def expectedArtifactTask = target.stonecutterTarget.toString().startsWith('26.') ? 'jar' : 'remapJar'
+					if (target.artifactTask != expectedArtifactTask) {
+						throw new GradleException("${target.id}: expected ${expectedArtifactTask}, configured ${target.artifactTask}")
+					}
+					if (!(projectTaskNames[target.projectPath] as List<String>).contains(target.artifactTask as String)) {
+						throw new GradleException("${target.id}: task ${target.projectPath}:${target.artifactTask} does not exist")
+					}
+				}
+				List<String> expectedJarNames = task.inputs.properties.expectedJarNames as List<String>
+				if (expectedJarNames.size() != expectedJarNames.unique().size()) {
+					throw new GradleException("Multiple release targets produce the same jar name: ${expectedJarNames}")
+				}
+			}
+		}
+
 		def validateReleaseArtifacts = root.tasks.register('validateReleaseArtifacts') {
 			group = 'verification'
 			description = 'Validates collected release jars, filenames and generated fabric.mod.json metadata.'
@@ -110,11 +208,66 @@ gradle.rootProject { root ->
 			}
 		}
 
+		def validateReleaseChangelog = root.tasks.register('validateReleaseChangelog') {
+			group = 'verification'
+			description = 'Validates that CHANGELOG.md is complete and belongs to the current mod version.'
+			inputs.property('modVersion', root.providers.gradleProperty('mod_version'))
+			inputs.property('changelogPath', root.layout.projectDirectory.file('CHANGELOG.md').asFile.absolutePath)
+
+			doLast { task ->
+				def changelogFile = new File(task.inputs.properties.changelogPath.toString())
+				if (!changelogFile.isFile()) {
+					throw new GradleException('CHANGELOG.md is missing. Create it with the real release notes for the current mod_version.')
+				}
+				def changelog = changelogFile.getText('UTF-8')
+				def modVersion = task.inputs.properties.modVersion.toString()
+				if (changelog.trim().isEmpty()) {
+					throw new GradleException('CHANGELOG.md is empty. Add real release notes before publishing.')
+				}
+				def expectedTitle = "# ${modVersion} | CHANGELOG:".toString()
+				if (changelog.readLines().first().trim() != expectedTitle) {
+					throw new GradleException("CHANGELOG.md must start with '# ${modVersion} | CHANGELOG:'")
+				}
+				def forbiddenPatterns = [
+						'(?i)<MOD_VERSION>',
+						'(?i)\\bTODO\\b',
+						'(?s)<!--.*?-->',
+						'(?i)Inserire qui',
+						'(?i)placeholder'
+				]
+				forbiddenPatterns.each { pattern ->
+					if ((changelog =~ pattern).find()) {
+						throw new GradleException("CHANGELOG.md contains a forbidden template marker matching ${pattern}")
+					}
+				}
+				def sectionMatcher = changelog =~ '(?ms)^##[ \\t]+([^\\r\\n]+)\\R(.*?)(?=^##[ \\t]+|\\z)'
+				def sectionCount = 0
+				while (sectionMatcher.find()) {
+					sectionCount++
+					if (sectionMatcher.group(2).trim().isEmpty()) {
+						throw new GradleException("CHANGELOG.md section '${sectionMatcher.group(1).trim()}' must contain real release notes")
+					}
+				}
+				if (sectionCount == 0) {
+					throw new GradleException('CHANGELOG.md must contain at least one non-empty level-two section')
+				}
+			}
+		}
+
+		root.tasks.register('validateRelease') {
+			group = 'verification'
+			description = 'Validates release mapping, jars and the production changelog without publishing.'
+			dependsOn(validateReleaseConfiguration)
+			dependsOn(validateReleaseArtifacts)
+			dependsOn(validateReleaseChangelog)
+		}
+
 		root.tasks.register('fullVerify') {
 			group = 'verification'
 			description = 'Runs all compatibility and release validation checks and restores Stonecutter IDE models.'
 			dependsOn(root.tasks.named('verifyAllVersions'))
 			dependsOn(root.tasks.named('validateDocumentation'))
+			dependsOn(validateReleaseConfiguration)
 			dependsOn(validateReleaseArtifacts)
 			dependsOn(root.tasks.named('stonecutterSaveModels'))
 		}

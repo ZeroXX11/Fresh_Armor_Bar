@@ -203,7 +203,8 @@ Fresh_Armor_Bar/
 |  |- dependencies.gradle        Repositories and target dependencies
 |  |- resources.gradle           Metadata and resource generation
 |  |- java-artifacts.gradle      Toolchains and jar outputs
-|  `- publishing.gradle          Publication and legacy aliases
+|  |- publishing.gradle          Per-target Modrinth/CurseForge destinations
+|  `- release-publishing.gradle  Root release tasks, order and safety guards
 |- build.gradle                  Coordinator for target build scripts
 |- settings.gradle               Coordinator for Stonecutter and root scripts
 |- stonecutter.gradle            Active-version marker and Loom version
@@ -211,7 +212,7 @@ Fresh_Armor_Bar/
 `- MULTIVERSION.md               Complete developer workflow
 ```
 
-`settings.gradle` coordinates Stonecutter and applies shared release/version helpers, root tasks, documentation validation and release validation. `build.gradle` coordinates each target through the dedicated scripts in `gradle/`.
+`settings.gradle` coordinates Stonecutter and applies shared release/version helpers, root tasks, documentation validation, release validation and `release-publishing.gradle`. `build.gradle` coordinates each target through the dedicated scripts in `gradle/`; `publishing.gradle` configures the publication plugin. See [the publishing guide](docs/PUBLISHING.md) before preparing any release.
 
 Official armor-mod textures are bundled in the main JAR under `modded_strips/<modid>/`. This support remains optional and does not add a runtime dependency on the supported mod.
 
