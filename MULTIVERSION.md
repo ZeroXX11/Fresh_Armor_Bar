@@ -8,6 +8,7 @@ This guide explains how one Fresh Armor Bar repository builds several Minecraft 
 - [Supported targets](#supported-targets)
 - [Where versions are configured](#where-versions-are-configured)
 - [Shared and version-specific code](#shared-and-version-specific-code)
+- [Modded armor texture resolution](#modded-armor-texture-resolution)
 - [Changing the active version](#changing-the-active-version)
 - [Running the client](#running-the-client)
 - [Java requirements](#java-requirements)
@@ -128,6 +129,16 @@ The inactive branch is preserved inside a block comment so every generated targe
 Do not reformat or move these comments unless you are intentionally changing version behavior.
 
 Fresh Armor Bar remains client-side on every target. Mod Menu and Trinkets-family integrations are optional. Targets 26.1.2+ discover compatible Elytra-slot APIs through guarded reflection instead of compiling directly against Trinkets.
+
+## Modded armor texture resolution
+
+Official armor-mod resources remain in the shared source tree and are packaged in every target JAR under:
+
+```text
+src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png
+```
+
+`ArmorBarTextures` handles material resolution and fallbacks, while `ArmorBarModTextures` tracks the namespaces with official support. Compatibility uses identifiers and resources only, so supported armor mods remain optional dependencies. Version-specific directives normalize the different Minecraft material APIs to the same `<modid>:<material>` form.
 
 ## Changing the active version
 
@@ -324,7 +335,8 @@ The build and release workflow assume that:
 6. Fabric API is never emitted as a required or suggested metadata dependency;
 7. `build/libs` contains only expected release artifacts;
 8. every supported target has a valid Stonecutter model;
-9. target-specific API differences use the smallest practical Stonecutter directive.
+9. target-specific API differences use the smallest practical Stonecutter directive;
+10. bundled third-party textures stay in the shared JAR under `modded_strips/<modid>/` and do not introduce a hard dependency on that mod.
 
 `validateReleaseArtifacts` enforces the artifact-related invariants. `verifyAllVersions` and `stonecutterSaveModels` enforce compilation and model generation.
 
@@ -415,6 +427,7 @@ For every release candidate:
 - [ ] Open and save the Mod Menu configuration.
 - [ ] Confirm that configuration persists after restart.
 - [ ] Test a resource-pack override and the unknown-material fallback.
+- [ ] Test the officially supported armor mods on the oldest and newest targets.
 - [ ] Run `.\gradlew.bat clean fullVerify --no-daemon`.
 - [ ] Inspect the final binary and sources JAR names in `build/libs`.
 
@@ -439,6 +452,7 @@ For every release candidate:
 |------------------------------------------|--------------------------------------|
 | `src/main/java`                          | Shared Java source                   |
 | `src/main/resources`                     | Shared metadata, mixins and assets   |
+| `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips` | Official armor-mod textures |
 | `versions/<version>/gradle.properties`   | Target-specific versions             |
 | `gradle/release-versions.gradle`         | Target and release lists             |
 | `gradle/version-utils.gradle`            | Minecraft version-range helpers      |

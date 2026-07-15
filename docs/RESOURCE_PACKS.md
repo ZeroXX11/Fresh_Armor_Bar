@@ -8,7 +8,9 @@ Fresh Armor Bar loads its HUD textures through Minecraft's resource system. A no
 - [Pack metadata](#pack-metadata)
 - [Texture sizes](#texture-sizes)
 - [Material-strip format](#material-strip-format)
-- [Modded armor materials](#modded-armor-materials)
+- [Official mod support](#official-mod-support)
+- [Other modded armor materials](#other-modded-armor-materials)
+- [Lookup order](#lookup-order)
 - [Troubleshooting](#troubleshooting)
 
 ## Directory layout
@@ -35,6 +37,9 @@ FreshArmorBar_ResourcePack/
                |  |- diamond.png
                |  |- netherite.png
                |  `- copper.png
+               |- modded_strips/
+               |  `- <modid>/
+               |     `- <material>.png
                `- overlays/
                   `- trim/
                      |- trim_base.png
@@ -79,7 +84,21 @@ left half | right half | full icon
 
 The first two areas are used when one HUD icon combines halves from different armor pieces. The third is used when the whole icon has one appearance.
 
-## Modded armor materials
+## Official mod support
+
+Fresh Armor Bar bundles textures for officially supported armor mods in its own JAR. The current list is:
+
+- Advanced Netherite
+
+Every supported mod uses the same scalable path:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png
+```
+
+`<modid>` is the mod namespace and `<material>` is the material identifier without the namespace. A resource pack can override an official integration by repeating the same path. Each new official integration uses another mod-id folder and its strips.
+
+## Other modded armor materials
 
 For a material without a namespace, use:
 
@@ -95,12 +114,23 @@ assets/examplemod/textures/gui/armorbar/strips/ruby.png
 
 If no matching texture exists, Fresh Armor Bar uses `base.png` and writes a warning to the game log.
 
+## Lookup order
+
+For a modded material, Fresh Armor Bar checks:
+
+1. `assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png` for a directly supported mod;
+2. `assets/<modid>/textures/gui/armorbar/strips/<material>.png`;
+3. `assets/fresh-armor-bar/textures/gui/armorbar/strips/<material>.png`;
+4. the built-in `base.png` fallback.
+
+The first path is the current system for official integrations. The other paths remain compatible fallbacks for textures supplied by mods or older resource packs.
+
 ## Troubleshooting
 
 - Confirm that the pack is enabled and above conflicting packs.
 - Check spelling, namespace, lowercase filenames and the complete directory path.
 - Confirm that every strip is exactly `27x9` pixels.
-- Read `latest.log` to find the material identifier requested by Fresh Armor Bar.
+- Read `latest.log` to find the `modid:material` requested by Fresh Armor Bar and the paths it checked.
 - Reload resources after changing files.
 
 Return to the [main README](../README.md).

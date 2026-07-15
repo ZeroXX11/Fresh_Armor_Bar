@@ -49,7 +49,7 @@ final class ArmorBarTextures {
     private static final Identifier NETHERITE_STRIP = id("textures/gui/armorbar/strips/netherite.png");
 
     private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
-    private static final Set<String> UNKNOWN_MATERIALS_LOGGED = new HashSet<>();
+    private static final Set<String> LOGGED_MATERIALS = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     //? if >=26.1.2
     //private static net.minecraft.server.packs.resources.ResourceManager lastResourceManager = null;
@@ -158,21 +158,21 @@ final class ArmorBarTextures {
         //? if >=26.1.2 {
         /*if (currentManager != lastResourceManager) {
             MATERIAL_TEXTURE_CACHE.clear();
-            UNKNOWN_MATERIALS_LOGGED.clear();
+            LOGGED_MATERIALS.clear();
             lastResourceManager = currentManager;
         }
         *///?} else {
         
         if (currentManager != null && currentManager != lastResourceManager) {
             MATERIAL_TEXTURE_CACHE.clear();
-            UNKNOWN_MATERIALS_LOGGED.clear();
+            LOGGED_MATERIALS.clear();
             lastResourceManager = currentManager;
         }
         //?}
 
         String cacheKey = namespace + ":" + material;
         return MATERIAL_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored -> {
-            boolean shouldLog = UNKNOWN_MATERIALS_LOGGED.add(cacheKey);
+            boolean shouldLog = LOGGED_MATERIALS.add(cacheKey);
             Identifier externalTexture;
             Identifier genericTexture;
             try {

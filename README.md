@@ -35,6 +35,7 @@ Fresh Armor Bar is a client-side Fabric mod that replaces Minecraft's vanilla ar
 - Configurable feedback for damage and Mending repairs.
 - A configuration screen when Mod Menu is installed.
 - Resource-pack support for built-in and modded armor textures.
+- Official compatibility with selected third-party armor mods.
 
 ## Download
 
@@ -90,7 +91,9 @@ config/fresh-armor-bar.properties
 ## Compatibility and limitations
 
 - Vanilla armor materials are supported directly.
-- Unknown or modded materials fall back to `base.png` unless a matching resource-pack texture exists.
+- Officially supported armor mods: Advanced Netherite.
+- Other modded materials can provide a namespaced or generic strip through Minecraft's resource system.
+- Unknown materials fall back to `base.png` only after every supported texture location has been checked.
 - Elytra integrations are best-effort and depend on the slot API exposed by the other mod.
 - Fresh Armor Bar supports the classic Trinkets API, Trinkets Canary and Trinkets Updated when present.
 - Mods that completely replace or reposition the vanilla armor HUD may conflict with Fresh Armor Bar.
@@ -106,10 +109,16 @@ Resource packs can replace the built-in textures or add material strips for modd
 assets/fresh-armor-bar/textures/gui/armorbar/
 ```
 
-For example, a namespaced material such as `examplemod:ruby` uses:
+Textures for officially supported armor mods use:
 
 ```text
-assets/examplemod/textures/gui/armorbar/strips/ruby.png
+assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png
+```
+
+For mods without an official integration, resource packs can still use the material owner's namespace:
+
+```text
+assets/<modid>/textures/gui/armorbar/strips/<material>.png
 ```
 
 See [Resource-pack guide](docs/RESOURCE_PACKS.md) for the complete directory layout, texture sizes, strip format and `pack.mcmeta` example.
@@ -130,7 +139,7 @@ Mod Menu is optional but required for the in-game configuration screen. The prop
 
 ### Modded armor uses the fallback texture
 
-Fresh Armor Bar could not find a material-specific strip and used `base.png`. Check the warning in `latest.log`, then add the path described in the [resource-pack guide](docs/RESOURCE_PACKS.md).
+Fresh Armor Bar could not find a material-specific strip and used `base.png`. Check the `modid:material` in `latest.log`, then compare it with the paths described in the [resource-pack guide](docs/RESOURCE_PACKS.md).
 
 ### The HUD overlaps another mod
 
@@ -203,6 +212,8 @@ Fresh_Armor_Bar/
 ```
 
 `settings.gradle` coordinates Stonecutter and applies shared release/version helpers, root tasks, documentation validation and release validation. `build.gradle` coordinates each target through the dedicated scripts in `gradle/`.
+
+Official armor-mod textures are bundled in the main JAR under `modded_strips/<modid>/`. This support remains optional and does not add a runtime dependency on the supported mod.
 
 ## Links
 

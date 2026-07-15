@@ -4,7 +4,21 @@ Fresh Armor Bar is a client-side HUD renderer. It changes how armor is displayed
 
 ## Armor materials
 
-Vanilla armor materials are supported directly. Modded materials can supply compatible `27x9` strips through a resource pack. When a matching texture cannot be found, the mod renders `base.png` and records the requested material in `latest.log`.
+Vanilla armor materials are supported directly. Modded armor can be supported through integrated textures or Minecraft's resource system.
+
+## Official armor mod support
+
+- Advanced Netherite
+
+Official integrations are bundled in the main Fresh Armor Bar JAR under:
+
+```text
+assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png
+```
+
+These integrations use resource identifiers only. They do not import the supported mod's Java API or make it a required dependency.
+
+When no matching texture can be found, the mod renders `base.png` and records the requested material in `latest.log`.
 
 See the [resource-pack guide](RESOURCE_PACKS.md) for filenames and namespaces.
 
