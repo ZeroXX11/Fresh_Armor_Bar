@@ -17,7 +17,7 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 ## Prepare a release
 
-1. Set `mod_version` in `gradle.properties`. Every Minecraft group uses this same platform version number; the Minecraft group remains part of the JAR name and display title.
+1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.1-1.20.1` or `2.1-26.2`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.1 | 26.2`.
 2. Review the single source of truth in `gradle/release-versions.gradle`. Each entry maps its Stonecutter project, platform Minecraft versions, display label, artifact task, and changelog role.
 3. Write or update `CHANGELOG.md` with the real release notes. Every level-two section must contain content. The title must be `# <current mod_version> | CHANGELOG`.
 4. Commit the completed `CHANGELOG.md` with the release changes.

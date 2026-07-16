@@ -240,6 +240,17 @@ gradle.rootProject { root ->
 						throw new GradleException("CHANGELOG.md contains a forbidden template marker matching ${pattern}")
 					}
 				}
+				def mojibakePatterns = [
+						'\\x{00E2}\\x{0153}',
+						'\\x{00E2}\\x{0161}',
+						'\\x{00E2}\\x{20AC}',
+						'\\x{00F0}\\x{0178}',
+						'\\x{00EF}\\x{00B8}',
+						'\\x{FFFD}'
+				]
+				if (mojibakePatterns.any { pattern -> (changelog =~ pattern).find() }) {
+					throw new GradleException('CHANGELOG.md contains text that appears to be decoded with the wrong character encoding. Save it as UTF-8 before publishing.')
+				}
 				def sectionMatcher = changelog =~ '(?ms)^##[ \\t]+([^\\r\\n]+)\\R(.*?)(?=^##[ \\t]+|\\z)'
 				def sectionCount = 0
 				while (sectionMatcher.find()) {

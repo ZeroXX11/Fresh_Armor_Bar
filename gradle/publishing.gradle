@@ -13,7 +13,9 @@ def confirmRelease = providers.gradleProperty('confirmRelease')
         .orElse(false)
 def releaseDryRun = confirmRelease.map { confirmed -> !confirmed }
 def modVersion = providers.gradleProperty('mod_version')
-def releaseTitle = "${providers.gradleProperty('mod_name').get()} ${modVersion.get()} | ${releaseTarget.displayMinecraft}"
+def publicationVersion = modVersion.map { version -> "${version}-${releaseTarget.displayMinecraft}" }
+def releaseTitle = publicationVersion.map { version -> "${providers.gradleProperty('mod_name').get()} ${version}" }
+def curseForgeTitle = modVersion.map { version -> "${providers.gradleProperty('mod_name').get()} ${version} | ${releaseTarget.displayMinecraft}" }
 
 if (!rootProject.ext.has('releaseChangelogTextProvider')) {
     def changelogFile = rootProject.layout.projectDirectory.file('CHANGELOG.md')
@@ -22,14 +24,15 @@ if (!rootProject.ext.has('releaseChangelogTextProvider')) {
     }
     rootProject.ext.releaseChangelogTextProvider = rootProject.providers
             .fileContents(changelogFile)
-            .asText
+            .asBytes
+            .map { bytes -> new String(bytes, 'UTF-8') }
             .orElse(dryRunChangelog)
 }
 def releaseChangelog = rootProject.ext.releaseChangelogTextProvider
 
 publishMods {
     file = publishArtifactTask.flatMap { task -> task.archiveFile }
-    version = modVersion
+    version = publicationVersion
     displayName = releaseTitle
     type = STABLE
     modLoaders.add('fabric')
@@ -47,6 +50,7 @@ publishMods {
     curseforge {
         projectId = providers.gradleProperty('curseforge_project_id')
         accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+        displayName = curseForgeTitle
         minecraftVersions.addAll(releaseTarget.minecraftVersionsCurseForge as List<String>)
         client = true
         server = false

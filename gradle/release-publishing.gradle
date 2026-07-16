@@ -12,7 +12,10 @@ gradle.rootProject { root ->
         def dryRunChangelogText = modVersion.map { version ->
             "# Fresh Armor Bar ${version}\n\nDry-run preview only. Prepare CHANGELOG.md before a real release."
         }
-        def reportChangelogText = root.providers.fileContents(changelogFile).asText.orElse(dryRunChangelogText)
+        def reportChangelogText = root.providers.fileContents(changelogFile)
+                .asBytes
+                .map { bytes -> new String(bytes, 'UTF-8') }
+                .orElse(dryRunChangelogText)
         def modrinthTokenPresent = root.providers.environmentVariable('MODRINTH_TOKEN')
                 .map { token -> !token.trim().isEmpty() }
                 .orElse(false)
@@ -139,7 +142,9 @@ gradle.rootProject { root ->
                     if (!artifact.isFile()) {
                         throw new GradleException("Dry-run artifact is missing: ${artifact}")
                     }
-                    def displayName = "${task.inputs.properties.modName} ${task.inputs.properties.modVersion} | ${target.displayMinecraft}"
+                    def publicationVersion = "${task.inputs.properties.modVersion}-${target.displayMinecraft}"
+                    def displayName = "${task.inputs.properties.modName} ${publicationVersion}"
+                    def curseForgeDisplayName = "${task.inputs.properties.modName} ${task.inputs.properties.modVersion} | ${target.displayMinecraft}"
                     entries << [
                             platform        : 'curseforge',
                             task            : "${target.projectPath}:publishCurseforge",
@@ -147,8 +152,8 @@ gradle.rootProject { root ->
                             stonecutterTarget: target.stonecutterTarget,
                             artifactTask    : target.artifactTask,
                             artifact        : artifact.absolutePath,
-                            displayName     : displayName,
-                            version         : task.inputs.properties.modVersion,
+                            displayName     : curseForgeDisplayName,
+                            version         : publicationVersion,
                             minecraftVersions: target.minecraftVersionsCurseForge,
                             modLoaders      : ['fabric'],
                             environment     : [client: true, server: false],
@@ -166,7 +171,7 @@ gradle.rootProject { root ->
                             artifactTask    : target.artifactTask,
                             artifact        : artifact.absolutePath,
                             displayName     : displayName,
-                            version         : task.inputs.properties.modVersion,
+                            version         : publicationVersion,
                             minecraftVersions: target.minecraftVersionsModrinth,
                             modLoaders      : ['fabric'],
                             environment     : 'client-only',
