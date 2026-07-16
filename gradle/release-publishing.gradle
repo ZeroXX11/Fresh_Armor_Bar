@@ -9,6 +9,7 @@ gradle.rootProject { root ->
                 .orElse(false)
         def modVersion = root.providers.gradleProperty('mod_version')
         def changelogFile = root.layout.projectDirectory.file('CHANGELOG.md')
+        def curseForgeChangelogFile = root.layout.projectDirectory.file('CHANGELOG_CURSEFORGE.html')
         def dryRunChangelogText = modVersion.map { version ->
             "# Fresh Armor Bar ${version}\n\nDry-run preview only. Prepare CHANGELOG.md before a real release."
         }
@@ -16,6 +17,9 @@ gradle.rootProject { root ->
                 .asBytes
                 .map { bytes -> new String(bytes, 'UTF-8') }
                 .orElse(dryRunChangelogText)
+        def reportCurseForgeChangelogText = root.providers.fileContents(curseForgeChangelogFile)
+                .asBytes
+                .map { bytes -> new String(bytes, 'UTF-8') }
         def modrinthTokenPresent = root.providers.environmentVariable('MODRINTH_TOKEN')
                 .map { token -> !token.trim().isEmpty() }
                 .orElse(false)
@@ -103,6 +107,7 @@ gradle.rootProject { root ->
             inputs.property('modrinthProjectId', root.providers.gradleProperty('modrinth_project_id'))
             inputs.property('curseforgeProjectId', root.providers.gradleProperty('curseforge_project_id'))
             inputs.property('changelogText', reportChangelogText)
+            inputs.property('curseForgeChangelogText', reportCurseForgeChangelogText)
             inputs.property('confirmationSet', confirmRelease)
             inputs.property('archivesBaseName', root.providers.gradleProperty('archives_base_name'))
             inputs.property('libsDirPath', root.layout.buildDirectory.dir('libs').map { directory -> directory.asFile.absolutePath })
@@ -116,6 +121,7 @@ gradle.rootProject { root ->
             doLast { task ->
                 List<Map> targets = task.inputs.properties.releaseTargets as List<Map>
                 def productionChangelog = task.inputs.properties.changelogText.toString()
+                def curseForgeChangelog = task.inputs.properties.curseForgeChangelogText.toString()
                 def entries = []
 
                 targets.each { target ->
@@ -157,9 +163,9 @@ gradle.rootProject { root ->
                             minecraftVersions: target.minecraftVersionsCurseForge,
                             modLoaders      : ['fabric'],
                             environment     : [client: true, server: false],
-                            changelog       : productionChangelog,
+                            changelog       : curseForgeChangelog,
                             changelogMode   : 'full',
-                            changelogFormat : 'markdown',
+                            changelogFormat : 'html',
                             publicationOrder: targets.indexOf(target) + 1,
                             dependencies    : [[slug: 'modmenu', type: 'optional']]
                     ]

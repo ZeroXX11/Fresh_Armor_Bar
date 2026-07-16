@@ -30,6 +30,15 @@ if (!rootProject.ext.has('releaseChangelogTextProvider')) {
 }
 def releaseChangelog = rootProject.ext.releaseChangelogTextProvider
 
+if (!rootProject.ext.has('curseForgeChangelogTextProvider')) {
+    def curseForgeChangelogFile = rootProject.layout.projectDirectory.file('CHANGELOG_CURSEFORGE.html')
+    rootProject.ext.curseForgeChangelogTextProvider = rootProject.providers
+            .fileContents(curseForgeChangelogFile)
+            .asBytes
+            .map { bytes -> new String(bytes, 'UTF-8') }
+}
+def curseForgeChangelog = rootProject.ext.curseForgeChangelogTextProvider
+
 publishMods {
     file = publishArtifactTask.flatMap { task -> task.archiveFile }
     version = publicationVersion
@@ -54,8 +63,8 @@ publishMods {
         minecraftVersions.addAll(releaseTarget.minecraftVersionsCurseForge as List<String>)
         client = true
         server = false
-        changelog = releaseChangelog
-        changelogType = 'markdown'
+        changelog = curseForgeChangelog
+        changelogType = 'html'
         optional('modmenu')
     }
 }

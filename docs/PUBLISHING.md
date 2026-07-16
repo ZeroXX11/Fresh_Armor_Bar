@@ -19,7 +19,7 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.1-1.20.1` or `2.1-26.2`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.1 | 26.2`.
 2. Review the single source of truth in `gradle/release-versions.gradle`. Each entry maps its Stonecutter project, platform Minecraft versions, display label, artifact task, and changelog role.
-3. Write or update `CHANGELOG.md` with the real release notes. Every level-two section must contain content. The title must be `# <current mod_version> | CHANGELOG`.
+3. Write or update `CHANGELOG.md` with the real release notes for Modrinth, then keep the equivalent CurseForge HTML in `CHANGELOG_CURSEFORGE.html`. The titles must be `# <current mod_version> | CHANGELOG` and `<h1><current mod_version> | CHANGELOG</h1>` respectively.
 4. Commit the completed `CHANGELOG.md` with the release changes.
 
 `CHANGELOG.md` may not contain `<MOD_VERSION>`, `TODO`, HTML comments, template instructions, empty sections, or a version different from `mod_version`.
@@ -28,7 +28,7 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 Modrinth receives the complete changelog only on the primary Minecraft 1.20.1 publication. Every other Modrinth destination is configured with a truly empty changelog string—no link, title, space, or placeholder. The primary Modrinth task is ordered before every other Modrinth task.
 
-CurseForge receives the same complete `CHANGELOG.md` on every target. Each CurseForge destination explicitly declares `changelogType = 'markdown'`.
+CurseForge receives the complete `CHANGELOG_CURSEFORGE.html` on every target with `changelogType = 'html'`, avoiding platform-specific Markdown rendering differences. Modrinth continues to receive Markdown from `CHANGELOG.md`.
 
 When `CHANGELOG.md` does not exist, dry-run tasks use an unmistakable local preview string so the mapping can still be inspected. Real publication always runs `validateRelease` and refuses that fallback.
 

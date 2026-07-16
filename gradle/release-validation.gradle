@@ -213,13 +213,19 @@ gradle.rootProject { root ->
 			description = 'Validates that CHANGELOG.md is complete and belongs to the current mod version.'
 			inputs.property('modVersion', root.providers.gradleProperty('mod_version'))
 			inputs.property('changelogPath', root.layout.projectDirectory.file('CHANGELOG.md').asFile.absolutePath)
+			inputs.property('curseForgeChangelogPath', root.layout.projectDirectory.file('CHANGELOG_CURSEFORGE.html').asFile.absolutePath)
 
 			doLast { task ->
 				def changelogFile = new File(task.inputs.properties.changelogPath.toString())
+				def curseForgeChangelogFile = new File(task.inputs.properties.curseForgeChangelogPath.toString())
 				if (!changelogFile.isFile()) {
 					throw new GradleException('CHANGELOG.md is missing. Create it with the real release notes for the current mod_version.')
 				}
+				if (!curseForgeChangelogFile.isFile()) {
+					throw new GradleException('CHANGELOG_CURSEFORGE.html is missing. Create the CurseForge HTML changelog before publishing.')
+				}
 				def changelog = changelogFile.getText('UTF-8')
+				def curseForgeChangelog = curseForgeChangelogFile.getText('UTF-8')
 				def modVersion = task.inputs.properties.modVersion.toString()
 				if (changelog.trim().isEmpty()) {
 					throw new GradleException('CHANGELOG.md is empty. Add real release notes before publishing.')
@@ -227,6 +233,10 @@ gradle.rootProject { root ->
 				def expectedTitle = "# ${modVersion} | CHANGELOG".toString()
 				if (changelog.readLines().first().trim() != expectedTitle) {
 					throw new GradleException("CHANGELOG.md must start with '# ${modVersion} | CHANGELOG'")
+				}
+				def expectedCurseForgeTitle = "<h1>${modVersion} | CHANGELOG</h1>".toString()
+				if (curseForgeChangelog.readLines().first().trim() != expectedCurseForgeTitle) {
+					throw new GradleException("CHANGELOG_CURSEFORGE.html must start with '<h1>${modVersion} | CHANGELOG</h1>'")
 				}
 				def forbiddenPatterns = [
 						'(?i)<MOD_VERSION>',
@@ -236,8 +246,8 @@ gradle.rootProject { root ->
 						'(?i)placeholder'
 				]
 				forbiddenPatterns.each { pattern ->
-					if ((changelog =~ pattern).find()) {
-						throw new GradleException("CHANGELOG.md contains a forbidden template marker matching ${pattern}")
+					if ((changelog =~ pattern).find() || (curseForgeChangelog =~ pattern).find()) {
+						throw new GradleException("A release changelog contains a forbidden template marker matching ${pattern}")
 					}
 				}
 				def mojibakePatterns = [
@@ -248,8 +258,12 @@ gradle.rootProject { root ->
 						'\\x{00EF}\\x{00B8}',
 						'\\x{FFFD}'
 				]
-				if (mojibakePatterns.any { pattern -> (changelog =~ pattern).find() }) {
-					throw new GradleException('CHANGELOG.md contains text that appears to be decoded with the wrong character encoding. Save it as UTF-8 before publishing.')
+				if (mojibakePatterns.any { pattern -> (changelog =~ pattern).find() || (curseForgeChangelog =~ pattern).find() }) {
+					throw new GradleException('A release changelog contains text that appears to be decoded with the wrong character encoding. Save it as UTF-8 before publishing.')
+				}
+				if (!(curseForgeChangelog =~ '(?s)<h2>.+?</h2>').find()
+						|| !(curseForgeChangelog =~ '(?s)<ul>.+?</ul>').find()) {
+					throw new GradleException('CHANGELOG_CURSEFORGE.html must contain HTML section headings and lists.')
 				}
 				def sectionMatcher = changelog =~ '(?ms)^##[ \\t]+([^\\r\\n]+)\\R(.*?)(?=^##[ \\t]+|\\z)'
 				def sectionCount = 0
