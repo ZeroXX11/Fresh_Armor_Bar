@@ -5,10 +5,17 @@
   "fresharmorbar.config.category.damage_hint": "Master toggle first, then fine tune each hit type.",
   "fresharmorbar.config.category.mending": "MENDING",
   "fresharmorbar.config.damage.all": "All damage feedback",
+  "fresharmorbar.config.damage.all.short": "All Damage",
   "fresharmorbar.config.damage.generic": "Normal hit feedback",
+  "fresharmorbar.config.damage.generic.short": "Normal",
   "fresharmorbar.config.damage.fire": "Fire hit feedback",
+  "fresharmorbar.config.damage.fire.short": "Fire",
   "fresharmorbar.config.damage.blast": "Explosion hit feedback",
+  "fresharmorbar.config.damage.blast.short": "Blast",
   "fresharmorbar.config.damage.projectile": "Projectile hit feedback",
+  "fresharmorbar.config.damage.projectile.short": "Projectile",
   "fresharmorbar.config.damage.fall": "Fall hit feedback",
-  "fresharmorbar.config.mending.effect": "Repair flash"
+  "fresharmorbar.config.damage.fall.short": "Fall",
+  "fresharmorbar.config.mending.effect": "Repair flash",
+  "fresharmorbar.config.mending.effect.short": "Mending Flash"
 }

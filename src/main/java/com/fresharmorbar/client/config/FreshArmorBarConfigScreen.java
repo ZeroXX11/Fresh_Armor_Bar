@@ -10,13 +10,45 @@ import org.jspecify.annotations.NullMarked;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+//? if <1.21
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.text.Text;
+//? if <1.21
+import net.minecraft.util.Identifier;
 //?}
 
 public final class FreshArmorBarConfigScreen extends Screen {
-    private static final int BUTTON_WIDTH = 150;
-    private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 8;
+    //? if <1.21
+    private static final int BUTTON_WIDTH = 112;
+    //? if >=1.21
+    /*private static final int BUTTON_WIDTH = 150;*/
+    //? if <1.21
+    private static final int COLUMN_GAP = 6;
+    //? if >=1.21
+    /*private static final int COLUMN_GAP = 8;*/
+    private static final int GRID_WIDTH = BUTTON_WIDTH * 2 + COLUMN_GAP;
+    // On 1.20.1 the master and Mending controls no longer span both columns.
+    //? if <1.21
+    private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH;
+    //? if >=1.21
+    /*private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 8;*/
+    //? if <1.21
+    private static final int DONE_BUTTON_WIDTH = BUTTON_WIDTH;
+    //? if >=1.21
+    /*private static final int DONE_BUTTON_WIDTH = 200;*/
     private static final int BUTTON_HEIGHT = 20;
+
+    // The compact icon treatment is intentionally limited to the 1.20.1 target.
+    //? if <1.21 {
+    private static final int ICON_SIZE = 12;
+    private static final int ICON_TEXT_GAP = 3;
+    private static final Identifier GENERIC_ICON = icon("damage_generic");
+    private static final Identifier FIRE_ICON = icon("damage_fire");
+    private static final Identifier BLAST_ICON = icon("damage_blast");
+    private static final Identifier PROJECTILE_ICON = icon("damage_projectile");
+    private static final Identifier FALL_ICON = icon("damage_fall");
+    private static final Identifier MENDING_ICON = icon("mending");
+    //?}
 
     private final Screen parent;
 
@@ -45,12 +77,13 @@ public final class FreshArmorBarConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        int left = this.width / 2 - WIDE_BUTTON_WIDTH / 2;
-        int right = left + BUTTON_WIDTH + 8;
+        int left = this.width / 2 - GRID_WIDTH / 2;
+        int right = left + BUTTON_WIDTH + COLUMN_GAP;
+        int single = this.width / 2 - WIDE_BUTTON_WIDTH / 2;
         int y = 66;
 
         //? if >=26.1.2 {
-        /*this.damageEffectsButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+        /*this.damageEffectsButton = addButton(single, y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
                 () -> FreshArmorBarConfig.setDamageEffectsEnabled(!FreshArmorBarConfig.damageEffectEnabled()));
         y += 34;
@@ -73,15 +106,15 @@ public final class FreshArmorBarConfigScreen extends Screen {
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
 
         y += 54;
-        this.mendingButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+        this.mendingButton = addButton(single, y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
         this.addRenderableWidget(Button.builder(text("gui.done"), ignored -> closeToParent())
-                .bounds(this.width / 2 - 100, this.height - 28, 200, 20)
+                .bounds(this.width / 2 - DONE_BUTTON_WIDTH / 2, this.height - 28, DONE_BUTTON_WIDTH, 20)
                 .build());
         *///?} else {
-        this.damageEffectsButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+        this.damageEffectsButton = addButton(single, y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
                 () -> FreshArmorBarConfig.setDamageEffectsEnabled(!FreshArmorBarConfig.damageEffectEnabled()));
         y += 34;
@@ -104,13 +137,22 @@ public final class FreshArmorBarConfigScreen extends Screen {
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
 
         y += 54;
-        this.mendingButton = addButton(left, y, WIDE_BUTTON_WIDTH,
+        this.mendingButton = addButton(single, y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
         this.addDrawableChild(ButtonWidget.builder(text("gui.done"), button -> closeToParent())
-                .dimensions(this.width / 2 - 100, this.height - 28, 200, 20)
+                .dimensions(this.width / 2 - DONE_BUTTON_WIDTH / 2, this.height - 28, DONE_BUTTON_WIDTH, 20)
                 .build());
+        //?}
+
+        //? if <1.21 {
+        setButtonIcon(this.genericDamageButton, GENERIC_ICON);
+        setButtonIcon(this.fireDamageButton, FIRE_ICON);
+        setButtonIcon(this.blastDamageButton, BLAST_ICON);
+        setButtonIcon(this.projectileDamageButton, PROJECTILE_ICON);
+        setButtonIcon(this.fallDamageButton, FALL_ICON);
+        setButtonIcon(this.mendingButton, MENDING_ICON);
         //?}
     }
 
@@ -126,12 +168,19 @@ public final class FreshArmorBarConfigScreen extends Screen {
     }
     *///?} else {
     private ButtonWidget addButton(int x, int y, int width, Text message, Runnable action) {
-        ButtonWidget button = ButtonWidget.builder(message, ignored -> {
+        //? if <1.21 {
+        ButtonWidget button = new IconButtonWidget(x, y, width, BUTTON_HEIGHT, message, () -> {
+            action.run();
+            refreshButtons();
+        });
+        //?} else {
+        /*ButtonWidget button = ButtonWidget.builder(message, ignored -> {
                     action.run();
                     refreshButtons();
                 })
                 .dimensions(x, y, width, BUTTON_HEIGHT)
                 .build();
+        *///?}
         return this.addDrawableChild(button);
     }
     //?}
@@ -177,8 +226,8 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //?}
 
         int centerX = this.width / 2;
-        int dividerLeft = centerX - WIDE_BUTTON_WIDTH / 2;
-        int dividerRight = centerX + WIDE_BUTTON_WIDTH / 2;
+        int dividerLeft = centerX - GRID_WIDTH / 2;
+        int dividerRight = centerX + GRID_WIDTH / 2;
         drawCentered(context, text("fresharmorbar.config.title"), centerX, 16);
         drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48);
         drawDivider(context, dividerLeft, dividerRight);
@@ -247,7 +296,54 @@ public final class FreshArmorBarConfigScreen extends Screen {
     }
 
     private static Text optionText(String key, boolean enabled) {
+        //? if <1.21
+        key = compactKey(key);
         return Text.translatable("fresharmorbar.config.option", text(key), text(enabled ? "options.on" : "options.off"));
     }
+
+    //? if <1.21 {
+    private static void setButtonIcon(ButtonWidget button, Identifier icon) {
+        ((IconButtonWidget) button).setIcon(icon);
+    }
+
+    private static Identifier icon(String name) {
+        return new Identifier("fresh-armor-bar", "textures/gui/config/" + name + ".png");
+    }
+
+    private static String compactKey(String key) {
+        return key + ".short";
+    }
+
+    private static final class IconButtonWidget extends ButtonWidget {
+        private Identifier icon;
+
+        private IconButtonWidget(int x, int y, int width, int height, Text message, Runnable action) {
+            super(x, y, width, height, message, ignored -> action.run(), DEFAULT_NARRATION_SUPPLIER);
+        }
+
+        private void setIcon(Identifier icon) {
+            this.icon = icon;
+        }
+
+        @Override
+        public void drawMessage(DrawContext context, TextRenderer textRenderer, int color) {
+            int contentWidth = textRenderer.getWidth(this.getMessage());
+            if (this.icon != null) {
+                contentWidth += ICON_SIZE + ICON_TEXT_GAP;
+            }
+
+            int contentX = this.getX() + (this.getWidth() - contentWidth) / 2;
+            int textX = contentX;
+            if (this.icon != null) {
+                int iconY = this.getY() + (this.getHeight() - ICON_SIZE) / 2;
+                context.drawTexture(this.icon, contentX, iconY, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
+                textX += ICON_SIZE + ICON_TEXT_GAP;
+            }
+
+            int textY = this.getY() + (this.getHeight() - 8) / 2;
+            context.drawTextWithShadow(textRenderer, this.getMessage(), textX, textY, color);
+        }
+    }
+    //?}
     //?}
 }
