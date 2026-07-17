@@ -14,6 +14,7 @@ import java.util.Set;
 final class ArmorBarModTextures {
     private static final Set<String> SUPPORTED_MODS = Set.of(
             "advancednetherite",
+            "betterend",
             "deeperdarker"
     );
 
