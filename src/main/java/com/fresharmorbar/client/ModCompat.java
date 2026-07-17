@@ -7,6 +7,12 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 *///?} else {
+//? if >=1.21 && <1.21.2 {
+/*import net.minecraft.client.MinecraftClient;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.nbt.NbtCompound;
+*///?}
 //? if >=1.21.11
 //import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EquipmentSlot;
@@ -25,10 +31,14 @@ import java.util.function.Predicate;
 
 public class ModCompat {
     private static final FabricLoader LOADER = FabricLoader.getInstance();
+    private static final boolean ARMORED_ELYTRA_LOADED = LOADER.isModLoaded("armored-elytra");
     private static final boolean TRINKETS_LOADED = LOADER.isModLoaded("trinkets");
     private static final boolean TRINKETS_UPDATED_LOADED =
             LOADER.isModLoaded("trinkets_updated") || LOADER.isModLoaded("trinkets-updated");
 
+    private static final Class<?> ARMORED_ELYTRA_RENDER_HELPER = ARMORED_ELYTRA_LOADED
+            ? classOrNull("dorkix.armored.elytra.RenderHelper")
+            : null;
     private static final Class<?> TRINKETS_API =
             TRINKETS_LOADED ? classOrNull("dev.emi.trinkets.api.TrinketsApi") : null;
     private static final Class<?> TRINKETS_UPDATED_API =
@@ -40,6 +50,42 @@ public class ModCompat {
 
     public record ElytraState(boolean equipped, boolean enchanted, Identifier texture) {
         public static final ElytraState NONE = new ElytraState(false, false, null);
+    }
+
+    /**
+     * Restituisce la corazza incorporata da Armored Elytra, lasciando invariati tutti
+     * gli altri stack. Il renderer puo cosi mostrare sia il materiale dell'armatura
+     * sia l'icona dell'elitra equipaggiata.
+     */
+    public static ItemStack getArmorStack(ItemStack stack) {
+        if (!ARMORED_ELYTRA_LOADED || stack.isEmpty()) return stack;
+
+        Object resolved = invokeSingleArg(
+                ARMORED_ELYTRA_RENDER_HELPER, null, "modifyStackWithArmor", stack);
+        if (resolved instanceof ItemStack armorStack && armorStack != stack) {
+            return armorStack;
+        }
+
+        return getLegacyArmoredElytraArmor(stack);
+    }
+
+    private static ItemStack getLegacyArmoredElytraArmor(ItemStack stack) {
+        // Armored Elytra 1.21/1.21.1 precede la classe RenderHelper: la corazza
+        // originale e serializzata nel custom data con questa chiave stabile.
+        //? if >=1.21 && <1.21.2 {
+        /*var player = MinecraftClient.getInstance().player;
+        if (player == null) return stack;
+
+        NbtCompound chestplateData = stack
+                .getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT)
+                .copyNbt()
+                .getCompound("armored_elytra:chestplate");
+        if (chestplateData.isEmpty()) return stack;
+
+        return ItemStack.fromNbt(player.getRegistryManager(), chestplateData).orElse(stack);
+        *///?} else {
+        return stack;
+        //?}
     }
 
     //? if >=26.1.2 {

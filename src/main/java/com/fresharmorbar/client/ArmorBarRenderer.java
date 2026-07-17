@@ -199,9 +199,10 @@ public class ArmorBarRenderer {
         if (!java.util.Objects.equals(lastElytraState, elytraState)) return true;
         for (int i = 0; i < 4; i++) {
             //? if >=26.1.2
-            //if (!areVisualsEqual(player.getItemBySlot(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
+            //ItemStack stack = player.getItemBySlot(ARMOR_ORDER[i]);
             //? if <26.1.2
-            if (!areVisualsEqual(player.getEquippedStack(ARMOR_ORDER[i]), LAST_STACKS[i])) return true;
+            ItemStack stack = player.getEquippedStack(ARMOR_ORDER[i]);
+            if (!areVisualsEqual(ModCompat.getArmorStack(stack), LAST_STACKS[i])) return true;
         }
         return false;
     }
@@ -337,6 +338,7 @@ public class ArmorBarRenderer {
             //ItemStack stack = player.getItemBySlot(slot);
             //? if <26.1.2
             ItemStack stack = player.getEquippedStack(slot);
+            stack = ModCompat.getArmorStack(stack);
             LAST_STACKS[i] = stack.copy(); // Aggiorna cache con una copia per rilevare modifiche NBT in-place
 
             //? if >=1.21.11 {
@@ -515,6 +517,7 @@ public class ArmorBarRenderer {
             //ItemStack stack = player.getItemBySlot(slot);
             //? if <26.1.2
             ItemStack stack = player.getEquippedStack(slot);
+            stack = ModCompat.getArmorStack(stack);
             //? if >=1.21.11 {
             /*total += getProtection(stack, slot);
             *///?} else {
