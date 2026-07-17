@@ -174,7 +174,7 @@ public class ArmorBarRenderer {
             if (elytraEnchanted) {
                 //? if >=1.21.11
                 /*ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, elytraY, elytraTexture);
-                *///? if <1.21.11
+*/                /**///? if <1.21.11
                 ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, elytraY);
             }
         }

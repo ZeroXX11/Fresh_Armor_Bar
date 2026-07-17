@@ -21,21 +21,21 @@ public final class FreshArmorBarConfigScreen extends Screen {
     //? if <1.21
     private static final int BUTTON_WIDTH = 112;
     //? if >=1.21
-    /*private static final int BUTTON_WIDTH = 150;*/
+    //private static final int BUTTON_WIDTH = 150;
     //? if <1.21
     private static final int COLUMN_GAP = 6;
     //? if >=1.21
-    /*private static final int COLUMN_GAP = 8;*/
+    //private static final int COLUMN_GAP = 8;
     private static final int GRID_WIDTH = BUTTON_WIDTH * 2 + COLUMN_GAP;
     // On 1.20.1 the master and Mending controls no longer span both columns.
     //? if <1.21
     private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH;
     //? if >=1.21
-    /*private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 8;*/
+    //private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 8;
     //? if <1.21
     private static final int DONE_BUTTON_WIDTH = BUTTON_WIDTH;
     //? if >=1.21
-    /*private static final int DONE_BUTTON_WIDTH = 200;*/
+    //private static final int DONE_BUTTON_WIDTH = 200;
     private static final int BUTTON_HEIGHT = 20;
 
     // The compact icon treatment is intentionally limited to the 1.20.1 target.
@@ -133,7 +133,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //? if <1.21
         y += 28;
         //? if >=1.21
-        /*y += 34;*/
+        //y += 34;
         this.genericDamageButton = addButton(left, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setGenericDamageEffectEnabled(!FreshArmorBarConfig.genericDamageEffectSelected()));
@@ -152,7 +152,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
                 //? if <1.21
                 single,
                 //? if >=1.21
-                /*left,*/
+                //left,
                 y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
@@ -160,12 +160,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //? if <1.21
         y = contentTop + 168;
         //? if >=1.21
-        /*y += 54;*/
+        //y += 54;
         this.mendingButton = addButton(
                 //? if <1.21
                 single,
                 //? if >=1.21
-                /*single,*/
+                //single,
                 y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
@@ -263,8 +263,8 @@ public final class FreshArmorBarConfigScreen extends Screen {
         //? if <1.21 {
         renderMinimalLabels(context);
         //?} else {
-        /*
-        int centerX = this.width / 2;
+        
+        /*int centerX = this.width / 2;
         int dividerLeft = centerX - GRID_WIDTH / 2;
         int dividerRight = centerX + GRID_WIDTH / 2;
         drawCentered(context, text("fresharmorbar.config.title"), centerX, 16);
