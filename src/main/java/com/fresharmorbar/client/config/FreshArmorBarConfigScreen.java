@@ -40,6 +40,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
 
     // The compact icon treatment is intentionally limited to the 1.20.1 target.
     //? if <1.21 {
+    private static final int CONTENT_HEIGHT = 224;
+    private static final int BUTTON_ROW_GAP = 24;
+    //?} else {
+    /*private static final int BUTTON_ROW_GAP = 24;
+    *///?}
+    //? if <1.21 {
     private static final int ICON_SIZE = 12;
     private static final int ICON_TEXT_GAP = 3;
     private static final Identifier GENERIC_ICON = icon("damage_generic");
@@ -80,7 +86,14 @@ public final class FreshArmorBarConfigScreen extends Screen {
         int left = this.width / 2 - GRID_WIDTH / 2;
         int right = left + BUTTON_WIDTH + COLUMN_GAP;
         int single = this.width / 2 - WIDE_BUTTON_WIDTH / 2;
+        //? if <1.21 {
+        int contentTop = minimalContentTop();
+        int doneY = contentTop + 204;
+        int y = contentTop + 39;
+        //?} else {
+        /*int doneY = this.height - 28;
         int y = 66;
+        *///?}
 
         //? if >=26.1.2 {
         /*this.damageEffectsButton = addButton(single, y, WIDE_BUTTON_WIDTH,
@@ -93,14 +106,14 @@ public final class FreshArmorBarConfigScreen extends Screen {
         this.fireDamageButton = addButton(right, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFireDamageEffectEnabled(!FreshArmorBarConfig.fireDamageEffectSelected()));
-        y += 24;
+        y += BUTTON_ROW_GAP;
         this.blastDamageButton = addButton(left, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setBlastDamageEffectEnabled(!FreshArmorBarConfig.blastDamageEffectSelected()));
         this.projectileDamageButton = addButton(right, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setProjectileDamageEffectEnabled(!FreshArmorBarConfig.projectileDamageEffectSelected()));
-        y += 24;
+        y += BUTTON_ROW_GAP;
         this.fallDamageButton = addButton(left, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
@@ -111,39 +124,61 @@ public final class FreshArmorBarConfigScreen extends Screen {
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
         this.addRenderableWidget(Button.builder(text("gui.done"), ignored -> closeToParent())
-                .bounds(this.width / 2 - DONE_BUTTON_WIDTH / 2, this.height - 28, DONE_BUTTON_WIDTH, 20)
+                .bounds(this.width / 2 - DONE_BUTTON_WIDTH / 2, doneY, DONE_BUTTON_WIDTH, 20)
                 .build());
         *///?} else {
         this.damageEffectsButton = addButton(single, y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.all", FreshArmorBarConfig.damageEffectEnabled()),
                 () -> FreshArmorBarConfig.setDamageEffectsEnabled(!FreshArmorBarConfig.damageEffectEnabled()));
-        y += 34;
+        //? if <1.21
+        y += 28;
+        //? if >=1.21
+        /*y += 34;*/
         this.genericDamageButton = addButton(left, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.generic", FreshArmorBarConfig.genericDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setGenericDamageEffectEnabled(!FreshArmorBarConfig.genericDamageEffectSelected()));
         this.fireDamageButton = addButton(right, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.fire", FreshArmorBarConfig.fireDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFireDamageEffectEnabled(!FreshArmorBarConfig.fireDamageEffectSelected()));
-        y += 24;
+        y += BUTTON_ROW_GAP;
         this.blastDamageButton = addButton(left, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setBlastDamageEffectEnabled(!FreshArmorBarConfig.blastDamageEffectSelected()));
         this.projectileDamageButton = addButton(right, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setProjectileDamageEffectEnabled(!FreshArmorBarConfig.projectileDamageEffectSelected()));
-        y += 24;
-        this.fallDamageButton = addButton(left, y, BUTTON_WIDTH,
+        y += BUTTON_ROW_GAP;
+        this.fallDamageButton = addButton(
+                //? if <1.21
+                single,
+                //? if >=1.21
+                /*left,*/
+                y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()),
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
 
-        y += 54;
-        this.mendingButton = addButton(single, y, WIDE_BUTTON_WIDTH,
+        //? if <1.21
+        y = contentTop + 168;
+        //? if >=1.21
+        /*y += 54;*/
+        this.mendingButton = addButton(
+                //? if <1.21
+                single,
+                //? if >=1.21
+                /*single,*/
+                y, WIDE_BUTTON_WIDTH,
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
-        this.addDrawableChild(ButtonWidget.builder(text("gui.done"), button -> closeToParent())
-                .dimensions(this.width / 2 - DONE_BUTTON_WIDTH / 2, this.height - 28, DONE_BUTTON_WIDTH, 20)
+        //? if <1.21 {
+        this.addDrawableChild(new IconButtonWidget(
+                this.width / 2 - DONE_BUTTON_WIDTH / 2, doneY, DONE_BUTTON_WIDTH, BUTTON_HEIGHT,
+                text("gui.done"), this::closeToParent));
+        //?} else {
+        /*this.addDrawableChild(ButtonWidget.builder(text("gui.done"), button -> closeToParent())
+                .dimensions(this.width / 2 - DONE_BUTTON_WIDTH / 2, doneY, DONE_BUTTON_WIDTH, 20)
                 .build());
+        *///?}
         //?}
 
         //? if <1.21 {
@@ -225,6 +260,10 @@ public final class FreshArmorBarConfigScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
         //?}
 
+        //? if <1.21 {
+        renderMinimalLabels(context);
+        //?} else {
+        /*
         int centerX = this.width / 2;
         int dividerLeft = centerX - GRID_WIDTH / 2;
         int dividerRight = centerX + GRID_WIDTH / 2;
@@ -232,6 +271,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48);
         drawDivider(context, dividerLeft, dividerRight);
         drawCentered(context, text("fresharmorbar.config.category.mending"), centerX, 190);
+        *///?}
     }
 
     private void closeToParent() {
@@ -283,6 +323,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         return Component.translatable("fresharmorbar.config.option", text(key), text(enabled ? "options.on" : "options.off"));
     }
     *///?} else {
+    @SuppressWarnings("unused")
     private static void drawDivider(DrawContext context, int left, int right) {
         context.fill(left, 178, right, 179, 0x55FFFFFF);
     }
@@ -290,6 +331,12 @@ public final class FreshArmorBarConfigScreen extends Screen {
     private void drawCentered(DrawContext context, Text value, int x, int y) {
         context.drawCenteredTextWithShadow(this.textRenderer, value, x, y, 0xFFFFFFFF);
     }
+
+    //? if <1.21 {
+    private void drawMutedCentered(DrawContext context, Text value, int x, int y) {
+        context.drawCenteredTextWithShadow(this.textRenderer, value, x, y, 0xFFE0E0E0);
+    }
+    //?}
 
     private static Text text(String key) {
         return Text.translatable(key);
@@ -302,6 +349,32 @@ public final class FreshArmorBarConfigScreen extends Screen {
     }
 
     //? if <1.21 {
+    private int minimalContentTop() {
+        return Math.max(8, (this.height - CONTENT_HEIGHT) / 2);
+    }
+
+    private void renderMinimalLabels(DrawContext context) {
+        int centerX = this.width / 2;
+        int contentTop = minimalContentTop();
+
+        drawCentered(context, text("fresharmorbar.config.title"), centerX, contentTop);
+        context.fill(centerX - 18, contentTop + 14, centerX + 18, contentTop + 15, 0x66FFFFFF);
+        drawSectionHeading(context, text("fresharmorbar.config.category.damage"), centerX, contentTop + 25);
+        drawSectionHeading(context, text("fresharmorbar.config.category.mending"), centerX, contentTop + 154);
+    }
+
+    private void drawSectionHeading(DrawContext context, Text label, int centerX, int y) {
+        int textWidth = this.textRenderer.getWidth(label);
+        int gap = textWidth / 2 + 8;
+        int lineY = y + 4;
+        int sectionLeft = centerX - GRID_WIDTH / 2;
+        int sectionRight = centerX + GRID_WIDTH / 2;
+
+        context.fill(sectionLeft, lineY, centerX - gap, lineY + 1, 0x44FFFFFF);
+        context.fill(centerX + gap, lineY, sectionRight, lineY + 1, 0x44FFFFFF);
+        drawMutedCentered(context, label, centerX, y);
+    }
+
     private static void setButtonIcon(ButtonWidget button, Identifier icon) {
         ((IconButtonWidget) button).setIcon(icon);
     }
@@ -343,6 +416,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
             int textY = this.getY() + (this.getHeight() - 8) / 2;
             context.drawTextWithShadow(textRenderer, this.getMessage(), textX, textY, color);
         }
+
     }
     //?}
     //?}
