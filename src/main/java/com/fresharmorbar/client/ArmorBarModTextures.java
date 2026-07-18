@@ -15,6 +15,7 @@ final class ArmorBarModTextures {
     private static final Set<String> SUPPORTED_MODS = Set.of(
             "advancednetherite",
             "betterend",
+            "betternether",
             "deeperdarker"
     );
 
