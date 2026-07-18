@@ -88,7 +88,7 @@ public class InGameHudMixin {
 
     @Unique
     private static int fabApplyElytraArmorFallback(int armor) {
-        return (armor == 0 && fabCachedHasElytra) ? 1 : armor;
+        return (armor == 0 && (fabCachedHasElytra || ArmorBarRenderer.shouldKeepRendering())) ? 1 : armor;
     }
 
     @Unique
