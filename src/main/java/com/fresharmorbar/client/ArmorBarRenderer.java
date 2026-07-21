@@ -168,8 +168,7 @@ public class ArmorBarRenderer {
         }
         if (animating) {
             ArmorBarAnimation.renderSlot(
-                    ctx, slotIndex, x, y, renderArmorValue,
-                    hasElytra, elytraEnchanted, lastElytraState, now);
+                    ctx, slotIndex, x, y, renderArmorValue, lastElytraState, now);
             return;
         }
 

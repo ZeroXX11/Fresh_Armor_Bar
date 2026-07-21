@@ -249,14 +249,33 @@ final class ArmorBarAnimation {
 
     //? if >=26.1.2 {
     /*static void renderSlot(GuiGraphicsExtractor ctx, int slotIndex, int x, int y,
-                           int renderArmorValue, boolean hasElytra, boolean elytraEnchanted,
-                           ModCompat.ElytraState currentElytraState, long now) {
+                           int renderArmorValue, ModCompat.ElytraState currentElytraState, long now) {
     *///?} else {
     static void renderSlot(DrawContext ctx, int slotIndex, int x, int y,
-                           int renderArmorValue, boolean hasElytra, boolean elytraEnchanted,
-                           ModCompat.ElytraState currentElytraState, long now) {
+                           int renderArmorValue, ModCompat.ElytraState currentElytraState, long now) {
     //?}
         int oldArmorValue = Math.min(previousArmorValue, PREVIOUS_CACHE.length);
+        renderArmorRows(ctx, slotIndex, x, y, oldArmorValue, renderArmorValue, now);
+
+        if (slotIndex == 0) {
+            renderElytraTransition(
+                    ctx, x, y, oldArmorValue, renderArmorValue, currentElytraState, now);
+        }
+
+        // Il layer mobile viene emesso dopo il decimo slot, quando tutte le coordinate
+        // del frame sono state registrate dal Renderer.
+        if (slotIndex == 9) {
+            renderMovementLayer(ctx, now, renderArmorValue);
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderArmorRows(GuiGraphicsExtractor ctx, int slotIndex, int x, int y,
+                                        int oldArmorValue, int renderArmorValue, long now) {
+    *///?} else {
+    private static void renderArmorRows(DrawContext ctx, int slotIndex, int x, int y,
+                                        int oldArmorValue, int renderArmorValue, long now) {
+    //?}
         int maxRows = Math.max(rowsForArmor(renderArmorValue), rowsForArmor(oldArmorValue));
 
         for (int row = 0; row < maxRows; row++) {
@@ -272,15 +291,14 @@ final class ArmorBarAnimation {
             // Rimane sempre ancorata allo slot e cambia soltanto opacita quando un intero
             // slot di sfondo compare o scompare davvero (per esempio cambiando riga).
             if (oldBackground || newBackground) {
-                float alpha = oldBackground && newBackground
-                        ? 1.0f
-                        : oldBackground ? 1.0f - smoothStep(exit) : smoothStep(enter);
+                float alpha = backgroundAlpha(oldBackground, newBackground, enter, exit);
                 if (alpha > 0.01f) drawTexture(ctx, EMPTY_TEX, x, currentY, alpha);
             }
 
-            renderHalfTransitions(
-                    ctx, currentSlot, x, currentY,
-                    oldArmorValue, renderArmorValue, enter, exit, now);
+            renderOutgoingHalfTransitions(
+                    ctx, currentSlot, x, currentY, oldArmorValue, exit, now);
+            renderIncomingHalfTransitions(
+                    ctx, currentSlot, x, currentY, renderArmorValue, enter, now);
 
             // I feedback di danno/Mending seguono il layer definitivo e non vengono duplicati.
             if (newPart && movementProgress(now) >= 0.999f && enter >= 0.999f) {
@@ -289,44 +307,58 @@ final class ArmorBarAnimation {
                         CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
             }
         }
+    }
 
-        if (slotIndex == 0) {
-            int newElytraY = renderArmorValue > 0
-                    ? y - (rowsForArmor(renderArmorValue) * 10)
-                    : y;
-            int oldElytraY = oldArmorValue > 0
-                    ? y - (rowsForArmor(oldArmorValue) * 10)
-                    : y;
-            boolean oldElytra = previousElytraState.equipped();
-            boolean elytraSame = oldElytra == hasElytra
-                    && (!hasElytra || (java.util.Objects.equals(
-                            previousElytraState, currentElytraState)
-                            && oldElytraY == newElytraY));
-
-            if (elytraSame) {
-                if (hasElytra) {
-                    renderElytra(
-                            ctx, currentElytraState, x, newElytraY,
-                            1.0f, elytraEnchanted);
-                }
-            } else {
-                if (oldElytra) {
-                    renderAnimatedElytra(
-                            ctx, previousElytraState, x, oldElytraY,
-                            outgoingProgress(0, now), false);
-                }
-                if (hasElytra) {
-                    renderAnimatedElytra(
-                            ctx, currentElytraState, x, newElytraY,
-                            incomingProgress(0, now), true);
-                }
-            }
+    private static float backgroundAlpha(
+            boolean oldBackground, boolean newBackground, float enter, float exit) {
+        if (oldBackground && newBackground) {
+            return 1.0f;
         }
+        if (oldBackground) {
+            return 1.0f - smoothStep(exit);
+        }
+        return smoothStep(enter);
+    }
 
-        // Il layer mobile viene emesso dopo il decimo slot, quando tutte le coordinate
-        // del frame sono state registrate dal Renderer.
-        if (slotIndex == 9) {
-            renderMovementLayer(ctx, now, renderArmorValue);
+    //? if >=26.1.2 {
+    /*private static void renderElytraTransition(GuiGraphicsExtractor ctx, int x, int y,
+                                               int oldArmorValue, int renderArmorValue,
+                                               ModCompat.ElytraState currentElytraState, long now) {
+    *///?} else {
+    private static void renderElytraTransition(DrawContext ctx, int x, int y,
+                                               int oldArmorValue, int renderArmorValue,
+                                               ModCompat.ElytraState currentElytraState, long now) {
+    //?}
+        int newElytraY = renderArmorValue > 0
+                ? y - (rowsForArmor(renderArmorValue) * 10)
+                : y;
+        int oldElytraY = oldArmorValue > 0
+                ? y - (rowsForArmor(oldArmorValue) * 10)
+                : y;
+        boolean oldElytra = previousElytraState.equipped();
+        boolean hasElytra = currentElytraState.equipped();
+        boolean elytraSame = oldElytra == hasElytra
+                && (!hasElytra || (java.util.Objects.equals(
+                        previousElytraState, currentElytraState)
+                        && oldElytraY == newElytraY));
+
+        if (elytraSame) {
+            if (hasElytra) {
+                renderElytra(
+                        ctx, currentElytraState, x, newElytraY,
+                        1.0f, currentElytraState.enchanted());
+            }
+            return;
+        }
+        if (oldElytra) {
+            renderAnimatedElytra(
+                    ctx, previousElytraState, x, oldElytraY,
+                    outgoingProgress(0, now), false);
+        }
+        if (hasElytra) {
+            renderAnimatedElytra(
+                    ctx, currentElytraState, x, newElytraY,
+                    incomingProgress(0, now), true);
         }
     }
 
@@ -383,18 +415,16 @@ final class ArmorBarAnimation {
     }
 
     //? if >=26.1.2 {
-    /*private static void renderHalfTransitions(GuiGraphicsExtractor ctx, int slot, int x, int y, int oldArmorValue, int newArmorValue,
-                                               float enter, float exit, long now) {
+    /*private static void renderOutgoingHalfTransitions(GuiGraphicsExtractor ctx, int slot, int x, int y,
+                                                       int oldArmorValue, float exit, long now) {
     *///?} else {
-    private static void renderHalfTransitions(DrawContext ctx, int slot, int x, int y, int oldArmorValue, int newArmorValue,
-                                              float enter, float exit, long now) {
+    private static void renderOutgoingHalfTransitions(DrawContext ctx, int slot, int x, int y,
+                                                       int oldArmorValue, float exit, long now) {
     //?}
         int firstHalf = slot * 2;
         int secondHalf = firstHalf + 1;
         float oldLeftClearance = oddTransitionClearanceProgress(firstHalf, now, false);
         float oldRightClearance = oddTransitionClearanceProgress(secondHalf, now, false);
-        float newLeftClearance = oddTransitionClearanceProgress(firstHalf, now, true);
-        float newRightClearance = oddTransitionClearanceProgress(secondHalf, now, true);
 
         boolean oldLeftExits = isRenderableHalf(PREVIOUS_CACHE, firstHalf, oldArmorValue)
                 && PREVIOUS_TO_CURRENT[firstHalf] < 0
@@ -408,46 +438,88 @@ final class ArmorBarAnimation {
             renderAnimatedFull(ctx, PREVIOUS_CACHE[firstHalf], x, y, exit, false,
                     oldLeftClearance);
         } else {
-            if (oldLeftExits) renderAnimatedHalf(ctx, PREVIOUS_CACHE[firstHalf], firstHalf,
-                    x, y, exit, false, oldLeftClearance);
-            if (oldRightExits) renderAnimatedHalf(ctx, PREVIOUS_CACHE[secondHalf], secondHalf,
-                    x, y, exit, false, oldRightClearance);
+            if (oldLeftExits) renderAnimatedHalf(ctx, firstHalf, x, y, exit, false,
+                    oldLeftClearance);
+            if (oldRightExits) renderAnimatedHalf(ctx, secondHalf, x, y, exit, false,
+                    oldRightClearance);
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderIncomingHalfTransitions(GuiGraphicsExtractor ctx, int slot, int x, int y,
+                                                       int newArmorValue, float enter, long now) {
+    *///?} else {
+    private static void renderIncomingHalfTransitions(DrawContext ctx, int slot, int x, int y,
+                                                       int newArmorValue, float enter, long now) {
+    //?}
+        int firstHalf = slot * 2;
+        if (renderStationaryIncomingPair(ctx, firstHalf, x, y, newArmorValue, now)) return;
+        if (renderIncomingFullPair(ctx, firstHalf, x, y, newArmorValue, enter, now)) return;
+
+        int secondHalf = firstHalf + 1;
+        float newLeftClearance = oddTransitionClearanceProgress(firstHalf, now, true);
+        float newRightClearance = oddTransitionClearanceProgress(secondHalf, now, true);
+        if (isRenderableHalf(CACHE, firstHalf, newArmorValue)) {
+            renderNewHalf(ctx, firstHalf, x, y, enter, newLeftClearance, now);
+        }
+        if (isRenderableHalf(CACHE, secondHalf, newArmorValue)) {
+            renderNewHalf(ctx, secondHalf, x, y, enter, newRightClearance, now);
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static boolean renderStationaryIncomingPair(GuiGraphicsExtractor ctx, int firstHalf,
+                                                         int x, int y, int newArmorValue, long now) {
+    *///?} else {
+    private static boolean renderStationaryIncomingPair(DrawContext ctx, int firstHalf,
+                                                         int x, int y, int newArmorValue, long now) {
+    //?}
+        int secondHalf = firstHalf + 1;
+        if (!isRenderableHalf(CACHE, firstHalf, newArmorValue)
+                || !isRenderableHalf(CACHE, secondHalf, newArmorValue)
+                || CURRENT_TO_PREVIOUS[firstHalf] != firstHalf
+                || CURRENT_TO_PREVIOUS[secondHalf] != secondHalf) {
+            return false;
         }
 
-        boolean newLeft = isRenderableHalf(CACHE, firstHalf, newArmorValue);
-        boolean newRight = isRenderableHalf(CACHE, secondHalf, newArmorValue);
-        int leftSource = newLeft ? CURRENT_TO_PREVIOUS[firstHalf] : -1;
-        int rightSource = newRight ? CURRENT_TO_PREVIOUS[secondHalf] : -1;
+        boolean pairUnchanged = visualsEqual(PREVIOUS_CACHE[firstHalf], CACHE[firstHalf])
+                && visualsEqual(PREVIOUS_CACHE[secondHalf], CACHE[secondHalf]);
+        if (pairUnchanged) {
+            renderPair(ctx, CACHE, firstHalf, x, y, 1.0f);
+        } else {
+            renderStationaryPairMorph(ctx, firstHalf, x, y,
+                    movementProgress(now, firstHalf, firstHalf));
+        }
+        return true;
+    }
 
-        if (newLeft && newRight
-                && leftSource == firstHalf && rightSource == secondHalf) {
-            boolean pairUnchanged = visualsEqual(PREVIOUS_CACHE[firstHalf], CACHE[firstHalf])
-                    && visualsEqual(PREVIOUS_CACHE[secondHalf], CACHE[secondHalf]);
-            if (pairUnchanged) {
-                renderPair(ctx, CACHE, firstHalf, x, y, 1.0f);
-            } else {
-                renderStationaryPairMorph(ctx, firstHalf, x, y,
-                        movementProgress(now, firstHalf, firstHalf));
-            }
-            return;
+    //? if >=26.1.2 {
+    /*private static boolean renderIncomingFullPair(GuiGraphicsExtractor ctx, int firstHalf,
+                                                   int x, int y, int newArmorValue, float enter, long now) {
+    *///?} else {
+    private static boolean renderIncomingFullPair(DrawContext ctx, int firstHalf,
+                                                   int x, int y, int newArmorValue, float enter, long now) {
+    //?}
+        int secondHalf = firstHalf + 1;
+        if (!isRenderableHalf(CACHE, firstHalf, newArmorValue)
+                || !isRenderableHalf(CACHE, secondHalf, newArmorValue)
+                || !isSame(CACHE[firstHalf], CACHE[secondHalf])) {
+            return false;
         }
 
-        if (newLeft && newRight && isSame(CACHE[firstHalf], CACHE[secondHalf])) {
-            if (leftSource < 0 && rightSource < 0
-                    && sameTransitionProgress(newLeftClearance, newRightClearance)) {
-                renderAnimatedFull(ctx, CACHE[firstHalf], x, y, enter, true,
-                        newLeftClearance);
-                return;
-            }
-            if (leftSource >= 0 && rightSource >= 0
-                    && canMoveAsFull(leftSource, rightSource, firstHalf, secondHalf)) {
-                // Renderizzato nel pass finale comune a entrambe le direzioni.
-                return;
-            }
+        int leftSource = CURRENT_TO_PREVIOUS[firstHalf];
+        int rightSource = CURRENT_TO_PREVIOUS[secondHalf];
+        float newLeftClearance = oddTransitionClearanceProgress(firstHalf, now, true);
+        float newRightClearance = oddTransitionClearanceProgress(secondHalf, now, true);
+        if (leftSource < 0 && rightSource < 0
+                && sameTransitionProgress(newLeftClearance, newRightClearance)) {
+            renderAnimatedFull(ctx, CACHE[firstHalf], x, y, enter, true,
+                    newLeftClearance);
+            return true;
         }
-
-        if (newLeft) renderNewHalf(ctx, firstHalf, x, y, enter, newLeftClearance, now);
-        if (newRight) renderNewHalf(ctx, secondHalf, x, y, enter, newRightClearance, now);
+        // Renderizzato nel pass finale comune a entrambe le direzioni.
+        return leftSource >= 0 && rightSource >= 0
+                && canMoveAsFull(leftSource, rightSource, firstHalf, secondHalf);
     }
 
     //? if >=26.1.2 {
@@ -504,7 +576,7 @@ final class ArmorBarAnimation {
         int sourceHalf = CURRENT_TO_PREVIOUS[half];
         if (sourceHalf < 0) {
             if (isManagedOddCompanion(half, true)) return;
-            renderAnimatedHalf(ctx, CACHE[half], half, x, y, enter, true, clearanceProgress);
+            renderAnimatedHalf(ctx, half, x, y, enter, true, clearanceProgress);
         } else if (sourceHalf == half) {
             if (visualsEqual(PREVIOUS_CACHE[sourceHalf], CACHE[half])) {
                 renderHalf(ctx, CACHE[half], half, x, y, 1.0f);
@@ -555,70 +627,107 @@ final class ArmorBarAnimation {
 
         int slotLimit = Math.min((armorValue + 1) / 2, CACHE.length / 2);
         for (int destinationSlot = 0; destinationSlot < slotLimit; destinationSlot++) {
-            int firstHalf = destinationSlot * 2;
-            int secondHalf = firstHalf + 1;
-            int column = destinationSlot % 10;
-            int row = destinationSlot / 10;
-            int x = FRAME_SLOT_X[column];
-            int y = FRAME_SLOT_Y[column] - (row * 10);
-
-            boolean newLeft = isRenderableHalf(CACHE, firstHalf, armorValue);
-            boolean newRight = isRenderableHalf(CACHE, secondHalf, armorValue);
-            int leftSource = newLeft ? CURRENT_TO_PREVIOUS[firstHalf] : -1;
-            int rightSource = newRight ? CURRENT_TO_PREVIOUS[secondHalf] : -1;
-
-            boolean renderedMovingFull = newLeft && newRight
-                    && isSame(CACHE[firstHalf], CACHE[secondHalf])
-                    && leftSource >= 0 && rightSource >= 0
-                    && (leftSource != firstHalf || rightSource != secondHalf)
-                    && canMoveAsFull(leftSource, rightSource, firstHalf, secondHalf);
-            if (renderedMovingFull) {
-                renderMovingFull(ctx, CACHE[firstHalf], leftSource, rightSource, firstHalf, secondHalf,
-                        x, y, movementProgress(now, leftSource, firstHalf));
-            }
-
-            if (!renderedMovingFull && newLeft && leftSource >= 0 && leftSource != firstHalf
-                    && cannotUseOddConveyor(leftSource, firstHalf)) {
-                renderMovingHalf(ctx, CACHE[firstHalf], leftSource, firstHalf, x, y,
-                        movementProgress(now, leftSource, firstHalf));
-            }
-            if (!renderedMovingFull && newRight && rightSource >= 0 && rightSource != secondHalf
-                    && cannotUseOddConveyor(rightSource, secondHalf)) {
-                renderMovingHalf(ctx, CACHE[secondHalf], rightSource, secondHalf, x, y,
-                        movementProgress(now, rightSource, secondHalf));
-            }
-
-            boolean visuallyJoinedPair = newLeft && newRight
-                    && isSame(CACHE[firstHalf], CACHE[secondHalf]);
-            boolean stationaryPairTransition = leftSource == firstHalf
-                    && rightSource == secondHalf;
-            boolean synchronizedFullEntry = leftSource < 0 && rightSource < 0
-                    && sameTransitionProgress(
-                            oddTransitionClearanceProgress(firstHalf, now, true),
-                            oddTransitionClearanceProgress(secondHalf, now, true));
-            boolean alreadyRenderedAsFull = stationaryPairTransition || synchronizedFullEntry;
-            boolean joinedInsideOddRun = (areInSameOddRun(firstHalf, secondHalf)
-                    && usesCombinedCellConveyorRun(ODD_RUN_BY_DESTINATION[firstHalf]))
-                    || isManagedOddCompanion(firstHalf, true)
-                    || isManagedOddCompanion(secondHalf, true);
-            if (!renderedMovingFull && visuallyJoinedPair && !alreadyRenderedAsFull
-                    && !joinedInsideOddRun) {
-                float connection = Math.min(
-                        halfConnectionProgress(firstHalf, now),
-                        halfConnectionProgress(secondHalf, now));
-                float materialArrival = Math.min(
-                        halfMaterialArrivalProgress(firstHalf, now),
-                        halfMaterialArrivalProgress(secondHalf, now));
-                connection = Math.min(connection, materialArrival);
-                if (connection > 0.01f) {
-                    // La cucitura scompare con un cross-fade dell'intera variante FULL.
-                    // Il fade parte soltanto quando le meta sono quasi arrivate, cosi
-                    // non compare una sagoma statica durante lo scorrimento.
-                    renderFull(ctx, CACHE[firstHalf], x, y, connection);
-                }
-            }
+            renderMovementSlot(ctx, now, armorValue, destinationSlot);
         }
         renderOddDetachOverlays(ctx, now);
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderMovementSlot(GuiGraphicsExtractor ctx, long now, int armorValue,
+                                           int destinationSlot) {
+    *///?} else {
+    private static void renderMovementSlot(DrawContext ctx, long now, int armorValue,
+                                           int destinationSlot) {
+    //?}
+        boolean renderedMovingFull = renderSlotMovers(ctx, now, armorValue, destinationSlot);
+        renderSlotConnectionSeam(ctx, now, armorValue, destinationSlot, renderedMovingFull);
+    }
+
+    //? if >=26.1.2 {
+    /*private static boolean renderSlotMovers(GuiGraphicsExtractor ctx, long now, int armorValue,
+                                            int destinationSlot) {
+    *///?} else {
+    private static boolean renderSlotMovers(DrawContext ctx, long now, int armorValue,
+                                            int destinationSlot) {
+    //?}
+        int firstHalf = destinationSlot * 2;
+        int secondHalf = firstHalf + 1;
+        boolean newLeft = isRenderableHalf(CACHE, firstHalf, armorValue);
+        boolean newRight = isRenderableHalf(CACHE, secondHalf, armorValue);
+        int leftSource = newLeft ? CURRENT_TO_PREVIOUS[firstHalf] : -1;
+        int rightSource = newRight ? CURRENT_TO_PREVIOUS[secondHalf] : -1;
+
+        boolean renderedMovingFull = newLeft && newRight
+                && isSame(CACHE[firstHalf], CACHE[secondHalf])
+                && leftSource >= 0 && rightSource >= 0
+                && (leftSource != firstHalf || rightSource != secondHalf)
+                && canMoveAsFull(leftSource, rightSource, firstHalf, secondHalf);
+        if (renderedMovingFull) {
+            renderMovingFull(ctx, CACHE[firstHalf], leftSource, rightSource, firstHalf, secondHalf,
+                    movementProgress(now, leftSource, firstHalf));
+        }
+
+        if (!renderedMovingFull && newLeft && leftSource >= 0 && leftSource != firstHalf
+                && cannotUseOddConveyor(leftSource, firstHalf)) {
+            renderMovingHalf(ctx, CACHE[firstHalf], leftSource, firstHalf,
+                    movementProgress(now, leftSource, firstHalf));
+        }
+        if (!renderedMovingFull && newRight && rightSource >= 0 && rightSource != secondHalf
+                && cannotUseOddConveyor(rightSource, secondHalf)) {
+            renderMovingHalf(ctx, CACHE[secondHalf], rightSource, secondHalf,
+                    movementProgress(now, rightSource, secondHalf));
+        }
+        return renderedMovingFull;
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderSlotConnectionSeam(GuiGraphicsExtractor ctx, long now, int armorValue,
+                                                  int destinationSlot, boolean renderedMovingFull) {
+    *///?} else {
+    private static void renderSlotConnectionSeam(DrawContext ctx, long now, int armorValue,
+                                                  int destinationSlot, boolean renderedMovingFull) {
+    //?}
+        int firstHalf = destinationSlot * 2;
+        int secondHalf = firstHalf + 1;
+        boolean newLeft = isRenderableHalf(CACHE, firstHalf, armorValue);
+        boolean newRight = isRenderableHalf(CACHE, secondHalf, armorValue);
+        int leftSource = newLeft ? CURRENT_TO_PREVIOUS[firstHalf] : -1;
+        int rightSource = newRight ? CURRENT_TO_PREVIOUS[secondHalf] : -1;
+        boolean visuallyJoinedPair = newLeft && newRight
+                && isSame(CACHE[firstHalf], CACHE[secondHalf]);
+        boolean stationaryPairTransition = leftSource == firstHalf
+                && rightSource == secondHalf;
+        boolean synchronizedFullEntry = leftSource < 0 && rightSource < 0
+                && sameTransitionProgress(
+                        oddTransitionClearanceProgress(firstHalf, now, true),
+                        oddTransitionClearanceProgress(secondHalf, now, true));
+        boolean alreadyRenderedAsFull = stationaryPairTransition || synchronizedFullEntry;
+        boolean joinedInsideOddRun = (areInSameOddRun(firstHalf, secondHalf)
+                && usesCombinedCellConveyorRun(ODD_RUN_BY_DESTINATION[firstHalf]))
+                || isManagedOddCompanion(firstHalf, true)
+                || isManagedOddCompanion(secondHalf, true);
+        if (renderedMovingFull || !visuallyJoinedPair || alreadyRenderedAsFull
+                || joinedInsideOddRun) {
+            return;
+        }
+
+        float connection = Math.min(
+                halfConnectionProgress(firstHalf, now),
+                halfConnectionProgress(secondHalf, now));
+        float materialArrival = Math.min(
+                halfMaterialArrivalProgress(firstHalf, now),
+                halfMaterialArrivalProgress(secondHalf, now));
+        connection = Math.min(connection, materialArrival);
+        if (connection <= 0.01f) return;
+
+        int column = destinationSlot % 10;
+        int row = destinationSlot / 10;
+        int x = FRAME_SLOT_X[column];
+        int y = FRAME_SLOT_Y[column] - (row * 10);
+        // La cucitura scompare con un cross-fade dell'intera variante FULL.
+        // Il fade parte soltanto quando le meta sono quasi arrivate, cosi
+        // non compare una sagoma statica durante lo scorrimento.
+        renderFull(ctx, CACHE[firstHalf], x, y, connection);
     }
 
     private static boolean areInSameOddRun(int firstDestination, int secondDestination) {
@@ -643,23 +752,27 @@ final class ArmorBarAnimation {
         if (replacements[half]) return false;
 
         for (int run = 0; run < oddRunCount; run++) {
-            int sourceStart = ODD_RUN_SOURCE_START[run];
-            int destinationStart = ODD_RUN_DESTINATION_START[run];
-            int length = ODD_RUN_LENGTH[run];
-            if (usesIndependentHalfConveyor(sourceStart, destinationStart)) {
-                continue;
-            }
-            if (!canRenderBuriedCapConveyor(sourceStart, destinationStart, length)) {
-                continue;
-            }
+            if (isManagedOddCompanionInRun(half, incoming, run)) return true;
+        }
+        return false;
+    }
 
-            int start = incoming ? destinationStart : sourceStart;
-            int end = start + length;
-            for (int anchor = Math.floorDiv(start, 2) * 2;
-                 anchor <= Math.floorDiv(end - 1, 2) * 2;
-                 anchor += 2) {
-                int variant = canonicalVariant(start, end, anchor);
-                if (variant == U_FULL) continue;
+    private static boolean isManagedOddCompanionInRun(int half, boolean incoming, int run) {
+        int sourceStart = ODD_RUN_SOURCE_START[run];
+        int destinationStart = ODD_RUN_DESTINATION_START[run];
+        int length = ODD_RUN_LENGTH[run];
+        if (usesIndependentHalfConveyor(sourceStart, destinationStart)
+                || !canRenderBuriedCapConveyor(sourceStart, destinationStart, length)) {
+            return false;
+        }
+
+        int start = incoming ? destinationStart : sourceStart;
+        int end = start + length;
+        for (int anchor = Math.floorDiv(start, 2) * 2;
+             anchor <= Math.floorDiv(end - 1, 2) * 2;
+             anchor += 2) {
+            int variant = canonicalVariant(start, end, anchor);
+            if (variant != U_FULL) {
                 int companionHalf = variant == U_LEFT ? anchor + 1 : anchor;
                 if (half == companionHalf) return true;
             }
@@ -675,58 +788,68 @@ final class ArmorBarAnimation {
         int oldLimit = Math.min(previousArmorValue, PREVIOUS_CACHE.length);
         int slotLimit = Math.min((oldLimit + 1) / 2, PREVIOUS_CACHE.length / 2);
         for (int slot = 0; slot < slotLimit; slot++) {
-            int left = slot * 2;
-            int right = left + 1;
-            if (!isRenderableHalf(PREVIOUS_CACHE, left, oldLimit)
-                    || !isRenderableHalf(PREVIOUS_CACHE, right, oldLimit)
-                    || !isSame(PREVIOUS_CACHE[left], PREVIOUS_CACHE[right])) {
-                continue;
-            }
-
-            int leftDestination = PREVIOUS_TO_CURRENT[left];
-            int rightDestination = PREVIOUS_TO_CURRENT[right];
-            int leftRun = leftDestination >= 0
-                    ? ODD_RUN_BY_DESTINATION[leftDestination]
-                    : -1;
-            int rightRun = rightDestination >= 0
-                    ? ODD_RUN_BY_DESTINATION[rightDestination]
-                    : -1;
-            if (leftRun < 0 && rightRun < 0) continue;
-
-            boolean preservedByOddRun = leftRun >= 0 && leftRun == rightRun
-                    && usesCombinedCellConveyorRun(leftRun);
-            boolean preservedByFullMover = leftDestination >= 0 && rightDestination >= 0
-                    && (leftDestination & 1) == 0
-                    && (rightDestination & 1) != 0
-                    && leftDestination / 2 == rightDestination / 2
-                    && canMoveAsFull(left, right, leftDestination, rightDestination);
-            boolean preservedInPlace = leftDestination == left && rightDestination == right;
-            boolean managedOddCompanion = isManagedOddCompanion(left, false)
-                    || isManagedOddCompanion(right, false);
-            if (preservedByOddRun || preservedByFullMover || preservedInPlace
-                    || managedOddCompanion) continue;
-
-            float leftProgress = detachMovementProgress(now, left, leftDestination, leftRun);
-            float rightProgress = detachMovementProgress(now, right, rightDestination, rightRun);
-            float progress = Math.max(leftProgress, rightProgress);
-            float movementDistance = Math.max(
-                    detachMovementDistance(left, leftDestination, leftRun),
-                    detachMovementDistance(right, rightDestination, rightRun));
-            float separation = movementDistance * progress;
-            // Ricostruisce il frame iniziale esatto, ma si dissolve non appena le
-            // meta si separano di meno di mezzo pixel. Il mover e gia attivo sotto:
-            // la FULL non puo piu mascherare lo scorrimento come nel vecchio path.
-            float alpha = stationarySeamAlpha(separation);
-            if (alpha <= 0.01f) continue;
-
-            int column = slot % 10;
-            int row = slot / 10;
-            int x = FRAME_SLOT_X[column];
-            int y = FRAME_SLOT_Y[column] - row * 10;
-            // A p=0 ricostruisce la vecchia U_FULL esatta sopra U_LEFT+U_RIGHT;
-            // la cucitura compare soltanto mentre la coppia si separa davvero.
-            renderFull(ctx, PREVIOUS_CACHE[left], x, y, alpha);
+            renderOddDetachOverlay(ctx, now, oldLimit, slot);
         }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderOddDetachOverlay(
+            GuiGraphicsExtractor ctx, long now, int oldLimit, int slot) {
+    *///?} else {
+    private static void renderOddDetachOverlay(
+            DrawContext ctx, long now, int oldLimit, int slot) {
+    //?}
+        int left = slot * 2;
+        int right = left + 1;
+        if (!isRenderableHalf(PREVIOUS_CACHE, left, oldLimit)
+                || !isRenderableHalf(PREVIOUS_CACHE, right, oldLimit)
+                || !isSame(PREVIOUS_CACHE[left], PREVIOUS_CACHE[right])) {
+            return;
+        }
+
+        int leftDestination = PREVIOUS_TO_CURRENT[left];
+        int rightDestination = PREVIOUS_TO_CURRENT[right];
+        int leftRun = leftDestination >= 0
+                ? ODD_RUN_BY_DESTINATION[leftDestination]
+                : -1;
+        int rightRun = rightDestination >= 0
+                ? ODD_RUN_BY_DESTINATION[rightDestination]
+                : -1;
+        if (leftRun < 0 && rightRun < 0) return;
+
+        boolean preservedByOddRun = leftRun >= 0 && leftRun == rightRun
+                && usesCombinedCellConveyorRun(leftRun);
+        boolean preservedByFullMover = leftDestination >= 0 && rightDestination >= 0
+                && (leftDestination & 1) == 0
+                && (rightDestination & 1) != 0
+                && leftDestination / 2 == rightDestination / 2
+                && canMoveAsFull(left, right, leftDestination, rightDestination);
+        boolean preservedInPlace = leftDestination == left && rightDestination == right;
+        boolean managedOddCompanion = isManagedOddCompanion(left, false)
+                || isManagedOddCompanion(right, false);
+        if (preservedByOddRun || preservedByFullMover || preservedInPlace
+                || managedOddCompanion) return;
+
+        float leftProgress = detachMovementProgress(now, left, leftDestination, leftRun);
+        float rightProgress = detachMovementProgress(now, right, rightDestination, rightRun);
+        float progress = Math.max(leftProgress, rightProgress);
+        float movementDistance = Math.max(
+                detachMovementDistance(left, leftDestination, leftRun),
+                detachMovementDistance(right, rightDestination, rightRun));
+        float separation = movementDistance * progress;
+        // Ricostruisce il frame iniziale esatto, ma si dissolve non appena le
+        // meta si separano di meno di mezzo pixel. Il mover e gia attivo sotto:
+        // la FULL non puo piu mascherare lo scorrimento come nel vecchio path.
+        float alpha = stationarySeamAlpha(separation);
+        if (alpha <= 0.01f) return;
+
+        int column = slot % 10;
+        int row = slot / 10;
+        int x = FRAME_SLOT_X[column];
+        int y = FRAME_SLOT_Y[column] - row * 10;
+        // A p=0 ricostruisce la vecchia U_FULL esatta sopra U_LEFT+U_RIGHT;
+        // la cucitura compare soltanto mentre la coppia si separa davvero.
+        renderFull(ctx, PREVIOUS_CACHE[left], x, y, alpha);
     }
 
     private static float detachMovementProgress(
@@ -818,10 +941,10 @@ final class ArmorBarAnimation {
 
     //? if >=26.1.2 {
     /*private static void renderMovingFull(GuiGraphicsExtractor ctx, SlotData data, int leftSource, int rightSource,
-                                         int leftDestination, int rightDestination, int x, int y, float progress) {
+                                         int leftDestination, int rightDestination, float progress) {
     *///?} else {
     private static void renderMovingFull(DrawContext ctx, SlotData data, int leftSource, int rightSource,
-                                         int leftDestination, int rightDestination, int x, int y, float progress) {
+                                         int leftDestination, int rightDestination, float progress) {
     //?}
         float remaining = 1.0f - progress;
         float offsetX = (halfMovementX(leftSource, leftDestination)
@@ -829,7 +952,8 @@ final class ArmorBarAnimation {
         float offsetY = (halfMovementY(leftSource, leftDestination)
                 + halfMovementY(rightSource, rightDestination)) * 0.5f * remaining;
 
-        renderBarClippedMovement(ctx, data, -1, x, y, offsetX, offsetY);
+        int anchorHalf = Math.floorDiv(leftDestination, 2) * 2;
+        renderBarClippedMovement(ctx, data, anchorHalf, U_FULL, offsetX, offsetY);
     }
 
     //? if >=26.1.2 {
@@ -900,7 +1024,8 @@ final class ArmorBarAnimation {
         // Ogni FULL resta una FULL e segue lo stesso treno del caso pari. Soltanto
         // i cap che cambiano LEFT/RIGHT/FULL fanno un morph locale lungo la medesima
         // traiettoria; non esiste piu uno switch simultaneo dell'intera barra.
-        for (int offset = 0; offset < length;) {
+        int offset = 0;
+        while (offset < length) {
             int segmentLength = 1;
             while (offset + segmentLength < length
                     && visualsEqual(
@@ -964,6 +1089,10 @@ final class ArmorBarAnimation {
             return;
         }
 
+        if (renderOddMovingFullPair(ctx, sourceStart, destinationStart, length, progress)) {
+            return;
+        }
+
         if (canRenderBuriedCapConveyor(sourceStart, destinationStart, length)) {
             renderBuriedCapConveyorSegment(ctx, sourceStart, destinationStart, length, progress);
             return;
@@ -980,6 +1109,56 @@ final class ArmorBarAnimation {
             return;
         }
 
+        renderCanonicalOddConveyorSegment(ctx,
+                sourceStart, destinationStart, length,
+                runDestinationStart, runLength, progress);
+    }
+
+    //? if >=26.1.2 {
+    /*private static boolean renderOddMovingFullPair(GuiGraphicsExtractor ctx,
+                                                   int sourceStart, int destinationStart,
+                                                   int length, float progress) {
+    *///?} else {
+    private static boolean renderOddMovingFullPair(DrawContext ctx,
+                                                   int sourceStart, int destinationStart,
+                                                   int length, float progress) {
+    //?}
+        if (length != 2
+                || ((sourceStart ^ destinationStart) & 1) == 0
+                || !isSame(PREVIOUS_CACHE[sourceStart], PREVIOUS_CACHE[sourceStart + 1])
+                || !isSame(CACHE[destinationStart], CACHE[destinationStart + 1])
+                || !visualsEqual(PREVIOUS_CACHE[sourceStart], CACHE[destinationStart])) {
+            return false;
+        }
+
+        int anchorHalf;
+        float offsetX;
+        if ((sourceStart & 1) == 0) {
+            anchorHalf = sourceStart;
+            offsetX = -halfMovementX(sourceStart, destinationStart) * progress;
+        } else {
+            anchorHalf = destinationStart;
+            offsetX = halfMovementX(sourceStart, destinationStart) * (1.0f - progress);
+        }
+
+        // Due meta dello stesso pezzo restano una singola FULL anche quando il loro
+        // spostamento dispari attraversa il confine fra due celle della barra.
+        renderCanonicalShiftedSprite(ctx, CACHE[destinationStart],
+                anchorHalf, U_FULL, offsetX, 1.0f);
+        return true;
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderCanonicalOddConveyorSegment(GuiGraphicsExtractor ctx,
+                                                           int sourceStart, int destinationStart,
+                                                           int length, int runDestinationStart,
+                                                           int runLength, float progress) {
+    *///?} else {
+    private static void renderCanonicalOddConveyorSegment(DrawContext ctx,
+                                                          int sourceStart, int destinationStart,
+                                                          int length, int runDestinationStart,
+                                                          int runLength, float progress) {
+    //?}
         int sourceEnd = sourceStart + length;
         int destinationEnd = destinationStart + length;
         int visualDelta = oddVisualDelta(sourceStart, destinationStart);
@@ -989,6 +1168,9 @@ final class ArmorBarAnimation {
         int destinationLastAnchor = Math.floorDiv(destinationEnd - 1, 2) * 2;
         int firstAnchor = Math.min(sourceFirstAnchor + visualDelta, destinationFirstAnchor);
         int lastAnchor = Math.max(sourceLastAnchor + visualDelta, destinationLastAnchor);
+        int runTrailingHalf = visualDelta > 0
+                ? runDestinationStart
+                : runDestinationStart + runLength - 1;
 
         for (int destinationAnchor = firstAnchor;
              destinationAnchor <= lastAnchor;
@@ -997,120 +1179,146 @@ final class ArmorBarAnimation {
             int sourceVariant = canonicalVariant(sourceStart, sourceEnd, sourceAnchor);
             int variant = canonicalVariant(destinationStart, destinationEnd, destinationAnchor);
             if (sourceVariant >= 0) {
-                int sourceDataHalf = canonicalDataHalf(sourceAnchor, sourceVariant);
-                if (variant < 0) {
-                    renderCanonicalConveyorSprite(ctx, PREVIOUS_CACHE[sourceDataHalf],
-                            sourceAnchor, visualDelta, sourceVariant, progress,
-                            1.0f - progress);
-                } else if (sourceVariant == variant) {
-                    int destinationDataHalf = canonicalDataHalf(destinationAnchor, variant);
-                    renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
-                            sourceAnchor, visualDelta, variant, progress, 1.0f);
-                } else {
-                    int destinationDataHalf = canonicalDataHalf(destinationAnchor, variant);
-                    // Le due sagome condividono esattamente anchor e traiettoria:
-                    // il cap cresce o si ritira senza alcun salto di fase.
-                    if (sourceVariant != U_FULL && variant == U_FULL) {
-                        // HALF -> FULL: i pixel condivisi restano opachi; compaiono
-                        // gradualmente soltanto quelli della meta complementare.
-                        renderCanonicalConveyorSprite(ctx, PREVIOUS_CACHE[sourceDataHalf],
-                                sourceAnchor, visualDelta, sourceVariant, progress, 1.0f);
-                        renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
-                                sourceAnchor, visualDelta, variant, progress, progress);
-                    } else if (sourceVariant == U_FULL) {
-                        // FULL -> HALF: la destinazione solida sta sotto e la parte
-                        // eccedente della FULL si dissolve durante il viaggio.
-                        renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
-                                sourceAnchor, visualDelta, variant, progress, 1.0f);
-                        renderCanonicalConveyorSprite(ctx, PREVIOUS_CACHE[sourceDataHalf],
-                                sourceAnchor, visualDelta, sourceVariant, progress,
-                                1.0f - progress);
-                    } else {
-                        renderOddLogicalHalfMorph(ctx,
-                                PREVIOUS_CACHE[sourceDataHalf], CACHE[destinationDataHalf],
-                                sourceDataHalf, destinationDataHalf, progress);
-                    }
-                }
+                renderSourceBackedConveyorAnchor(ctx,
+                        sourceAnchor, visualDelta, sourceVariant,
+                        destinationAnchor, variant, progress);
             } else if (variant >= 0) {
-                int destinationDataHalf = canonicalDataHalf(destinationAnchor, variant);
-                int runTrailingHalf = visualDelta > 0
-                        ? runDestinationStart
-                        : runDestinationStart + runLength - 1;
-                if (destinationDataHalf == runTrailingHalf && visualDelta > 0) {
-                    // Soltanto il vero cap esterno nasce sul posto: non deve entrare
-                    // da fuori barra. I cap ai confini fra materiali viaggiano invece
-                    // insieme alla meta adiacente, formando una sola icona mista.
-                    renderCanonicalSprite(ctx, CACHE[destinationDataHalf],
-                            destinationAnchor, variant, progress);
-                } else {
-                    // Verso sinistra il cap apparentemente "nuovo" e la meta della
-                    // FULL di partenza: deve attraversare la barra come nel percorso
-                    // inverso, non comparire gia fermo nella posizione di arrivo.
-                    renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
-                            sourceAnchor, visualDelta, variant, progress, progress);
-                }
+                renderDestinationOnlyConveyorAnchor(ctx,
+                        sourceAnchor, visualDelta, destinationAnchor, variant,
+                        runTrailingHalf, progress);
             }
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderSourceBackedConveyorAnchor(GuiGraphicsExtractor ctx,
+                                                          int sourceAnchor, int visualDelta,
+                                                          int sourceVariant, int destinationAnchor,
+                                                          int destinationVariant, float progress) {
+    *///?} else {
+    private static void renderSourceBackedConveyorAnchor(DrawContext ctx,
+                                                         int sourceAnchor, int visualDelta,
+                                                         int sourceVariant, int destinationAnchor,
+                                                         int destinationVariant, float progress) {
+    //?}
+        int sourceDataHalf = canonicalDataHalf(sourceAnchor, sourceVariant);
+        if (destinationVariant < 0) {
+            renderCanonicalConveyorSprite(ctx, PREVIOUS_CACHE[sourceDataHalf],
+                    sourceAnchor, visualDelta, sourceVariant, progress,
+                    1.0f - progress);
+            return;
+        }
+
+        int destinationDataHalf = canonicalDataHalf(destinationAnchor, destinationVariant);
+        if (sourceVariant == destinationVariant) {
+            renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
+                    sourceAnchor, visualDelta, destinationVariant, progress, 1.0f);
+            return;
+        }
+
+        renderCanonicalVariantTransition(ctx,
+                sourceAnchor, visualDelta, sourceVariant,
+                destinationAnchor, destinationVariant, progress);
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderCanonicalVariantTransition(GuiGraphicsExtractor ctx,
+                                                          int sourceAnchor, int visualDelta,
+                                                          int sourceVariant, int destinationAnchor,
+                                                          int destinationVariant, float progress) {
+    *///?} else {
+    private static void renderCanonicalVariantTransition(DrawContext ctx,
+                                                         int sourceAnchor, int visualDelta,
+                                                         int sourceVariant, int destinationAnchor,
+                                                         int destinationVariant, float progress) {
+    //?}
+        int sourceDataHalf = canonicalDataHalf(sourceAnchor, sourceVariant);
+        int destinationDataHalf = canonicalDataHalf(destinationAnchor, destinationVariant);
+
+        // Le due sagome condividono esattamente anchor e traiettoria:
+        // il cap cresce o si ritira senza alcun salto di fase.
+        if (sourceVariant != U_FULL && destinationVariant == U_FULL) {
+            // HALF -> FULL: i pixel condivisi restano opachi; compaiono
+            // gradualmente soltanto quelli della meta complementare.
+            renderCanonicalConveyorSprite(ctx, PREVIOUS_CACHE[sourceDataHalf],
+                    sourceAnchor, visualDelta, sourceVariant, progress, 1.0f);
+            renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
+                    sourceAnchor, visualDelta, destinationVariant, progress, progress);
+        } else if (sourceVariant == U_FULL) {
+            // FULL -> HALF: la destinazione solida sta sotto e la parte
+            // eccedente della FULL si dissolve durante il viaggio.
+            renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
+                    sourceAnchor, visualDelta, destinationVariant, progress, 1.0f);
+            renderCanonicalConveyorSprite(ctx, PREVIOUS_CACHE[sourceDataHalf],
+                    sourceAnchor, visualDelta, sourceVariant, progress,
+                    1.0f - progress);
+        } else {
+            renderOddLogicalHalfMorph(ctx,
+                    PREVIOUS_CACHE[sourceDataHalf], CACHE[destinationDataHalf],
+                    sourceDataHalf, destinationDataHalf, progress);
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderDestinationOnlyConveyorAnchor(GuiGraphicsExtractor ctx,
+                                                             int sourceAnchor, int visualDelta,
+                                                             int destinationAnchor, int destinationVariant,
+                                                             int runTrailingHalf, float progress) {
+    *///?} else {
+    private static void renderDestinationOnlyConveyorAnchor(DrawContext ctx,
+                                                            int sourceAnchor, int visualDelta,
+                                                            int destinationAnchor, int destinationVariant,
+                                                            int runTrailingHalf, float progress) {
+    //?}
+        int destinationDataHalf = canonicalDataHalf(destinationAnchor, destinationVariant);
+        if (destinationDataHalf == runTrailingHalf && visualDelta > 0) {
+            // Soltanto il vero cap esterno nasce sul posto: non deve entrare
+            // da fuori barra. I cap ai confini fra materiali viaggiano invece
+            // insieme alla meta adiacente, formando una sola icona mista.
+            renderCanonicalSprite(ctx, CACHE[destinationDataHalf],
+                    destinationAnchor, destinationVariant, progress);
+        } else {
+            // Verso sinistra il cap apparentemente "nuovo" e la meta della
+            // FULL di partenza: deve attraversare la barra come nel percorso
+            // inverso, non comparire gia fermo nella posizione di arrivo.
+            renderCanonicalConveyorSprite(ctx, CACHE[destinationDataHalf],
+                    sourceAnchor, visualDelta, destinationVariant, progress, progress);
         }
     }
 
     private static boolean canRenderBuriedCapConveyor(
             int sourceStart, int destinationStart, int length) {
-        if (length < 3 || (length & 1) == 0
-                || Math.abs(destinationStart - sourceStart) != 1
-                || sourceStart / 20 != destinationStart / 20) {
+        if (!isBuriedCapConveyorCandidate(sourceStart, destinationStart, length)) {
             return false;
         }
 
         int sourceEnd = sourceStart + length;
         int destinationEnd = destinationStart + length;
         int visualDelta = oddVisualDelta(sourceStart, destinationStart);
-        int sourceCapAnchor = -1;
-        int destinationCapAnchor = -1;
-        int sourceCaps = 0;
-        int destinationCaps = 0;
-        int sourceFulls = 0;
-        int destinationFulls = 0;
-
-        for (int anchor = Math.floorDiv(sourceStart, 2) * 2;
-             anchor <= Math.floorDiv(sourceEnd - 1, 2) * 2;
-             anchor += 2) {
-            int variant = canonicalVariant(sourceStart, sourceEnd, anchor);
-            if (variant == U_FULL) {
-                sourceFulls++;
-                if (canonicalVariant(destinationStart, destinationEnd,
-                        anchor + visualDelta) != U_FULL) {
-                    return false;
-                }
-            } else {
-                sourceCaps++;
-                sourceCapAnchor = anchor;
-            }
+        if (!sourceFullsRemainAligned(
+                sourceStart, sourceEnd, destinationStart, destinationEnd, visualDelta)) {
+            return false;
         }
 
-        for (int anchor = Math.floorDiv(destinationStart, 2) * 2;
-             anchor <= Math.floorDiv(destinationEnd - 1, 2) * 2;
-             anchor += 2) {
-            int variant = canonicalVariant(destinationStart, destinationEnd, anchor);
-            if (variant == U_FULL) {
-                destinationFulls++;
-            } else {
-                destinationCaps++;
-                destinationCapAnchor = anchor;
-            }
+        int sourceFulls = countCanonicalFulls(sourceStart, sourceEnd);
+        int destinationFulls = countCanonicalFulls(destinationStart, destinationEnd);
+        int sourceCaps = canonicalAnchorCount(sourceStart, sourceEnd) - sourceFulls;
+        int destinationCaps = canonicalAnchorCount(destinationStart, destinationEnd)
+                - destinationFulls;
+        if (sourceCaps != 1 || destinationCaps != 1
+                || sourceFulls <= 0 || sourceFulls != destinationFulls) {
+            return false;
         }
 
+        int sourceCapAnchor = findCanonicalCapAnchor(sourceStart, sourceEnd);
+        int destinationCapAnchor = findCanonicalCapAnchor(destinationStart, destinationEnd);
         int sourceCapVariant = canonicalVariant(sourceStart, sourceEnd, sourceCapAnchor);
         int destinationCapVariant = canonicalVariant(
                 destinationStart, destinationEnd, destinationCapAnchor);
-        int sourceCompanion = sourceCapVariant == U_LEFT
-                ? sourceCapAnchor + 1 : sourceCapAnchor;
-        int destinationCompanion = destinationCapVariant == U_LEFT
-                ? destinationCapAnchor + 1 : destinationCapAnchor;
-        if ((sourceCompanion >= 0 && sourceCompanion < OUTGOING_REPLACEMENT.length
-                && OUTGOING_REPLACEMENT[sourceCompanion])
-                || (destinationCompanion >= 0
-                && destinationCompanion < INCOMING_REPLACEMENT.length
-                && INCOMING_REPLACEMENT[destinationCompanion])) {
+        if (isReplacementCompanion(
+                sourceCapAnchor, sourceCapVariant, OUTGOING_REPLACEMENT)
+                || isReplacementCompanion(
+                        destinationCapAnchor, destinationCapVariant, INCOMING_REPLACEMENT)) {
             // Un pezzo sostituito non puo essere usato come cap opaco del conveyor:
             // deve restare libero di eseguire l'uscita e l'ingresso completi.
             return false;
@@ -1119,12 +1327,69 @@ final class ArmorBarAnimation {
         // Il cap nuovo deve essere nascosto da una FULL sorgente a p=0 e il cap
         // vecchio da una FULL destinazione a p=1. Solo cosi l'occlusione ricostruisce
         // entrambi gli endpoint senza alpha, crop o cambio di variante.
-        return sourceCaps == 1
-                && destinationCaps == 1
-                && sourceFulls > 0
-                && sourceFulls == destinationFulls
-                && canonicalVariant(sourceStart, sourceEnd, destinationCapAnchor) == U_FULL
+        return canonicalVariant(sourceStart, sourceEnd, destinationCapAnchor) == U_FULL
                 && canonicalVariant(destinationStart, destinationEnd, sourceCapAnchor) == U_FULL;
+    }
+
+    private static boolean isBuriedCapConveyorCandidate(
+            int sourceStart, int destinationStart, int length) {
+        return length >= 3
+                && (length & 1) != 0
+                && Math.abs(destinationStart - sourceStart) == 1
+                && sourceStart / 20 == destinationStart / 20;
+    }
+
+    private static boolean sourceFullsRemainAligned(
+            int sourceStart, int sourceEnd,
+            int destinationStart, int destinationEnd,
+            int visualDelta) {
+        for (int anchor = Math.floorDiv(sourceStart, 2) * 2;
+             anchor <= Math.floorDiv(sourceEnd - 1, 2) * 2;
+             anchor += 2) {
+            if (canonicalVariant(sourceStart, sourceEnd, anchor) == U_FULL
+                    && canonicalVariant(destinationStart, destinationEnd,
+                            anchor + visualDelta) != U_FULL) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int countCanonicalFulls(int start, int end) {
+        int fulls = 0;
+        for (int anchor = Math.floorDiv(start, 2) * 2;
+             anchor <= Math.floorDiv(end - 1, 2) * 2;
+             anchor += 2) {
+            if (canonicalVariant(start, end, anchor) == U_FULL) {
+                fulls++;
+            }
+        }
+        return fulls;
+    }
+
+    private static int canonicalAnchorCount(int start, int end) {
+        int firstAnchor = Math.floorDiv(start, 2) * 2;
+        int lastAnchor = Math.floorDiv(end - 1, 2) * 2;
+        return ((lastAnchor - firstAnchor) / 2) + 1;
+    }
+
+    private static int findCanonicalCapAnchor(int start, int end) {
+        for (int anchor = Math.floorDiv(start, 2) * 2;
+             anchor <= Math.floorDiv(end - 1, 2) * 2;
+             anchor += 2) {
+            if (canonicalVariant(start, end, anchor) != U_FULL) {
+                return anchor;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isReplacementCompanion(
+            int capAnchor, int capVariant, boolean[] replacements) {
+        int companion = capVariant == U_LEFT ? capAnchor + 1 : capAnchor;
+        return companion >= 0
+                && companion < replacements.length
+                && replacements[companion];
     }
 
     //? if >=26.1.2 {
@@ -1188,24 +1453,10 @@ final class ArmorBarAnimation {
 
         // I soli cap globali stanno opachi sotto il treno: vengono scoperti/coperti
         // dalle celle in movimento e non partecipano mai a un cross-fade.
-        for (int anchor = Math.floorDiv(sourceStart, 2) * 2;
-             anchor <= Math.floorDiv(sourceEnd - 1, 2) * 2;
-             anchor += 2) {
-            int variant = canonicalVariant(sourceStart, sourceEnd, anchor);
-            if (variant != U_FULL) {
-                renderOddStationaryCapCell(ctx, PREVIOUS_CACHE, PREVIOUS_TO_CURRENT,
-                        anchor, variant);
-            }
-        }
-        for (int anchor = Math.floorDiv(destinationStart, 2) * 2;
-             anchor <= Math.floorDiv(destinationEnd - 1, 2) * 2;
-             anchor += 2) {
-            int variant = canonicalVariant(destinationStart, destinationEnd, anchor);
-            if (variant != U_FULL) {
-                renderOddStationaryCapCell(ctx, CACHE, CURRENT_TO_PREVIOUS,
-                        anchor, variant);
-            }
-        }
+        renderOddStationaryCaps(ctx, PREVIOUS_CACHE, PREVIOUS_TO_CURRENT,
+                sourceStart, sourceEnd);
+        renderOddStationaryCaps(ctx, CACHE, CURRENT_TO_PREVIOUS,
+                destinationStart, destinationEnd);
 
         float sourceOffset = visualDelta * HALF_PITCH * progress;
         float destinationOffset = -visualDelta * HALF_PITCH * (1.0f - progress);
@@ -1213,32 +1464,83 @@ final class ArmorBarAnimation {
         // Un unico treno di basi opache mantiene pitch e copertura costanti come nel
         // caso dei punti interi. Se una cella passa FULL <-> mista, la base FULL e
         // quella del materiale invariato: cosi anche trim e glow non pulsano.
-        for (int anchor = Math.floorDiv(sourceStart, 2) * 2;
-             anchor <= Math.floorDiv(sourceEnd - 1, 2) * 2;
-             anchor += 2) {
-            if (canonicalVariant(sourceStart, sourceEnd, anchor) != U_FULL) continue;
-            int destinationAnchor = anchor + visualDelta;
-            if (oddCellsVisuallyEqual(anchor, destinationAnchor)) {
-                renderOddCellShifted(ctx, PREVIOUS_CACHE, anchor, sourceOffset, 1.0f);
-            } else {
-                renderOddCellTransitionBase(ctx, anchor, destinationAnchor,
-                        sourceOffset, destinationOffset);
-            }
-        }
+        renderOddCellTransitionBases(ctx,
+                sourceStart, sourceEnd, visualDelta, sourceOffset, destinationOffset);
 
         // Soltanto la meta che cambia materiale viene fusa sulla traiettoria comune.
         // La cucitura nasce o sparisce dalla variante canonica, senza ridisegnare la
         // meta invariata e senza creare un secondo bordo indipendente.
+        renderOddCellTransitionOverlays(ctx,
+                sourceStart, sourceEnd, visualDelta,
+                sourceOffset, destinationOffset, progress);
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderOddStationaryCaps(GuiGraphicsExtractor ctx,
+                                                SlotData[] data, int[] mapping,
+                                                int start, int end) {
+    *///?} else {
+    private static void renderOddStationaryCaps(DrawContext ctx,
+                                                SlotData[] data, int[] mapping,
+                                                int start, int end) {
+    //?}
+        for (int anchor = Math.floorDiv(start, 2) * 2;
+             anchor <= Math.floorDiv(end - 1, 2) * 2;
+             anchor += 2) {
+            int variant = canonicalVariant(start, end, anchor);
+            if (variant != U_FULL) {
+                renderOddStationaryCapCell(ctx, data, mapping, anchor, variant);
+            }
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderOddCellTransitionBases(GuiGraphicsExtractor ctx,
+                                                     int sourceStart, int sourceEnd,
+                                                     int visualDelta, float sourceOffset,
+                                                     float destinationOffset) {
+    *///?} else {
+    private static void renderOddCellTransitionBases(DrawContext ctx,
+                                                     int sourceStart, int sourceEnd,
+                                                     int visualDelta, float sourceOffset,
+                                                     float destinationOffset) {
+    //?}
         for (int anchor = Math.floorDiv(sourceStart, 2) * 2;
              anchor <= Math.floorDiv(sourceEnd - 1, 2) * 2;
              anchor += 2) {
-            if (canonicalVariant(sourceStart, sourceEnd, anchor) != U_FULL) continue;
-            int destinationAnchor = anchor + visualDelta;
-            if (oddCellsVisuallyEqual(anchor, destinationAnchor)) {
-                continue;
+            if (canonicalVariant(sourceStart, sourceEnd, anchor) == U_FULL) {
+                int destinationAnchor = anchor + visualDelta;
+                if (oddCellsVisuallyEqual(anchor, destinationAnchor)) {
+                    renderOddCellShifted(ctx, PREVIOUS_CACHE, anchor, sourceOffset, 1.0f);
+                } else {
+                    renderOddCellTransitionBase(ctx, anchor, destinationAnchor,
+                            sourceOffset, destinationOffset);
+                }
             }
-            renderOddCellTransitionOverlay(ctx, anchor, destinationAnchor,
-                    sourceOffset, destinationOffset, progress);
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderOddCellTransitionOverlays(GuiGraphicsExtractor ctx,
+                                                        int sourceStart, int sourceEnd,
+                                                        int visualDelta, float sourceOffset,
+                                                        float destinationOffset, float progress) {
+    *///?} else {
+    private static void renderOddCellTransitionOverlays(DrawContext ctx,
+                                                        int sourceStart, int sourceEnd,
+                                                        int visualDelta, float sourceOffset,
+                                                        float destinationOffset, float progress) {
+    //?}
+        for (int anchor = Math.floorDiv(sourceStart, 2) * 2;
+             anchor <= Math.floorDiv(sourceEnd - 1, 2) * 2;
+             anchor += 2) {
+            if (canonicalVariant(sourceStart, sourceEnd, anchor) == U_FULL) {
+                int destinationAnchor = anchor + visualDelta;
+                if (!oddCellsVisuallyEqual(anchor, destinationAnchor)) {
+                    renderOddCellTransitionOverlay(ctx, anchor, destinationAnchor,
+                            sourceOffset, destinationOffset, progress);
+                }
+            }
         }
     }
 
@@ -1435,12 +1737,7 @@ final class ArmorBarAnimation {
                                                      float offsetX, float alpha) {
     //?}
         if (alpha <= 0.001f) return;
-        int slot = anchorHalf / 2;
-        int column = slot % 10;
-        int row = slot / 10;
-        int x = FRAME_SLOT_X[column];
-        int y = FRAME_SLOT_Y[column] - row * 10;
-        renderBarClippedCanonicalMovement(ctx, data, variant, x, y,
+        renderBarClippedCanonicalMovement(ctx, data, anchorHalf, variant,
                 offsetX, 0.0f, alpha);
     }
 
@@ -1536,7 +1833,8 @@ final class ArmorBarAnimation {
                                                int halfStart, int length) {
     //?}
         int end = halfStart + length;
-        for (int half = halfStart; half < end;) {
+        int half = halfStart;
+        while (half < end) {
             int slot = half / 2;
             int column = slot % 10;
             int row = slot / 10;
@@ -1571,12 +1869,13 @@ final class ArmorBarAnimation {
     }
 
     //? if >=26.1.2 {
-    /*private static void renderAnimatedHalf(GuiGraphicsExtractor ctx, SlotData data, int halfIndex, int x, int y,
+    /*private static void renderAnimatedHalf(GuiGraphicsExtractor ctx, int halfIndex, int x, int y,
                                            float progress, boolean incoming, float clearanceProgress) {
     *///?} else {
-    private static void renderAnimatedHalf(DrawContext ctx, SlotData data, int halfIndex, int x, int y,
+    private static void renderAnimatedHalf(DrawContext ctx, int halfIndex, int x, int y,
                                            float progress, boolean incoming, float clearanceProgress) {
     //?}
+        SlotData data = incoming ? CACHE[halfIndex] : PREVIOUS_CACHE[halfIndex];
         if (Float.isFinite(clearanceProgress)) {
             float alpha = oddClearanceAlpha(clearanceProgress, incoming);
             if (alpha > 0.01f) renderHalf(ctx, data, halfIndex, x, y, alpha);
@@ -1598,46 +1897,53 @@ final class ArmorBarAnimation {
 
     //? if >=26.1.2 {
     /*private static void renderMovingHalf(GuiGraphicsExtractor ctx, SlotData data, int sourceHalf, int destinationHalf,
-                                          int x, int y, float progress) {
+                                          float progress) {
     *///?} else {
     private static void renderMovingHalf(DrawContext ctx, SlotData data, int sourceHalf, int destinationHalf,
-                                         int x, int y, float progress) {
+                                         float progress) {
     //?}
         float remaining = 1.0f - progress;
-        renderTranslatedHalf(ctx, data, destinationHalf, x, y,
+        int anchorHalf = Math.floorDiv(destinationHalf, 2) * 2;
+        int variant = (destinationHalf & 1) == 0 ? U_LEFT : U_RIGHT;
+        renderTranslatedHalf(ctx, data, anchorHalf, variant,
                 halfMovementX(sourceHalf, destinationHalf) * remaining,
                 halfMovementY(sourceHalf, destinationHalf) * remaining);
     }
 
     //? if >=26.1.2 {
-    /*private static void renderTranslatedHalf(GuiGraphicsExtractor ctx, SlotData data, int halfIndex,
-                                               int x, int y, float offsetX, float offsetY) {
+    /*private static void renderTranslatedHalf(GuiGraphicsExtractor ctx, SlotData data, int anchorHalf,
+                                               int variant, float offsetX, float offsetY) {
     *///?} else {
-    private static void renderTranslatedHalf(DrawContext ctx, SlotData data, int halfIndex,
-                                             int x, int y, float offsetX, float offsetY) {
+    private static void renderTranslatedHalf(DrawContext ctx, SlotData data, int anchorHalf,
+                                             int variant, float offsetX, float offsetY) {
     //?}
-        renderBarClippedMovement(ctx, data, halfIndex, x, y, offsetX, offsetY);
+        renderBarClippedMovement(ctx, data, anchorHalf, variant, offsetX, offsetY);
     }
 
     //? if >=26.1.2 {
-    /*private static void renderBarClippedMovement(GuiGraphicsExtractor ctx, SlotData data, int halfIndex,
-                                                 int x, int y, float offsetX, float offsetY) {
+    /*private static void renderBarClippedMovement(GuiGraphicsExtractor ctx, SlotData data, int anchorHalf,
+                                                 int variant, float offsetX, float offsetY) {
     *///?} else {
-    private static void renderBarClippedMovement(DrawContext ctx, SlotData data, int halfIndex,
-                                                 int x, int y, float offsetX, float offsetY) {
+    private static void renderBarClippedMovement(DrawContext ctx, SlotData data, int anchorHalf,
+                                                 int variant, float offsetX, float offsetY) {
     //?}
-        int variant = halfIndex < 0 ? U_FULL : (halfIndex & 1) == 0 ? U_LEFT : U_RIGHT;
-        renderBarClippedCanonicalMovement(ctx, data, variant, x, y, offsetX, offsetY, 1.0f);
+        renderBarClippedCanonicalMovement(
+                ctx, data, anchorHalf, variant, offsetX, offsetY, 1.0f);
     }
 
     //? if >=26.1.2 {
-    /*private static void renderBarClippedCanonicalMovement(GuiGraphicsExtractor ctx, SlotData data, int variant,
-                                                           int x, int y, float offsetX, float offsetY, float alpha) {
+    /*private static void renderBarClippedCanonicalMovement(GuiGraphicsExtractor ctx, SlotData data, int anchorHalf,
+                                                           int variant, float offsetX, float offsetY, float alpha) {
     *///?} else {
-    private static void renderBarClippedCanonicalMovement(DrawContext ctx, SlotData data, int variant,
-                                                          int x, int y, float offsetX, float offsetY, float alpha) {
+    private static void renderBarClippedCanonicalMovement(DrawContext ctx, SlotData data, int anchorHalf,
+                                                          int variant, float offsetX, float offsetY, float alpha) {
     //?}
         if (alpha <= 0.001f) return;
+        int slot = anchorHalf / 2;
+        int column = slot % 10;
+        int row = slot / 10;
+        int x = FRAME_SLOT_X[column];
+        int y = FRAME_SLOT_Y[column] - row * 10;
         int oldArmorValue = Math.min(previousArmorValue, PREVIOUS_CACHE.length);
         int newArmorValue = Math.min(currentArmorValue, CACHE.length);
         int maxRows = Math.max(rowsForArmor(oldArmorValue), rowsForArmor(newArmorValue));
@@ -1764,12 +2070,12 @@ final class ArmorBarAnimation {
             if (currentData.materialTex == null) continue;
 
             for (int previous = 0; previous < oldLimit; previous++) {
-                if (PREVIOUS_TO_CURRENT[previous] >= 0) continue;
-                if (!sameLogicalHalf(PREVIOUS_CACHE[previous], currentData)) continue;
-
-                CURRENT_TO_PREVIOUS[current] = previous;
-                PREVIOUS_TO_CURRENT[previous] = current;
-                break;
+                if (PREVIOUS_TO_CURRENT[previous] < 0
+                        && sameLogicalHalf(PREVIOUS_CACHE[previous], currentData)) {
+                    CURRENT_TO_PREVIOUS[current] = previous;
+                    PREVIOUS_TO_CURRENT[previous] = current;
+                    break;
+                }
             }
         }
 
@@ -1801,7 +2107,8 @@ final class ArmorBarAnimation {
         // Una run contiene meta consecutive che compiono lo stesso spostamento.
         // Viene spezzata al cambio di riga o di vettore, cosi il conveyor conserva
         // un unico treno orizzontale anche con barre moddate oltre i venti punti.
-        for (int destination = 0; destination < newLimit;) {
+        int destination = 0;
+        while (destination < newLimit) {
             int source = CURRENT_TO_PREVIOUS[destination];
             if (cannotUseOddConveyor(source, destination)) {
                 destination++;
