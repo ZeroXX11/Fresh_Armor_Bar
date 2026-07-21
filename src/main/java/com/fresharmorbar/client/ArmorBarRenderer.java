@@ -521,9 +521,9 @@ public class ArmorBarRenderer {
     static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u, float alpha) {
     //?}
         if (side.materialTex != null) {
-            drawPart(ctx, side.materialTex, x, y, u, side.armorColor != -1, side.matR, side.matG, side.matB, false, alpha);
+            drawPart(ctx, side, x, y, u, false, alpha);
             if (side.trimRgb != -1) {
-                drawPart(ctx, TRIM_BASE, x, y, u, true, side.trimR, side.trimG, side.trimB, side.trimGlow, alpha);
+                drawPart(ctx, side, x, y, u, true, alpha);
             }
         }
     }
@@ -560,10 +560,19 @@ public class ArmorBarRenderer {
     }
 
     //? if >=26.1.2 {
-    /*private static void drawPart(GuiGraphicsExtractor ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow, float alpha) {
+    /*private static void drawPart(GuiGraphicsExtractor ctx, SlotData side, int x, int y, int u,
+                                 boolean trimPart, float alpha) {
     *///?} else {
-    private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow, float alpha) {
+    private static void drawPart(DrawContext ctx, SlotData side, int x, int y, int u,
+                                 boolean trimPart, float alpha) {
     //?}
+        Identifier tex = trimPart ? TRIM_BASE : side.materialTex;
+        boolean hasColor = trimPart || side.armorColor != -1;
+        float r = trimPart ? side.trimR : side.matR;
+        float g = trimPart ? side.trimG : side.matG;
+        float b = trimPart ? side.trimB : side.matB;
+        boolean glow = trimPart && side.trimGlow;
+
         //? if >=1.21.11 {
         /*int a = Math.clamp(Math.round(alpha * 255.0f), 0, 255);
         int color = (a << 24) | 0x00FFFFFF;

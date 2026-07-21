@@ -177,64 +177,75 @@ final class ArmorBarTextures {
         //?}
 
         String cacheKey = namespace + ":" + material;
-        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored -> {
-            boolean shouldLog = LOGGED_MATERIALS.add(cacheKey);
-            Identifier externalTexture;
-            Identifier genericTexture;
-            try {
-                Identifier bundledModTexture = ArmorBarModTextures.findTexture(
-                        currentManager, namespace, material);
-                if (bundledModTexture != null) {
-                    if (shouldLog) {
-                        LOGGER.info(
-                                "Found bundled modded armor texture for '{}:{}' at {}",
-                                namespace,
-                                material,
-                                bundledModTexture);
-                    }
-                    return bundledModTexture;
-                }
+        return MATERIAL_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored ->
+                resolveMaterialTexture(currentManager, namespace, material, cacheKey));
+    }
 
-                externalTexture = id(namespace, "textures/gui/armorbar/strips/" + material + ".png");
-                genericTexture = id("textures/gui/armorbar/strips/" + material + ".png");
-            } catch (Exception e) {
+    //? if >=26.1.2 {
+    /*private static Identifier resolveMaterialTexture(
+            net.minecraft.server.packs.resources.ResourceManager currentManager,
+            String namespace, String material, String cacheKey) {
+    *///?} else {
+    private static Identifier resolveMaterialTexture(
+            net.minecraft.resource.ResourceManager currentManager,
+            String namespace, String material, String cacheKey) {
+    //?}
+        boolean shouldLog = LOGGED_MATERIALS.add(cacheKey);
+        Identifier externalTexture;
+        Identifier genericTexture;
+        try {
+            Identifier bundledModTexture = ArmorBarModTextures.findTexture(
+                    currentManager, namespace, material);
+            if (bundledModTexture != null) {
                 if (shouldLog) {
-                    LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", cacheKey);
+                    LOGGER.info(
+                            "Found bundled modded armor texture for '{}:{}' at {}",
+                            namespace,
+                            material,
+                            bundledModTexture);
                 }
-                return BASE_STRIP;
+                return bundledModTexture;
             }
 
-            //? if >=26.1.2 {
-            /*if (currentManager.getResource(externalTexture).isPresent()) {
-            *///?} else {
-            if (currentManager != null && currentManager.getResource(externalTexture).isPresent()) {
-            //?}
-                if (shouldLog) {
-                    LOGGER.info("Found custom texture for armor material '{}' at {}", cacheKey, externalTexture);
-                }
-                return externalTexture;
-            }
-
-            //? if >=26.1.2 {
-            /*if (currentManager.getResource(genericTexture).isPresent()) {
-            *///?} else {
-            if (currentManager != null && currentManager.getResource(genericTexture).isPresent()) {
-            //?}
-                if (shouldLog) {
-                    LOGGER.info("Found generic texture for armor material '{}' at {}", cacheKey, genericTexture);
-                }
-                return genericTexture;
-            }
-
+            externalTexture = id(namespace, "textures/gui/armorbar/strips/" + material + ".png");
+            genericTexture = id("textures/gui/armorbar/strips/" + material + ".png");
+        } catch (Exception e) {
             if (shouldLog) {
-                LOGGER.warn(
-                        "Unknown armor material '{}'; no texture found at {} or {}. Falling back to base texture.",
-                        cacheKey,
-                        externalTexture,
-                        genericTexture);
+                LOGGER.warn("Invalid armor material name '{}'. Falling back to base texture.", cacheKey);
             }
             return BASE_STRIP;
-        });
+        }
+
+        //? if >=26.1.2 {
+        /*if (currentManager.getResource(externalTexture).isPresent()) {
+        *///?} else {
+        if (currentManager != null && currentManager.getResource(externalTexture).isPresent()) {
+        //?}
+            if (shouldLog) {
+                LOGGER.info("Found custom texture for armor material '{}' at {}", cacheKey, externalTexture);
+            }
+            return externalTexture;
+        }
+
+        //? if >=26.1.2 {
+        /*if (currentManager.getResource(genericTexture).isPresent()) {
+        *///?} else {
+        if (currentManager != null && currentManager.getResource(genericTexture).isPresent()) {
+        //?}
+            if (shouldLog) {
+                LOGGER.info("Found generic texture for armor material '{}' at {}", cacheKey, genericTexture);
+            }
+            return genericTexture;
+        }
+
+        if (shouldLog) {
+            LOGGER.warn(
+                    "Unknown armor material '{}'; no texture found at {} or {}. Falling back to base texture.",
+                    cacheKey,
+                    externalTexture,
+                    genericTexture);
+        }
+        return BASE_STRIP;
     }
 
     static Identifier getElytraTex(ItemStack stack) {
@@ -261,57 +272,68 @@ final class ArmorBarTextures {
         }
 
         String cacheKey = namespace + ":" + item;
-        return ELYTRA_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored -> {
-            boolean shouldLog = LOGGED_ELYTRAS.add(cacheKey);
-            Identifier bundledTexturePath;
-            Identifier externalTexture;
-            Identifier genericTexture;
-            try {
-                bundledTexturePath = id(
-                        "textures/gui/armorbar/modded_strips/" + namespace + "/elytra/" + item + ".png");
-                Identifier bundledTexture = ArmorBarModTextures.findElytraTexture(
-                        currentManager, namespace, item);
-                if (bundledTexture != null) {
-                    if (shouldLog) {
-                        LOGGER.info("Found bundled modded Elytra texture for '{}' at {}", cacheKey, bundledTexture);
-                    }
-                    return bundledTexture;
-                }
+        return ELYTRA_TEXTURE_CACHE.computeIfAbsent(cacheKey, ignored ->
+                resolveElytraTexture(currentManager, namespace, item, cacheKey));
+    }
 
-                externalTexture = id(namespace, "textures/gui/armorbar/elytras/" + item + ".png");
-                genericTexture = id("textures/gui/armorbar/elytras/" + item + ".png");
-            } catch (Exception e) {
+    //? if >=26.1.2 {
+    /*private static Identifier resolveElytraTexture(
+            net.minecraft.server.packs.resources.ResourceManager currentManager,
+            String namespace, String item, String cacheKey) {
+    *///?} else {
+    private static Identifier resolveElytraTexture(
+            net.minecraft.resource.ResourceManager currentManager,
+            String namespace, String item, String cacheKey) {
+    //?}
+        boolean shouldLog = LOGGED_ELYTRAS.add(cacheKey);
+        Identifier bundledTexturePath;
+        Identifier externalTexture;
+        Identifier genericTexture;
+        try {
+            bundledTexturePath = id(
+                    "textures/gui/armorbar/modded_strips/" + namespace + "/elytra/" + item + ".png");
+            Identifier bundledTexture = ArmorBarModTextures.findElytraTexture(
+                    currentManager, namespace, item);
+            if (bundledTexture != null) {
                 if (shouldLog) {
-                    LOGGER.warn("Invalid modded Elytra item id '{}'. Falling back to the vanilla Elytra texture.", cacheKey);
+                    LOGGER.info("Found bundled modded Elytra texture for '{}' at {}", cacheKey, bundledTexture);
                 }
-                return ELYTRA_TEX;
+                return bundledTexture;
             }
 
-            if (currentManager != null && currentManager.getResource(externalTexture).isPresent()) {
-                if (shouldLog) {
-                    LOGGER.info("Found custom texture for modded Elytra '{}' at {}", cacheKey, externalTexture);
-                }
-                return externalTexture;
-            }
-
-            if (currentManager != null && currentManager.getResource(genericTexture).isPresent()) {
-                if (shouldLog) {
-                    LOGGER.info("Found generic texture for modded Elytra '{}' at {}", cacheKey, genericTexture);
-                }
-                return genericTexture;
-            }
-
+            externalTexture = id(namespace, "textures/gui/armorbar/elytras/" + item + ".png");
+            genericTexture = id("textures/gui/armorbar/elytras/" + item + ".png");
+        } catch (Exception e) {
             if (shouldLog) {
-                LOGGER.warn(
-                        "Unknown modded Elytra '{}'; no 9x9 texture found at {}, {} or {}. Falling back to {}.",
-                        cacheKey,
-                        bundledTexturePath,
-                        externalTexture,
-                        genericTexture,
-                        ELYTRA_TEX);
+                LOGGER.warn("Invalid modded Elytra item id '{}'. Falling back to the vanilla Elytra texture.", cacheKey);
             }
             return ELYTRA_TEX;
-        });
+        }
+
+        if (currentManager != null && currentManager.getResource(externalTexture).isPresent()) {
+            if (shouldLog) {
+                LOGGER.info("Found custom texture for modded Elytra '{}' at {}", cacheKey, externalTexture);
+            }
+            return externalTexture;
+        }
+
+        if (currentManager != null && currentManager.getResource(genericTexture).isPresent()) {
+            if (shouldLog) {
+                LOGGER.info("Found generic texture for modded Elytra '{}' at {}", cacheKey, genericTexture);
+            }
+            return genericTexture;
+        }
+
+        if (shouldLog) {
+            LOGGER.warn(
+                    "Unknown modded Elytra '{}'; no 9x9 texture found at {}, {} or {}. Falling back to {}.",
+                    cacheKey,
+                    bundledTexturePath,
+                    externalTexture,
+                    genericTexture,
+                    ELYTRA_TEX);
+        }
+        return ELYTRA_TEX;
     }
 
     static Identifier id(String path) {
