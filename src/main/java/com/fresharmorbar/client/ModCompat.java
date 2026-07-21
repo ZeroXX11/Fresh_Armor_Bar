@@ -43,8 +43,10 @@ public class ModCompat {
             TRINKETS_LOADED ? classOrNull("dev.emi.trinkets.api.TrinketsApi") : null;
     private static final Class<?> TRINKETS_UPDATED_API =
             TRINKETS_UPDATED_LOADED ? classOrNull("eu.pb4.trinkets.api.TrinketsApi") : null;
+    //? if <1.21.11 {
     private static final Class<?> FABRIC_ELYTRA_ITEM =
             classOrNull("net.fabricmc.fabric.api.entity.event.v1.FabricElytraItem");
+    //?}
     private static final String[] STACK_ACCESSORS =
             {"stack", "getStack", "getRight", "getB", "getSecond", "right", "second"};
 

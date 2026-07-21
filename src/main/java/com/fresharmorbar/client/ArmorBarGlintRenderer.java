@@ -64,12 +64,14 @@ import java.lang.reflect.Field;
 *///?}
 
 final class ArmorBarGlintRenderer {
-    //? if >=1.21.11 {
-    /*private static final Logger LOGGER = LoggerFactory.getLogger("fresh-armor-bar");
-    *///?}
     private static final String MODID = "fresh-armor-bar";
     //? if >=1.21.11 {
-    /*private static final int U_LEFT = 0, U_RIGHT = 9, U_FULL = 18;
+    /*private static final Logger LOGGER = LoggerFactory.getLogger(MODID);
+    *///?}
+    //? if >=1.21.11 {
+    /*private static final int U_LEFT = 0;
+    private static final int U_RIGHT = 9;
+    private static final int U_FULL = 18;
     *///?}
 
     //? if >=1.21.11 {
@@ -453,7 +455,7 @@ final class ArmorBarGlintRenderer {
             Matrix3x2f pose,
             //? if >=26.1.2 {
             /^ScreenRectangle bounds,
-            ScreenRectangle scissor,
+            @Nullable ScreenRectangle scissor,
             ^///?} else {
             ScreenRect bounds,
             ScreenRect scissor,

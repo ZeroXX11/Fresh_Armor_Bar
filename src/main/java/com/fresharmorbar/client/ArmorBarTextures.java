@@ -263,7 +263,11 @@ final class ArmorBarTextures {
         String item = itemId.getPath();
         if ("minecraft".equals(namespace) && "elytra".equals(item)) return ELYTRA_TEX;
 
+        //? if >=26.1.2 {
+        /*if (currentManager != lastResourceManager) {
+        *///?} else {
         if (currentManager != null && currentManager != lastResourceManager) {
+        //?}
             MATERIAL_TEXTURE_CACHE.clear();
             ELYTRA_TEXTURE_CACHE.clear();
             LOGGED_MATERIALS.clear();

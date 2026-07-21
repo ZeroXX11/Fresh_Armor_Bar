@@ -553,11 +553,10 @@ public final class ArmorBarFeedback {
         for (int i = 0; i < PULSES.length; i++) {
             Pulse pulse = PULSES[i];
             if (pulse.isExpired(now)) continue;
-            if ((leftHalf >= lastHalfStart[i] && leftHalf < lastHalfEnd[i])
-                    || (rightHalf >= lastHalfStart[i] && rightHalf < lastHalfEnd[i])) {
-                if (best == Pulse.EMPTY || pulse.startedAt > best.startedAt || (pulse.heavy && !best.heavy)) {
-                    best = pulse;
-                }
+            if (((leftHalf >= lastHalfStart[i] && leftHalf < lastHalfEnd[i])
+                            || (rightHalf >= lastHalfStart[i] && rightHalf < lastHalfEnd[i]))
+                    && (best == Pulse.EMPTY || pulse.startedAt > best.startedAt || (pulse.heavy && !best.heavy))) {
+                best = pulse;
             }
         }
         return best;
