@@ -8,6 +8,7 @@ This guide explains how one Fresh Armor Bar repository builds several Minecraft 
 - [Supported targets](#supported-targets)
 - [Where versions are configured](#where-versions-are-configured)
 - [Shared and version-specific code](#shared-and-version-specific-code)
+- [Rendering and animation architecture](#rendering-and-animation-architecture)
 - [Modded armor texture resolution](#modded-armor-texture-resolution)
 - [Changing the active version](#changing-the-active-version)
 - [Running the client](#running-the-client)
@@ -129,6 +130,68 @@ The inactive branch is preserved inside a block comment so every generated targe
 Do not reformat or move these comments unless you are intentionally changing version behavior.
 
 Fresh Armor Bar remains client-side on every target. Mod Menu and Trinkets-family integrations are optional. Targets 26.1.2+ discover compatible Elytra-slot APIs through guarded reflection instead of compiling directly against Trinkets.
+
+## Rendering and animation architecture
+
+The HUD implementation is split by responsibility. Keep this boundary when adding features or porting a renderer API:
+
+| File                                | Owns                                                                                                                                          | Change it when                                                                   |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `ArmorBarRenderer.java`             | Equipment reads, the current `SlotData` cache, static slot rendering, colors, trims and stable Elytra rendering                               | The equipment data model or non-animated appearance changes                      |
+| `ArmorBarAnimation.java`            | Previous snapshots, logical half matching, incoming/outgoing pieces, replacements, conveyors, odd runs, seams, transforms and animated Elytra | Timing, movement, replacement or seam behavior changes                           |
+| `ArmorBarGlintRenderer.java`        | Native glint on older targets and the masked GUI render state on newer targets                                                                | Enchantment strength, speed, clipping, texture masks or GUI pipeline APIs change |
+| `fab_gui_glint_mask.vsh` and `.fsh` | Sampling the moving glint and material alpha masks                                                                                            | The modern masked-glint vertex format or pixel composition changes               |
+| `InGameHudMixin.java`               | Resetting HUD state, preserving the last removal animation and forwarding vanilla slot coordinates                                            | Minecraft changes the armor HUD hook or draw signature                           |
+
+The update and render flow is:
+
+```mermaid
+flowchart LR
+    Equipment["Equipment changed"] --> Previous["Capture previous SlotData cache"]
+    Previous --> Current["Build current cache"]
+    Current --> Match["Match logical armor halves"]
+    Match --> Transition["Render enter, exit, replacement or conveyor"]
+    Transition --> Seam["Resolve LEFT, RIGHT and FULL seams"]
+    Seam --> Glint["Apply glint for enchanted sprites"]
+    Glint --> Stable["Return to static renderer"]
+```
+
+Each populated `SlotData` carries both visual data and logical identity:
+
+- `materialTex`, trim, glow, enchantment and color fields describe its appearance;
+- `sourceItem` identifies the armor item type;
+- `equipmentIndex` identifies head, chest, legs or feet in the renderer's order;
+- `pieceHalfIndex` identifies the half-point contributed by that item.
+
+`ArmorBarAnimation` uses that identity to distinguish a piece that only moved from a genuinely replaced item. Do not match halves by texture alone: two items can look identical while requiring separate enter and exit animations. Do not move this state back into `ArmorBarRenderer`; the facade must remain usable without knowing conveyor internals.
+
+The animation cache supports 60 half-points, matching the renderer's maximum of 30 icons. Timings are expressed in nanoseconds near the top of `ArmorBarAnimation`. Changing a duration requires manual tests in both directions because enter, exit, distance-based movement and seam timing overlap.
+
+### Half-icon and conveyor rules
+
+- Even and odd indices select the `LEFT` and `RIGHT` variants of a `27x9` material strip.
+- Two visually identical adjacent halves may be rendered as the `FULL` variant.
+- An unchanged logical half follows its mapped source-to-destination path.
+- A different item in the same equipment slot is a replacement and performs a complete outgoing and incoming transition.
+- Odd-distance runs keep full icons together where possible and isolate the terminal half that changes side.
+- Empty armor backgrounds remain anchored to the HUD; only material sprites move.
+- Damage and Mending feedback is emitted only after the destination state is stable.
+
+### Glint during animation
+
+Targets before 1.21.11 use Minecraft's native glint buffer. Targets 1.21.11 and newer use `ArmorBarGlintRenderer` with the custom `fab_gui_glint_mask` pipeline. The modern path passes the selected material texture and strip variant to the shader, clips movement to the armor-bar rectangle and uses the material alpha as the glint mask.
+
+During the movement layer, auxiliary seam and cap sprites must not create an independent enchantment overlay. The moving-sprite path is the owner of its glint. If the glint API changes, test static icons, moving `FULL` icons, both half variants, replacements between enchanted and unenchanted items, and the user's glint strength/speed options.
+
+### Safe change procedure
+
+1. Identify the owning file in the table above.
+2. Preserve the previous/current cache boundary.
+3. Keep Stonecutter directives limited to API differences, not animation decisions.
+4. Build the active target after each coherent renderer change.
+5. Test add, remove and replacement transitions in both directions.
+6. Test an odd armor delta, a same-total material replacement and enchanted movement.
+7. Build the oldest and newest targets before running the full verification.
 
 ## Modded armor texture resolution
 
@@ -263,9 +326,9 @@ versions/26.1.2/build/stonecutter-cache/node.json
 versions/26.2/build/stonecutter-cache/node.json
 ```
 
-Do not edit or commit them. `clean` removes them, and `fullVerify` recreates them through `stonecutterSaveModels`.
+Do not edit or commit them. The root `clean` task removes them together with the rest of `build/`, then automatically runs `stonecutterSaveModels` to restore them before Gradle exits. This prevents the IntelliJ plugin from observing a missing model when the project is opened after a clean.
 
-This is why `clean fullVerify` must finish before using the Stonecutter selector again. If IntelliJ still shows old information after a successful build, reload the Gradle project.
+Let `clean` finish before closing Gradle or using the Stonecutter selector again. If IntelliJ still shows old information after a successful build, reload the Gradle project.
 
 ## Release artifacts and metadata
 
@@ -278,11 +341,11 @@ build/libs
 Current binary names are:
 
 ```text
-FreshArmorBar-2.1-1.20.1.jar
-FreshArmorBar-2.1-1.21.1.jar
-FreshArmorBar-2.1-1.21.11.jar
-FreshArmorBar-2.1-26.1.2.jar
-FreshArmorBar-2.1-26.2.jar
+FreshArmorBar-2.2-1.20.1.jar
+FreshArmorBar-2.2-1.21.1.jar
+FreshArmorBar-2.2-1.21.11.jar
+FreshArmorBar-2.2-26.1.2.jar
+FreshArmorBar-2.2-26.2.jar
 ```
 
 Do not publish jars from `versions/<version>/build` or `build/devlibs`; those are working artifacts.
@@ -345,6 +408,7 @@ The build and release workflow assume that:
 A successful `fullVerify` confirms build and artifact correctness, but does not guarantee:
 
 - correct visual rendering in every game state;
+- correct timing, seam ownership or glint alignment during animated transitions;
 - compatibility with every HUD mod;
 - behavior of every optional third-party slot mod;
 - visual correctness with custom resource packs;
@@ -420,6 +484,12 @@ For every release candidate:
 - [ ] Test dyed leather.
 - [ ] Test trims and glowing trims.
 - [ ] Test enchanted armor.
+- [ ] Equip and remove a piece while later armor icons move in both directions.
+- [ ] Replace an armor item with a different material at the same total armor value.
+- [ ] Test an odd armor-value change that converts a `LEFT` half to `RIGHT`, then reverse it.
+- [ ] Repeat the movement and replacement tests with enchanted armor and inspect the glint edges frame by frame.
+- [ ] Test the final fade-out from one armor piece to no armor.
+- [ ] Test a multi-row transition when an armor source above 20 points is available.
 - [ ] Test Elytra in the vanilla slot.
 - [ ] Test an optional Elytra-slot integration where available.
 - [ ] Test every damage feedback category.
@@ -433,32 +503,37 @@ For every release candidate:
 
 ## Quick troubleshooting
 
-| Error or symptom                        | Likely cause                            | Resolution                                               |
-|-----------------------------------------|-----------------------------------------|----------------------------------------------------------|
-| `Missing release jar`                   | Release target was not built            | Run `releaseBuild` and inspect the target build          |
-| `Unexpected jar(s)`                     | Stale files remain in `build/libs`      | Run `cleanCollectedJars` or `clean fullVerify`           |
-| `Missing fabric.mod.json`               | Resource generation or packaging failed | Check `resources.gradle` and the generated resource tree |
-| Loader metadata mismatch                | Loader value is no longer central       | Check `loader_version` in `gradle.properties`            |
-| Missing release sources JAR             | Sources artifact was not collected      | Check `java-artifacts.gradle` and rebuild                |
-| Missing `LICENSE_FreshArmorBar`         | License packaging was changed           | Check `java-artifacts.gradle`                            |
-| Stonecutter cannot switch after clean   | Generated `node.json` files are gone    | Run `fullVerify`, then reload Gradle                     |
-| Wrong Minecraft version starts          | Active version was not switched         | Switch, wait for refresh, then run `minecraftClient`     |
-| Java toolchain cannot be found          | Required JDK is unavailable             | Install/configure JDK 25 for the 26.x targets            |
-| Gradle builds but IntelliJ shows errors | IDE model or Gradle JVM is stale        | Reload Gradle and use Java 21+ as the Gradle JVM         |
+| Error or symptom                                     | Likely cause                              | Resolution                                                 |
+| ---------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------- |
+| `Missing release jar`                                | Release target was not built              | Run `releaseBuild` and inspect the target build            |
+| `Unexpected jar(s)`                                  | Stale files remain in `build/libs`        | Run `cleanCollectedJars` or `clean fullVerify`             |
+| `Missing fabric.mod.json`                            | Resource generation or packaging failed   | Check `resources.gradle` and the generated resource tree   |
+| Loader metadata mismatch                             | Loader value is no longer central         | Check `loader_version` in `gradle.properties`              |
+| Missing release sources JAR                          | Sources artifact was not collected        | Check `java-artifacts.gradle` and rebuild                  |
+| Missing `LICENSE_FreshArmorBar`                      | License packaging was changed             | Check `java-artifacts.gradle`                              |
+| Stonecutter cannot switch after an interrupted clean | Generated model files were not restored   | Run `stonecutterSaveModels`, then reload Gradle            |
+| Wrong Minecraft version starts                       | Active version was not switched           | Switch, wait for refresh, then run `minecraftClient`       |
+| Java toolchain cannot be found                       | Required JDK is unavailable               | Install/configure JDK 25 for the 26.x targets              |
+| Gradle builds but IntelliJ shows errors              | IDE model or Gradle JVM is stale          | Reload Gradle and use Java 21+ as the Gradle JVM           |
 
 ## Key files
 
-| Path                                                                            | Purpose                            |
-|---------------------------------------------------------------------------------|------------------------------------|
-| `src/main/java`                                                                 | Shared Java source                 |
-| `src/main/resources`                                                            | Shared metadata, mixins and assets |
-| `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips` | Official armor-mod textures        |
-| `versions/<version>/gradle.properties`                                          | Target-specific versions           |
-| `gradle/release-versions.gradle`                                                | Target and release lists           |
-| `gradle/version-utils.gradle`                                                   | Minecraft version-range helpers    |
-| `gradle/root-tasks.gradle`                                                      | Root lifecycle and build tasks     |
-| `gradle/documentation-validation.gradle`                                        | Documentation/build consistency    |
-| `gradle/release-publishing.gradle`                                              | Publication aggregates and guards  |
+| Path                                                                              | Purpose                                   |
+| --------------------------------------------------------------------------------- | ----------------------------------------- |
+| `src/main/java`                                                                   | Shared Java source                        |
+| `src/main/resources`                                                              | Shared metadata, mixins and assets        |
+| `src/main/java/com/fresharmorbar/client/ArmorBarRenderer.java`                    | Equipment cache and stable HUD rendering  |
+| `src/main/java/com/fresharmorbar/client/ArmorBarAnimation.java`                   | Transition engine and half-point movement |
+| `src/main/java/com/fresharmorbar/client/ArmorBarGlintRenderer.java`               | Native and masked enchantment rendering   |
+| `src/main/java/com/fresharmorbar/mixin/client/InGameHudMixin.java`                | Version-specific armor HUD hooks          |
+| `src/main/resources/assets/fresh-armor-bar/shaders/core/fab_gui_glint_mask.*`     | Modern material-masked glint shaders      |
+| `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips`   | Official armor-mod textures               |
+| `versions/<version>/gradle.properties`                                            | Target-specific versions                  |
+| `gradle/release-versions.gradle`                                                  | Target and release lists                  |
+| `gradle/version-utils.gradle`                                                     | Minecraft version-range helpers           |
+| `gradle/root-tasks.gradle`                                                        | Root lifecycle and build tasks            |
+| `gradle/documentation-validation.gradle`                                          | Documentation/build consistency           |
+| `gradle/release-publishing.gradle`                                                | Publication aggregates and guards         |
 
 `settings.gradle` applies `release-versions.gradle`, `version-utils.gradle`, `root-tasks.gradle`, `documentation-validation.gradle`, `release-validation.gradle` and `release-publishing.gradle`. `build.gradle` is the target-build coordinator for the dedicated versioning, Loom, dependency, resource, Java/artifact and `publishing.gradle` scripts. The guarded release commands are documented in `docs/PUBLISHING.md`.
 

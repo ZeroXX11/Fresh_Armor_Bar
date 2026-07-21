@@ -19,10 +19,29 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.1-1.20.1` or `2.1-26.2`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.1 | 26.2`.
 2. Review the single source of truth in `gradle/release-versions.gradle`. Each entry maps its Stonecutter project, platform Minecraft versions, display label, artifact task, and changelog role.
-3. Write or update `CHANGELOG.md` with the real release notes for Modrinth, then keep the equivalent CurseForge HTML in `CHANGELOG_CURSEFORGE.html`. The titles must be `# <current mod_version> | CHANGELOG` and `<h1><current mod_version> | CHANGELOG</h1>` respectively.
-4. Commit the completed `CHANGELOG.md` with the release changes.
+3. Update `README.md`, `MULTIVERSION.md` and the applicable files under `docs/` whenever supported versions, renderer behavior, integrations, resource paths or release commands change.
+4. Write or update `CHANGELOG.md` with the real release notes for Modrinth, then keep the equivalent CurseForge HTML in `CHANGELOG_CURSEFORGE.html`. The titles must be `# <current mod_version> | CHANGELOG` and `<h1><current mod_version> | CHANGELOG</h1>` respectively.
+5. Commit both changelog formats and the completed documentation with the release changes.
 
 `CHANGELOG.md` may not contain `<MOD_VERSION>`, `TODO`, HTML comments, template instructions, empty sections, or a version different from `mod_version`.
+
+## Visual release checks
+
+Compilation cannot verify HUD animation output. Before creating final artifacts, launch at least the oldest and newest supported targets and test:
+
+- no armor to armor, and the final piece back to no armor;
+- adding and removing a piece that shifts later icons left and right;
+- replacing an item with another material at the same armor value;
+- an odd armor delta that changes a half icon between `LEFT` and `RIGHT`;
+- iron, diamond, Netherite, dyed leather, trims and glowing trims;
+- enchanted versions of the movement and replacement cases, with glint strength and speed enabled;
+- Elytra appearing, disappearing and changing HUD row;
+- an armor value above 20 when a compatible test setup is available;
+- damage and Mending feedback after a transition completes.
+
+Inspect enchanted transitions frame by frame for glint outside the material alpha mask, stale seams or overlays left at the source position. Also run one pass without resource packs and unrelated HUD mods so a compatibility conflict is not mistaken for a renderer regression.
+
+Record the exact before/after equipment used for a visual regression. A short capture is preferable to a screenshot because replacement, conveyor and seam bugs may exist for only a few frames.
 
 ## Changelog policy
 
@@ -55,6 +74,8 @@ The plugin creates its dry-run workspace below each target's `build/publishMods/
 ## Real publication
 
 The commands in this section perform real uploads. Run them only after successful `clean fullVerify`, `validateRelease`, and `publishAllDryRun` checks.
+
+They also assume that the manual visual checks above passed; no Gradle task can enforce that condition.
 
 Set environment variables for the current shell using secret values supplied outside the repository. Placeholder examples:
 

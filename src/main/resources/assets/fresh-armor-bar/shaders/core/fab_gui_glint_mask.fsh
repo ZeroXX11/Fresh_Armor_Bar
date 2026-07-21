@@ -35,5 +35,5 @@ void main() {
         discard;
     }
 
-    fragColor = vec4(glint.rgb * vertexData.b, glint.a) * ColorModulator;
+    fragColor = vec4(glint.rgb * vertexData.b, glint.a * vertexData.a) * ColorModulator;
 }

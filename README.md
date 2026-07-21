@@ -16,6 +16,7 @@ Fresh Armor Bar is a client-side Fabric mod that replaces Minecraft's vanilla ar
 - [Supported versions](#supported-versions)
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Animated transitions](#animated-transitions)
 - [Compatibility and limitations](#compatibility-and-limitations)
 - [Using a resource pack](#using-a-resource-pack)
 - [Troubleshooting](#troubleshooting)
@@ -30,6 +31,8 @@ Fresh Armor Bar is a client-side Fabric mod that replaces Minecraft's vanilla ar
 - Distinct textures for vanilla armor materials and mixed armor sets.
 - Correct colors for dyed leather armor and colored armor-trim overlays.
 - Glow for selected shiny trim materials and glint for enchanted armor.
+- Smooth equip, removal, replacement and half-point movement animations.
+- Stable `LEFT`, `RIGHT` and `FULL` icon transitions without moving a whole armor point when only one half changes.
 - Vanilla and modded Elytra detection in the chest slot and optional Trinkets-family slots.
 - Extra HUD rows for armor values above the normal vanilla row.
 - Configurable feedback for damage and Mending repairs.
@@ -51,11 +54,11 @@ Download only the regular Fresh Armor Bar jar whose suffix matches your exact Mi
 
 | Minecraft | Java runtime | Minimum Fabric Loader | Status    | Release filename                |
 |-----------|-------------:|-----------------------|-----------|---------------------------------|
-| 1.20.1    |           17 | 0.19.3                | Supported | `FreshArmorBar-2.1-1.20.1.jar`  |
-| 1.21.1    |           21 | 0.19.3                | Supported | `FreshArmorBar-2.1-1.21.1.jar`  |
-| 1.21.11   |           21 | 0.19.3                | Supported | `FreshArmorBar-2.1-1.21.11.jar` |
-| 26.1.2    |           25 | 0.19.3                | Supported | `FreshArmorBar-2.1-26.1.2.jar`  |
-| 26.2      |           25 | 0.19.3                | Supported | `FreshArmorBar-2.1-26.2.jar`    |
+| 1.20.1    |           17 | 0.19.3                | Supported | `FreshArmorBar-2.2-1.20.1.jar`  |
+| 1.21.1    |           21 | 0.19.3                | Supported | `FreshArmorBar-2.2-1.21.1.jar`  |
+| 1.21.11   |           21 | 0.19.3                | Supported | `FreshArmorBar-2.2-1.21.11.jar` |
+| 26.1.2    |           25 | 0.19.3                | Supported | `FreshArmorBar-2.2-26.1.2.jar`  |
+| 26.2      |           25 | 0.19.3                | Supported | `FreshArmorBar-2.2-26.2.jar`    |
 
 The Java runtime in this table is the Java version used to start Minecraft. Developers building the project should follow the separate requirements in [For developers](#for-developers).
 
@@ -88,10 +91,25 @@ config/fresh-armor-bar.properties
 
 `damage_effects=false` suppresses all five damage categories regardless of their individual values. The Mending effect remains independent.
 
+## Animated transitions
+
+Fresh Armor Bar keeps a snapshot of the previous equipment state whenever armor or Elytra changes. Unchanged armor halves are matched to their new positions and travel along the bar, while genuinely added or removed pieces use their own enter or exit animation. Replacing one armor item therefore animates both the outgoing item and the incoming item instead of instantly changing its material.
+
+The transition engine also handles:
+
+- odd armor totals where a `LEFT` half becomes `RIGHT`, or the reverse;
+- temporary `FULL` icons and center seams while adjacent halves join or separate;
+- multiple HUD rows for armor totals above 20;
+- Elytra appearing, disappearing or moving to another row;
+- enchanted moving sprites, whose glint is clipped with the material texture on the modern GUI renderer;
+- damage and Mending feedback only after the destination state is stable.
+
+Animation timings are currently internal and are not configuration properties. Resource-pack authors should keep transparent pixels and all three strip variants aligned; see the [resource-pack guide](docs/RESOURCE_PACKS.md#animation-and-glint-masks).
+
 ## Compatibility and limitations
 
 - Vanilla armor materials are supported directly.
-- Officially supported armor mods: Advanced Netherite.
+- Officially supported armor mods: Advanced Netherite, BetterEnd, BetterNether, and Deeper and Darker.
 - Other modded materials can provide a namespaced or generic strip through Minecraft's resource system.
 - Unknown materials fall back to `base.png` only after every supported texture location has been checked.
 - Modded Elytra use their item id for custom `9x9` textures and report missing texture paths in `latest.log`.
@@ -146,6 +164,10 @@ Fresh Armor Bar could not find a material-specific strip and used `base.png`. Ch
 
 Disable the other HUD mod temporarily to confirm the conflict. Include both mod names and versions when [reporting the issue](#reporting-issues).
 
+### An armor transition looks wrong
+
+Test once without HUD-altering mods and without resource packs. Reproduce the same equipment change in both directions and note whether the total armor value changes by an odd or even number. For enchanted armor, also include one recording with the glint-strength option enabled. Attach the exact before/after equipment and a short video to the issue report.
+
 ## Reporting issues
 
 Report reproducible problems through the [GitHub issue tracker](https://github.com/ZeroXX11/Fresh_Armor_Bar/issues). Include:
@@ -163,6 +185,15 @@ Search existing issues first and remove unrelated mods when possible.
 ## For developers
 
 The repository uses one shared source tree and Stonecutter to build all five targets.
+
+Rendering responsibilities are deliberately separated:
+
+- `ArmorBarRenderer` reads equipment, owns the current cache and renders stable slots;
+- `ArmorBarAnimation` owns previous snapshots, half-point matching, conveyors, replacements, seams, fades and Elytra transitions;
+- `ArmorBarGlintRenderer` owns native and masked enchantment rendering;
+- `InGameHudMixin` only captures Minecraft's HUD hook and forwards slot coordinates.
+
+When changing animation behavior, start in `ArmorBarAnimation` rather than adding transition state back to `ArmorBarRenderer`. See [Rendering and animation architecture](MULTIVERSION.md#rendering-and-animation-architecture) for the complete change map and test matrix.
 
 Requirements:
 
@@ -190,6 +221,11 @@ Final jars are collected in `build/libs`. For version switching, task descriptio
 ```text
 Fresh_Armor_Bar/
 |- src/                          Shared Java code and resources
+|  `- main/java/com/fresharmorbar/client/
+|     |- ArmorBarRenderer.java   Equipment/cache facade and stable rendering
+|     |- ArmorBarAnimation.java  Complete transition engine
+|     `- ArmorBarGlintRenderer.java
+|                                Enchantment rendering and moving masks
 |- versions/                     Properties and generated work for each target
 |- docs/                         User and integration guides
 |- gradle/                       Dedicated build-logic scripts

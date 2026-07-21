@@ -46,50 +46,42 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.util.UUID;
 
-// Gestisce il rendering della barra armatura personalizzata con ottimizzazioni avanzate.
+/**
+ * Facade pubblica della barra armatura: legge l'equipaggiamento, mantiene la cache
+ * corrente e disegna lo stato statico. Le transizioni sono delegate integralmente
+ * ad {@code ArmorBarAnimation}.
+ */
 public class ArmorBarRenderer {
     private ArmorBarRenderer() {
     }
 
     private static final EquipmentSlot[] ARMOR_ORDER = { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
-    private static final int U_LEFT = 0;
-    private static final int U_RIGHT = 9;
-    private static final int U_FULL = 18;
-    private static final long ENTER_DURATION_NANOS = 330_000_000L;
-    private static final long EXIT_DURATION_NANOS = 230_000_000L;
-    private static final long ENTER_STAGGER_NANOS = 14_000_000L;
-    private static final long EXIT_STAGGER_NANOS = 10_000_000L;
-    private static final long ANIMATION_DURATION_NANOS = ENTER_DURATION_NANOS + (9L * ENTER_STAGGER_NANOS);
+    static final int U_LEFT = 0;
+    static final int U_RIGHT = 9;
+    static final int U_FULL = 18;
     //? if >=1.21
     //private static final int DEFAULT_LEATHER_COLOR = 0xA06540;
 
     // Cache per evitare ricalcoli inutili ad ogni frame
-    private static final SlotData[] CACHE = new SlotData[60];
-    private static final SlotData[] PREVIOUS_CACHE = new SlotData[60];
+    static final SlotData[] CACHE = new SlotData[60];
     private static final ItemStack[] LAST_STACKS = new ItemStack[4];
     private static int lastArmorValue = -1;
-    private static int previousArmorValue = 0;
     private static UUID lastPlayerUuid = null;
     private static ModCompat.ElytraState lastElytraState = ModCompat.ElytraState.NONE;
-    private static ModCompat.ElytraState previousElytraState = ModCompat.ElytraState.NONE;
-    private static long animationStartedNanos = Long.MIN_VALUE;
 
     static {
         for (int i = 0; i < 60; i++) {
             CACHE[i] = new SlotData();
-            PREVIOUS_CACHE[i] = new SlotData();
         }
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
     }
 
     private static void invalidate() {
         lastArmorValue = -1; lastElytraState = ModCompat.ElytraState.NONE;
-        previousArmorValue = 0; previousElytraState = ModCompat.ElytraState.NONE;
-        animationStartedNanos = Long.MIN_VALUE;
+        ArmorBarAnimation.reset();
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
         for (SlotData data : CACHE) data.reset();
-        for (SlotData data : PREVIOUS_CACHE) data.reset();
     }
 
     static class SlotData {
@@ -109,10 +101,11 @@ public class ArmorBarRenderer {
         float matG = 1f;
         float matB = 1f;
 
-        void fill(Identifier tex, int rgb, float tr, float tg, float tb, boolean glow, boolean ench, int color, float mr, float mg, float mb) {
-            materialTex = tex; trimRgb = rgb; trimR = tr; trimG = tg; trimB = tb;
-            trimGlow = glow; enchanted = ench; armorColor = color; matR = mr; matG = mg; matB = mb;
-        }
+        // Identita logica del mezzo-punto: permette di distinguere un pezzo cambiato
+        // da un pezzo invariato che si e soltanto spostato lungo la barra.
+        Object sourceItem = null;
+        int equipmentIndex = -1;
+        int pieceHalfIndex = -1;
 
         void reset() {
             materialTex = null;
@@ -126,17 +119,12 @@ public class ArmorBarRenderer {
             armorColor = -1;
 
             matR = 1f; matG = 1f; matB = 1f;
+
+            sourceItem = null;
+            equipmentIndex = -1;
+            pieceHalfIndex = -1;
         }
 
-        void copyFrom(SlotData other) {
-            materialTex = other.materialTex;
-            trimRgb = other.trimRgb;
-            trimR = other.trimR; trimG = other.trimG; trimB = other.trimB;
-            trimGlow = other.trimGlow;
-            enchanted = other.enchanted;
-            armorColor = other.armorColor;
-            matR = other.matR; matG = other.matG; matB = other.matB;
-        }
     }
 
     //? if >=26.1.2 {
@@ -148,18 +136,19 @@ public class ArmorBarRenderer {
         if (needsUpdate(player, armorValue, elytraState)) {
             boolean animate = lastArmorValue >= 0;
             if (animate) {
-                previousArmorValue = lastArmorValue;
-                previousElytraState = lastElytraState;
-                for (int i = 0; i < CACHE.length; i++) PREVIOUS_CACHE[i].copyFrom(CACHE[i]);
+                ArmorBarAnimation.capturePrevious(lastArmorValue, lastElytraState);
             }
             updateData(player, armorValue, elytraState);
-            if (animate) animationStartedNanos = System.nanoTime();
+            if (animate) {
+                ArmorBarAnimation.begin(lastArmorValue);
+            }
         }
+
     }
 
     /** Mantiene vivo il pass vanilla per il breve fade-out dell'ultimo pezzo rimosso. */
     public static boolean shouldKeepRendering() {
-        return isAnimating(System.nanoTime());
+        return ArmorBarAnimation.isAnimating(System.nanoTime());
     }
 
     //? if >=26.1.2 {
@@ -168,216 +157,77 @@ public class ArmorBarRenderer {
     public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra, boolean elytraEnchanted) {
     //?}
         long now = System.nanoTime();
-        boolean animating = isAnimating(now);
+        boolean animating = ArmorBarAnimation.isAnimating(now);
         if (armorValue <= 0 && !hasElytra && !animating) return;
         //? if >=1.21.11
         //if (slotIndex == 0) ArmorBarGlintRenderer.resetFrame();
 
         int renderArmorValue = Math.min(armorValue, CACHE.length);
-        int oldArmorValue = animating ? Math.min(previousArmorValue, PREVIOUS_CACHE.length) : renderArmorValue;
-        int maxRows = Math.max(rowsForArmor(renderArmorValue), rowsForArmor(oldArmorValue));
+        if (slotIndex >= 0 && slotIndex < 10) {
+            ArmorBarAnimation.recordSlotPosition(slotIndex, x, y);
+        }
+        if (animating) {
+            ArmorBarAnimation.renderSlot(
+                    ctx, slotIndex, x, y, renderArmorValue,
+                    hasElytra, elytraEnchanted, lastElytraState, now);
+            return;
+        }
 
+        int maxRows = rowsForArmor(renderArmorValue);
         for (int row = 0; row < maxRows; row++) {
             int currentSlot = slotIndex + (row * 10);
             int currentY = y - (row * 10);
-
-            boolean oldBackground = animating && hasBackground(oldArmorValue, row, currentSlot);
             boolean newBackground = hasBackground(renderArmorValue, row, currentSlot);
-            boolean oldPart = animating && hasArmorPart(oldArmorValue, currentSlot);
             boolean newPart = hasArmorPart(renderArmorValue, currentSlot);
 
-            if (!animating) {
-                if (newBackground) drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
-                if (newPart) {
-                    renderSlotMaterials(ctx, CACHE, currentSlot, x, currentY, 1.0f, true);
-                    ArmorBarFeedback.renderSlotFeedback(ctx, currentSlot, x, currentY, renderArmorValue, CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
-                }
-                continue;
-            }
-
-            float enter = incomingProgress(currentSlot, now);
-            float exit = outgoingProgress(currentSlot, now);
-
-            // Lo sfondo resta fermo quando esiste in entrambi gli stati: il movimento riguarda
-            // soltanto cio che e davvero comparso o scomparso.
-            if (oldBackground == newBackground) {
-                if (newBackground) drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
-            } else {
-                if (oldBackground) renderAnimatedBackground(ctx, x, currentY, exit, false);
-                if (newBackground) renderAnimatedBackground(ctx, x, currentY, enter, true);
-            }
-
-            boolean materialsSame = oldPart == newPart
-                    && (!newPart || slotVisualsEqual(PREVIOUS_CACHE, CACHE, currentSlot));
-            if (materialsSame) {
-                if (newPart) renderSlotMaterials(ctx, CACHE, currentSlot, x, currentY, 1.0f, true);
-            } else {
-                if (oldPart) renderAnimatedMaterials(ctx, PREVIOUS_CACHE, currentSlot, x, currentY, exit, false);
-                if (newPart) renderAnimatedMaterials(ctx, CACHE, currentSlot, x, currentY, enter, true);
-            }
-
-            // I feedback di danno/Mending seguono il layer definitivo e non vengono duplicati
-            // durante il cross-fade tra due equipaggiamenti.
-            if (newPart && (materialsSame || enter >= 0.999f)) {
-                ArmorBarFeedback.renderSlotFeedback(ctx, currentSlot, x, currentY, renderArmorValue, CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
+            if (newBackground) drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
+            if (newPart) {
+                renderSlotMaterials(ctx, currentSlot, x, currentY);
+                ArmorBarFeedback.renderSlotFeedback(
+                        ctx, currentSlot, x, currentY, renderArmorValue,
+                        CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
             }
         }
 
-        if (slotIndex == 0) {
-            int newElytraY = renderArmorValue > 0 ? y - (rowsForArmor(renderArmorValue) * 10) : y;
-            int oldElytraY = oldArmorValue > 0 ? y - (rowsForArmor(oldArmorValue) * 10) : y;
-            boolean oldElytra = animating && previousElytraState.equipped();
-            boolean newElytra = hasElytra;
-            boolean elytraSame = !animating || (oldElytra == newElytra
-                    && (!newElytra || (java.util.Objects.equals(previousElytraState, lastElytraState) && oldElytraY == newElytraY)));
-
-            if (elytraSame) {
-                if (newElytra) renderElytra(ctx, lastElytraState, x, newElytraY, 1.0f, elytraEnchanted);
-            } else {
-                if (oldElytra) renderAnimatedElytra(ctx, previousElytraState, x, oldElytraY, outgoingProgress(0, now), false);
-                if (newElytra) renderAnimatedElytra(ctx, lastElytraState, x, newElytraY, incomingProgress(0, now), true);
-            }
+        if (slotIndex == 0 && hasElytra) {
+            int elytraY = renderArmorValue > 0
+                    ? y - (rowsForArmor(renderArmorValue) * 10)
+                    : y;
+            renderElytra(ctx, lastElytraState, x, elytraY, 1.0f, elytraEnchanted);
         }
     }
 
-    private static boolean isAnimating(long now) {
-        return animationStartedNanos != Long.MIN_VALUE
-                && now - animationStartedNanos >= 0L
-                && now - animationStartedNanos < ANIMATION_DURATION_NANOS;
-    }
-
-    private static int rowsForArmor(int armorValue) {
+    static int rowsForArmor(int armorValue) {
         return armorValue > 0 ? (armorValue + 19) / 20 : 1;
     }
 
-    private static boolean hasBackground(int armorValue, int row, int slot) {
+    static boolean hasBackground(int armorValue, int row, int slot) {
         return armorValue > 0 && (row == 0 || hasArmorPart(armorValue, slot));
     }
 
-    private static boolean hasArmorPart(int armorValue, int slot) {
+    static boolean hasArmorPart(int armorValue, int slot) {
         return slot >= 0 && slot * 2 < armorValue && slot * 2 + 1 < CACHE.length;
     }
 
-    private static float incomingProgress(int slot, long now) {
-        long delay = Math.floorMod(slot, 10) * ENTER_STAGGER_NANOS;
-        return normalizedProgress(now - animationStartedNanos - delay, ENTER_DURATION_NANOS);
-    }
-
-    private static float outgoingProgress(int slot, long now) {
-        long delay = (9L - Math.floorMod(slot, 10)) * EXIT_STAGGER_NANOS;
-        return normalizedProgress(now - animationStartedNanos - delay, EXIT_DURATION_NANOS);
-    }
-
-    private static float normalizedProgress(long elapsed, long duration) {
-        if (elapsed <= 0L) return 0.0f;
-        if (elapsed >= duration) return 1.0f;
-        return (float)elapsed / (float)duration;
-    }
-
-    private static float smoothStep(float value) {
-        return value * value * (3.0f - 2.0f * value);
-    }
-
-    private static float easeOutCubic(float value) {
-        float inverse = 1.0f - value;
-        return 1.0f - inverse * inverse * inverse;
-    }
-
-    private static float easeOutBack(float value) {
-        float c1 = 1.28f;
-        float c3 = c1 + 1.0f;
-        float shifted = value - 1.0f;
-        return 1.0f + c3 * shifted * shifted * shifted + c1 * shifted * shifted;
-    }
-
+    // L'alpha varia nelle transizioni chiamate da ArmorBarAnimation; l'ispezione
+    // per-file di IntelliJ vede soltanto il percorso statico del renderer.
+    @SuppressWarnings("SameParameterValue")
     //? if >=26.1.2 {
-    /*private static void renderAnimatedBackground(GuiGraphicsExtractor ctx, int x, int y, float progress, boolean incoming) {
+    /*static void renderElytra(GuiGraphicsExtractor ctx, ModCompat.ElytraState state, int x, int y, float alpha, boolean renderGlint) {
     *///?} else {
-    private static void renderAnimatedBackground(DrawContext ctx, int x, int y, float progress, boolean incoming) {
-    //?}
-        float alpha = incoming ? smoothStep(progress) : 1.0f - smoothStep(progress);
-        if (alpha <= 0.01f) return;
-
-        float scale = incoming
-                ? 0.72f + 0.28f * easeOutBack(progress)
-                : 1.0f - 0.20f * progress * progress;
-        float offsetY = incoming
-                ? -3.0f * (1.0f - easeOutCubic(progress))
-                : 2.0f * progress * progress;
-        pushAnimationTransform(ctx, x, y, scale, offsetY);
-        try {
-            drawTexture(ctx, EMPTY_TEX, x, y, 0, 9, alpha);
-        } finally {
-            popAnimationTransform(ctx);
-        }
-    }
-
-    //? if >=26.1.2 {
-    /*private static void renderAnimatedMaterials(GuiGraphicsExtractor ctx, SlotData[] data, int slot, int x, int y, float progress, boolean incoming) {
-    *///?} else {
-    private static void renderAnimatedMaterials(DrawContext ctx, SlotData[] data, int slot, int x, int y, float progress, boolean incoming) {
-    //?}
-        float alpha = incoming ? smoothStep(progress) : 1.0f - smoothStep(progress);
-        if (alpha <= 0.01f) return;
-
-        float scale = incoming
-                ? 0.68f + 0.32f * easeOutBack(progress)
-                : 1.0f - 0.24f * progress * progress;
-        float offsetY = incoming
-                ? -3.5f * (1.0f - easeOutCubic(progress))
-                : 2.5f * progress * progress;
-        pushAnimationTransform(ctx, x, y, scale, offsetY);
-        try {
-            // Il glint entra poco dopo la sagoma e crea un piccolo highlight finale.
-            renderSlotMaterials(ctx, data, slot, x, y, alpha, incoming && progress >= 0.58f);
-        } finally {
-            popAnimationTransform(ctx);
-        }
-    }
-
-    //? if >=26.1.2 {
-    /*private static void renderAnimatedElytra(GuiGraphicsExtractor ctx, ModCompat.ElytraState state, int x, int y, float progress, boolean incoming) {
-    *///?} else {
-    private static void renderAnimatedElytra(DrawContext ctx, ModCompat.ElytraState state, int x, int y, float progress, boolean incoming) {
-    //?}
-        float alpha = incoming ? smoothStep(progress) : 1.0f - smoothStep(progress);
-        if (alpha <= 0.01f) return;
-
-        float scale = incoming
-                ? 0.68f + 0.32f * easeOutBack(progress)
-                : 1.0f - 0.24f * progress * progress;
-        float offsetY = incoming
-                ? -3.5f * (1.0f - easeOutCubic(progress))
-                : 2.5f * progress * progress;
-        pushAnimationTransform(ctx, x, y, scale, offsetY);
-        try {
-            renderElytra(ctx, state, x, y, alpha, incoming && progress >= 0.58f && state.enchanted());
-        } finally {
-            popAnimationTransform(ctx);
-        }
-    }
-
-    //? if >=26.1.2 {
-    /*private static void renderElytra(GuiGraphicsExtractor ctx, ModCompat.ElytraState state, int x, int y, float alpha, boolean renderGlint) {
-    *///?} else {
-    private static void renderElytra(DrawContext ctx, ModCompat.ElytraState state, int x, int y, float alpha, boolean renderGlint) {
+    static void renderElytra(DrawContext ctx, ModCompat.ElytraState state, int x, int y, float alpha, boolean renderGlint) {
     //?}
         Identifier texture = state.texture() != null ? state.texture() : ELYTRA_TEX;
-        drawTexture(ctx, texture, x, y, 0, 9, alpha);
+        drawTexture(ctx, texture, x, y, alpha);
         if (renderGlint) {
             //? if >=1.21.11
-            /*ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, y, texture);
-*/            /**///? if <1.21.11
-            ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, y);
+            //ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, y, texture, alpha);
+            /**///? if <1.21.11
+            ArmorBarGlintRenderer.renderFullIconEnchantment(ctx, x, y, alpha);
         }
     }
 
-    private static boolean slotVisualsEqual(SlotData[] first, SlotData[] second, int slot) {
-        int left = slot * 2;
-        return visualsEqual(first[left], second[left]) && visualsEqual(first[left + 1], second[left + 1]);
-    }
-
-    private static boolean visualsEqual(SlotData first, SlotData second) {
+    static boolean visualsEqual(SlotData first, SlotData second) {
         return java.util.Objects.equals(first.materialTex, second.materialTex)
                 && first.trimRgb == second.trimRgb
                 && first.trimGlow == second.trimGlow
@@ -387,49 +237,6 @@ public class ArmorBarRenderer {
                 && first.matG == second.matG
                 && first.matB == second.matB;
     }
-
-    //? if >=26.1.2 {
-    /*private static void pushAnimationTransform(GuiGraphicsExtractor ctx, int x, int y, float scale, float offsetY) {
-        float centerX = x + 4.5f;
-        float centerY = y + 4.5f;
-        ctx.pose().pushMatrix();
-        ctx.pose().translate(centerX, centerY + offsetY);
-        ctx.pose().scale(scale, scale);
-        ctx.pose().translate(-centerX, -centerY);
-    }
-    *///?} else if >=1.21.11 {
-    /*private static void pushAnimationTransform(DrawContext ctx, int x, int y, float scale, float offsetY) {
-        float centerX = x + 4.5f;
-        float centerY = y + 4.5f;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(centerX, centerY + offsetY);
-        ctx.getMatrices().scale(scale, scale);
-        ctx.getMatrices().translate(-centerX, -centerY);
-    }
-    *///?} else {
-    private static void pushAnimationTransform(DrawContext ctx, int x, int y, float scale, float offsetY) {
-        float centerX = x + 4.5f;
-        float centerY = y + 4.5f;
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(centerX, centerY + offsetY, 0.0f);
-        ctx.getMatrices().scale(scale, scale, 1.0f);
-        ctx.getMatrices().translate(-centerX, -centerY, 0.0f);
-    }
-    //?}
-
-    //? if >=26.1.2 {
-    /*private static void popAnimationTransform(GuiGraphicsExtractor ctx) {
-        ctx.pose().popMatrix();
-    }
-    *///?} else if >=1.21.11 {
-    /*private static void popAnimationTransform(DrawContext ctx) {
-        ctx.getMatrices().popMatrix();
-    }
-    *///?} else {
-    private static void popAnimationTransform(DrawContext ctx) {
-        ctx.getMatrices().pop();
-    }
-    //?}
 
     //? if >=26.1.2 {
     /*private static boolean needsUpdate(Player player, int currentArmor, ModCompat.ElytraState elytraState) {
@@ -540,16 +347,16 @@ public class ArmorBarRenderer {
     }
 
     //? if >=26.1.2 {
-    /*private static void drawTexture(GuiGraphicsExtractor ctx, Identifier tex, int x, int y, int u, int texWidth, float alpha) {
+    /*static void drawTexture(GuiGraphicsExtractor ctx, Identifier tex, int x, int y, float alpha) {
     *///?} else {
-    private static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int u, int texWidth, float alpha) {
+    static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, float alpha) {
     //?}
         //? if >=1.21.11 {
-        /*int a = Math.max(0, Math.min(255, Math.round(alpha * 255.0f)));
-        drawTexture(ctx, tex, x, y, u, texWidth, (a << 24) | 0x00FFFFFF);
+        /*int a = Math.clamp(Math.round(alpha * 255.0f), 0, 255);
+        drawTexture(ctx, tex, x, y, 0, 9, (a << 24) | 0x00FFFFFF);
         *///?} else {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
-        ctx.drawTexture(tex, x, y, u, 0, 9, 9, texWidth, 9);
+        ctx.drawTexture(tex, x, y, 0, 0, 9, 9, 9, 9);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         //?}
     }
@@ -651,9 +458,9 @@ public class ArmorBarRenderer {
             //?}
 
             //? if >=26.1.2
-            //boolean ench = stack.isEnchanted();
+            //boolean isEnchanted = stack.isEnchanted();
             //? if <26.1.2
-            boolean ench = stack.hasEnchantments();
+            boolean isEnchanted = stack.hasEnchantments();
             //? if >=1.21.11 {
             /*Identifier tex = getMaterialTex(stack);
             *///?} else if >=1.21 {
@@ -688,17 +495,31 @@ public class ArmorBarRenderer {
             }
             //?}
 
-            for (int j = 0; j < protection && half < CACHE.length; j++, half++)
-                CACHE[half].fill(tex, rgb, tr, tg, tb, glow, ench, color, mr, mg, mb);
+            for (int j = 0; j < protection && half < CACHE.length; j++, half++) {
+                SlotData data = CACHE[half];
+                data.materialTex = tex;
+                data.trimRgb = rgb;
+                data.trimR = tr; data.trimG = tg; data.trimB = tb;
+                data.trimGlow = glow;
+                data.enchanted = isEnchanted;
+                data.armorColor = color;
+                data.matR = mr; data.matG = mg; data.matB = mb;
+                data.sourceItem = stack.getItem();
+                data.equipmentIndex = i;
+                data.pieceHalfIndex = j;
+            }
         }
         // Non serve il fallback BASE_STRIP: il totale è calcolato dai pezzi reali,
         // quindi half == totalArmor sempre.
     }
 
+    // L'alpha varia nelle transizioni chiamate da ArmorBarAnimation; l'ispezione
+    // per-file di IntelliJ vede soltanto il percorso statico del renderer.
+    @SuppressWarnings("SameParameterValue")
     //? if >=26.1.2 {
-    /*private static void drawSide(GuiGraphicsExtractor ctx, SlotData side, int x, int y, int u, float alpha) {
+    /*static void drawSide(GuiGraphicsExtractor ctx, SlotData side, int x, int y, int u, float alpha) {
     *///?} else {
-    private static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u, float alpha) {
+    static void drawSide(DrawContext ctx, SlotData side, int x, int y, int u, float alpha) {
     //?}
         if (side.materialTex != null) {
             drawPart(ctx, side.materialTex, x, y, u, side.armorColor != -1, side.matR, side.matG, side.matB, false, alpha);
@@ -709,38 +530,34 @@ public class ArmorBarRenderer {
     }
 
     //? if >=26.1.2 {
-    /*private static void renderSlotMaterials(GuiGraphicsExtractor ctx, SlotData[] data, int slot, int x, int y, float alpha, boolean renderGlint) {
+    /*private static void renderSlotMaterials(GuiGraphicsExtractor ctx, int slot, int x, int y) {
     *///?} else {
-    private static void renderSlotMaterials(DrawContext ctx, SlotData[] data, int slot, int x, int y, float alpha, boolean renderGlint) {
+    private static void renderSlotMaterials(DrawContext ctx, int slot, int x, int y) {
     //?}
-        SlotData left = data[slot * 2];
-        SlotData right = data[slot * 2 + 1];
+        SlotData left = CACHE[slot * 2];
+        SlotData right = CACHE[slot * 2 + 1];
 
         if (left.materialTex == null && right.materialTex == null) return;
 
         if (isSame(left, right)) {
-            drawSide(ctx, left, x, y, U_FULL, alpha);
+            drawSide(ctx, left, x, y, U_FULL, 1.0f);
         } else {
-            drawSide(ctx, left, x, y, U_LEFT, alpha);
-            drawSide(ctx, right, x, y, U_RIGHT, alpha);
+            drawSide(ctx, left, x, y, U_LEFT, 1.0f);
+            drawSide(ctx, right, x, y, U_RIGHT, 1.0f);
         }
         //? if <1.21.11
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        if (renderGlint) {
-            //? if >=1.21.11 {
-            /*ArmorBarGlintRenderer.renderSlotEnchantments(ctx, left, right, x, y);
-            *///?} else {
-            ArmorBarGlintRenderer.renderSlotEnchantments(ctx, left.enchanted, right.enchanted, x, y);
-            //?}
-        }
+        //? if >=1.21.11 {
+        /*ArmorBarGlintRenderer.renderSlotEnchantments(ctx, left, right, x, y, 1.0f);
+        *///?} else {
+        ArmorBarGlintRenderer.renderSlotEnchantments(
+                ctx, left.enchanted, right.enchanted, x, y, 1.0f);
+        //?}
     }
 
     static boolean isSame(SlotData a, SlotData b) {
-        // matR/G/B sono derivati deterministicamente da armorColor in updateData(),
-        // quindi confrontare armorColor è sufficiente per coprire anche il colore dyeable.
-        return a.materialTex != null && a.materialTex.equals(b.materialTex) && a.trimRgb == b.trimRgb && a.trimGlow == b.trimGlow && a.armorColor == b.armorColor
-                && a.enchanted == b.enchanted && a.matR == b.matR && a.matG == b.matG && a.matB == b.matB;
+        return a.materialTex != null && visualsEqual(a, b);
     }
 
     //? if >=26.1.2 {
@@ -749,7 +566,7 @@ public class ArmorBarRenderer {
     private static void drawPart(DrawContext ctx, Identifier tex, int x, int y, int u, boolean hasColor, float r, float g, float b, boolean glow, float alpha) {
     //?}
         //? if >=1.21.11 {
-        /*int a = Math.max(0, Math.min(255, Math.round(alpha * 255.0f)));
+        /*int a = Math.clamp(Math.round(alpha * 255.0f), 0, 255);
         int color = (a << 24) | 0x00FFFFFF;
         if (hasColor) {
             int ir = (int)(r * 255.0F);
@@ -760,7 +577,7 @@ public class ArmorBarRenderer {
         drawTexture(ctx, tex, x, y, u, 27, color);
 
         if (glow) {
-            int glowAlpha = Math.max(0, Math.min(255, Math.round(alpha * 0.875f * 255.0f)));
+            int glowAlpha = Math.clamp(Math.round(alpha * 0.875f * 255.0f), 0, 255);
             drawTexture(ctx, TRIM_GLOW_TEX, x, y, u, 27, (glowAlpha << 24) | 0x00FFFFFF);
         }
         *///?} else {

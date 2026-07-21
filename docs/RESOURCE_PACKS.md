@@ -8,6 +8,7 @@ Fresh Armor Bar loads its HUD textures through Minecraft's resource system. A no
 - [Pack metadata](#pack-metadata)
 - [Texture sizes](#texture-sizes)
 - [Material-strip format](#material-strip-format)
+- [Animation and glint masks](#animation-and-glint-masks)
 - [Official mod support](#official-mod-support)
 - [Other modded armor materials](#other-modded-armor-materials)
 - [Modded Elytra](#modded-elytra)
@@ -97,6 +98,23 @@ left half | right half | full icon
 
 The first two areas are used when one HUD icon combines halves from different armor pieces. The third is used when the whole icon has one appearance.
 
+## Animation and glint masks
+
+All three variants are used during animated equipment changes. A half can move between slots and change from `LEFT` to `RIGHT`, while two adjacent matching halves can join into `FULL`. For a seamless transition:
+
+- draw every variant inside the same `9x9` coordinate system;
+- keep equivalent outer edges at the same pixel positions;
+- keep unused pixels fully transparent instead of filling them with a background color;
+- do not add opaque guide pixels, padding marks or color outside the intended icon;
+- preserve the center treatment expected when `LEFT` and `RIGHT` meet;
+- use straight, intentional alpha edges because the material alpha is also the enchantment mask on modern versions.
+
+On Minecraft 1.21.11 and newer, the moving glint samples the selected material strip directly. The shader selects the current variant at `0`, `9` or `18`, reads its alpha and clips the glint to the armor-bar movement rectangle. A non-zero alpha pixel can therefore receive glint even when its RGB color looks empty. Fully clear unused pixels are the safest choice.
+
+Older versions use Minecraft's native glint buffer and geometric half clipping, so test enchanted custom textures on both an older target and a modern masked-glint target before distributing a pack.
+
+Trim textures follow the same three-variant layout, but the material strip remains the glint silhouette. A trim may extend only where the corresponding material icon is intended to exist.
+
 ## Official mod support
 
 Fresh Armor Bar bundles textures for officially supported armor mods in its own JAR. The current list is:
@@ -106,8 +124,20 @@ Fresh Armor Bar bundles textures for officially supported armor mods in its own 
   - `netherite_emerald`
   - `netherite_gold`
   - `netherite_iron`
+- BetterEnd (`betterend`):
+  - `aeternium`
+  - `crystalite`
+  - `terminite`
+  - `thallasium`
+  - Elytra: `elytra_armored`, `elytra_crystalite`
+- BetterNether (`betternether`):
+  - `cincinnasite`
+  - `flaming_ruby`
+  - `nether_ruby`
 - Deeper and Darker (`deeperdarker`):
+  - `resonarium`
   - `warden`
+  - Elytra: `soul_elytra`
 
 Official integrations use this path inside the `fresh-armor-bar` namespace:
 
@@ -115,7 +145,7 @@ Official integrations use this path inside the `fresh-armor-bar` namespace:
 assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<modid>/<material>.png
 ```
 
-For example, the new Deeper and Darker compatibility texture is:
+For example, a Deeper and Darker compatibility texture is:
 
 ```text
 assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/deeperdarker/warden.png
@@ -183,6 +213,9 @@ The first existing resource wins. Resource-pack priority still applies when mult
 - Check spelling, namespace, lowercase filenames and the complete directory path.
 - For Deeper and Darker, confirm that the path ends in `modded_strips/deeperdarker/warden.png`, not `strips/warden.png`.
 - Confirm that every strip is exactly `27x9` pixels.
+- Inspect all three variants with a transparent checkerboard and remove non-zero alpha outside the intended icon.
+- Test adding, removing and replacing armor in both directions; a static screenshot does not exercise the animated half variants.
+- Test an enchanted transition on Minecraft 1.21.11 or newer to verify the material alpha mask.
 - Read `latest.log` to find the `modid:material` requested by Fresh Armor Bar and compare it with the lookup order above.
 - For an Elytra, search `latest.log` for `modded Elytra`; the warning includes its complete item id and both custom paths.
 - Reload resources after changing files.

@@ -150,16 +150,17 @@ final class ArmorBarGlintRenderer {
     }
 
     //? if >=26.1.2 {
-    /*static void renderFullIconEnchantment(GuiGraphicsExtractor ctx, int x, int y, Identifier texture) {
+    /*static void renderFullIconEnchantment(GuiGraphicsExtractor ctx, int x, int y, Identifier texture, float alpha) {
     *///?} else if >=1.21.11 {
-    /*static void renderFullIconEnchantment(DrawContext ctx, int x, int y, Identifier texture) {
+    /*static void renderFullIconEnchantment(DrawContext ctx, int x, int y, Identifier texture, float alpha) {
     *///?} else {
-    static void renderFullIconEnchantment(DrawContext ctx, int x, int y) {
+    static void renderFullIconEnchantment(DrawContext ctx, int x, int y, float alpha) {
     //?}
         //? if >=1.21.11 {
-        /*renderGuiGlint(ctx, x, y, texture, texture, 0, 0, 0.0f, 9.0f);
+        /*renderGuiGlint(ctx, x, y, texture, texture,
+                0, 0, 0.0f, 9.0f, alpha, 0, 0, 0, 0);
         *///?} else {
-        renderSlotEnchantments(ctx, true, true, x, y);
+        renderSlotEnchantments(ctx, true, true, x, y, alpha);
         //?}
     }
 
@@ -170,12 +171,13 @@ final class ArmorBarGlintRenderer {
     *///?}
 
     //? if <1.21.11 {
-    static void renderSlotEnchantments(DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y) {
-        if (!leftEnch && !rightEnch) return;
+    static void renderSlotEnchantments(
+            DrawContext ctx, boolean leftEnch, boolean rightEnch, int x, int y, float alpha) {
+        if ((!leftEnch && !rightEnch) || alpha <= 0.01f) return;
 
         // Abbassa l'intensità del colore per renderlo meno "forte" e meno "viola acceso"
         RenderSystem.enableBlend();
-        RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, 1.0f);
+        RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, alpha);
 
         // Usa il layer nativo getGlint() per le strisce animate
         VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
@@ -223,29 +225,49 @@ final class ArmorBarGlintRenderer {
 
     //? if >=1.21.11 {
     /*//? if >=26.1.2 {
-    /^static void renderSlotEnchantments(GuiGraphicsExtractor ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
+    /^static void renderSlotEnchantments(GuiGraphicsExtractor ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y, float alpha) {
     ^///?} else {
-    static void renderSlotEnchantments(DrawContext ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
+    static void renderSlotEnchantments(DrawContext ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y, float alpha) {
     //?}
-        if (!left.enchanted && !right.enchanted) return;
+        renderSlotEnchantments(ctx, left, right, x, y, alpha, 0, 0, 0, 0);
+    }
+
+    //? if >=26.1.2 {
+    /^static void renderSlotEnchantments(GuiGraphicsExtractor ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right,
+                                       int x, int y, float alpha,
+                                       int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+    ^///?} else {
+    static void renderSlotEnchantments(DrawContext ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right,
+                                       int x, int y, float alpha,
+                                       int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+    //?}
+        if ((!left.enchanted && !right.enchanted) || alpha <= 0.01f) return;
 
         if (left.enchanted && right.enchanted && left.materialTex != null && right.materialTex != null) {
             if (ArmorBarRenderer.isSame(left, right)) {
-                renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex, U_FULL, U_FULL, 0.0f, 9.0f);
+                renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex,
+                        U_FULL, U_FULL, 0.0f, 9.0f, alpha,
+                        clipMinX, clipMinY, clipMaxX, clipMaxY);
             } else {
-                renderGuiGlint(ctx, x, y, left.materialTex, right.materialTex, U_LEFT, U_RIGHT, 0.0f, 9.0f);
+                renderGuiGlint(ctx, x, y, left.materialTex, right.materialTex,
+                        U_LEFT, U_RIGHT, 0.0f, 9.0f, alpha,
+                        clipMinX, clipMinY, clipMaxX, clipMaxY);
             }
         } else if (left.enchanted && left.materialTex != null) {
-            renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex, U_LEFT, U_LEFT, 0.0f, 4.5f);
+            renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex,
+                    U_LEFT, U_LEFT, 0.0f, 4.5f, alpha,
+                    clipMinX, clipMinY, clipMaxX, clipMaxY);
         } else if (right.enchanted && right.materialTex != null) {
-            renderGuiGlint(ctx, x, y, right.materialTex, right.materialTex, U_RIGHT, U_RIGHT, 4.5f, 9.0f);
+            renderGuiGlint(ctx, x, y, right.materialTex, right.materialTex,
+                    U_RIGHT, U_RIGHT, 4.5f, 9.0f, alpha,
+                    clipMinX, clipMinY, clipMaxX, clipMaxY);
         }
     }
 
     //? if >=26.1.2 {
-    /^private static void renderGuiGlint(GuiGraphicsExtractor ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd) {
+    /^private static void renderGuiGlint(GuiGraphicsExtractor ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd, float alpha, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
     ^///?} else {
-    private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd) {
+    private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd, float alpha, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
     //?}
         if (leftMaskTexture == null || rightMaskTexture == null) return;
 
@@ -259,8 +281,14 @@ final class ArmorBarGlintRenderer {
         int maxX = x + ceilPositiveIconCoord(xEnd);
         //? if >=26.1.2 {
         /^ScreenRectangle bounds = new ScreenRectangle(minX, y, maxX - minX, 9).transformMaxBounds(pose);
+        ScreenRectangle scissor = clipMaxX > clipMinX && clipMaxY > clipMinY
+                ? new ScreenRectangle(clipMinX, clipMinY, clipMaxX - clipMinX, clipMaxY - clipMinY)
+                : null;
         ^///?} else {
         ScreenRect bounds = new ScreenRect(minX, y, maxX - minX, 9).transformEachVertex(pose);
+        ScreenRect scissor = clipMaxX > clipMinX && clipMaxY > clipMinY
+                ? new ScreenRect(clipMinX, clipMinY, clipMaxX - clipMinX, clipMaxY - clipMinY)
+                : null;
         //?}
         GuiRenderState state = getGuiRenderState(ctx);
         if (state == null) return;
@@ -271,15 +299,15 @@ final class ArmorBarGlintRenderer {
 
         //? if >=26.1.2 {
         /^state.addGuiElement(new GlintMaskRenderState(
-                pose, bounds, textureSetup, x, y, leftMaskU, rightMaskU,
+                pose, bounds, scissor, textureSetup, x, y, leftMaskU, rightMaskU,
                 xStart, xEnd, baseMinU, baseMaxU,
-                transform, color
+                transform, color, Math.clamp(Math.round(alpha * 255.0f), 0, 255)
         ));
         ^///?} else {
         state.addSimpleElement(new GlintMaskRenderState(
-                pose, bounds, textureSetup, x, y, leftMaskU, rightMaskU,
+                pose, bounds, scissor, textureSetup, x, y, leftMaskU, rightMaskU,
                 xStart, xEnd, baseMinU, baseMaxU,
-                transform, color
+                transform, color, Math.clamp(Math.round(alpha * 255.0f), 0, 255)
         ));
         //?}
     }
@@ -425,8 +453,10 @@ final class ArmorBarGlintRenderer {
             Matrix3x2f pose,
             //? if >=26.1.2 {
             /^ScreenRectangle bounds,
+            ScreenRectangle scissor,
             ^///?} else {
             ScreenRect bounds,
+            ScreenRect scissor,
             //?}
             TextureSetup textureSetup,
             int x,
@@ -438,7 +468,8 @@ final class ArmorBarGlintRenderer {
             float baseMinU,
             float baseMaxU,
             GlintTextureTransform transform,
-            int color
+            int color,
+            int alpha
     //? if >=26.1.2 {
     /^) implements GuiElementRenderState {
     ^///?} else {
@@ -481,7 +512,7 @@ final class ArmorBarGlintRenderer {
         private void addGlintMaskVertex(VertexConsumer vertexConsumer, float localX, float localY, float u, float v) {
             vertexConsumer.addVertex(new Matrix4f().mul(pose), x + localX, y + localY, 0.0f)
                     .setUv(transform.u(u, v), transform.v(u, v))
-                    .setColor(leftMaskU, rightMaskU, color & 0xFF, 255)
+                    .setColor(leftMaskU, rightMaskU, color & 0xFF, alpha)
                     .setUv2(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
         ^///?} else if >=1.21.11 {
@@ -498,7 +529,7 @@ final class ArmorBarGlintRenderer {
         private void addGlintMaskVertex(VertexConsumer vertexConsumer, float localX, float localY, float u, float v) {
             vertexConsumer.vertex(pose, x + localX, y + localY)
                     .texture(transform.u(u, v), transform.v(u, v))
-                    .color(leftMaskU, rightMaskU, color & 0xFF, 255)
+                    .color(leftMaskU, rightMaskU, color & 0xFF, alpha)
                     .light(Math.round(localX * GLINT_MASK_COORD_SCALE), Math.round(localY * GLINT_MASK_COORD_SCALE));
         }
         ^///?}
@@ -507,11 +538,11 @@ final class ArmorBarGlintRenderer {
         //? if >=26.1.2 {
         /^@Nullable
         public ScreenRectangle scissorArea() {
-            return null;
+            return scissor;
         }
         ^///?} else {
         public ScreenRect scissorArea() {
-            return null;
+            return scissor;
         }
         //?}
     }

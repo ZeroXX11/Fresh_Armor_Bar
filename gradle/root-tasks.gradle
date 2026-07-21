@@ -13,8 +13,11 @@ gradle.rootProject { root ->
 
 		root.tasks.register('clean', Delete) {
 			group = 'build'
-			description = 'Deletes the root build directory, including collected release jars.'
+			description = 'Deletes the root build directory, including collected release jars, then restores Stonecutter IDE models.'
 			delete(root.layout.buildDirectory)
+			// The IntelliJ plugin reads these models as soon as the project opens. Leaving them
+			// deleted after clean creates a startup race and a spurious Stonecutter reload error.
+			finalizedBy(root.tasks.named('stonecutterSaveModels'))
 		}
 
 		def cleanCollectedJars = root.tasks.register('cleanCollectedJars', Delete) {

@@ -9,6 +9,8 @@ Vanilla armor materials are supported directly. Modded armor can be supported th
 ## Official armor mod support
 
 - Advanced Netherite
+- BetterEnd
+- BetterNether
 - Deeper and Darker
 
 Official integrations are bundled in the main Fresh Armor Bar JAR under:
@@ -33,6 +35,8 @@ For example, Deeper and Darker's `deeperdarker:soul_elytra` uses:
 assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/deeperdarker/elytra/soul_elytra.png
 ```
 
+BetterEnd also includes bundled HUD textures for `elytra_armored` and `elytra_crystalite`. Every integration remains resource-based and optional.
+
 Fresh Armor Bar can also inspect extra equipment slots when one of these compatible APIs is present:
 
 - classic Trinkets API (`dev.emi.trinkets.api`);
@@ -44,6 +48,10 @@ These integrations are optional. A slot API provides the equipment inventory, wh
 ## HUD compatibility
 
 Resource packs and mods that retain Minecraft's normal armor HUD flow are generally compatible. A mod that completely replaces, cancels, moves or independently redraws the armor HUD may overlap with or suppress Fresh Armor Bar.
+
+Fresh Armor Bar records the ten vanilla armor-slot coordinates every frame and uses them as anchors for static and animated icons. Equip, removal and replacement transitions can continue briefly after the current armor value reaches zero. A HUD mod is therefore only animation-compatible when it continues to invoke the normal armor rendering flow and supplies stable slot coordinates for the complete transition.
+
+The transition engine supports mixed materials, odd half-points and armor values above 20. Enchanted movement uses the material strip as an alpha mask on Minecraft 1.21.11 and newer; older targets use the native glint buffer. Resource packs must keep the three strip variants aligned to avoid visible differences during a `LEFT`, `RIGHT` or `FULL` transition.
 
 When diagnosing a conflict:
 
@@ -57,6 +65,8 @@ When diagnosing a conflict:
 - Fabric is the supported loader.
 - Fresh Armor Bar is client-side only.
 - It does not change protection, durability, enchantments or damage calculations.
+- Animations are visual only and do not delay equipment or attribute changes.
+- Animation timings are currently internal and cannot be disabled from the configuration screen.
 - Unknown materials use a visual fallback rather than preventing the game from starting.
 - Third-party slot integrations are best-effort because their APIs and availability can differ between Minecraft versions.
 
