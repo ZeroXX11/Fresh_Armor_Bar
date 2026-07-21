@@ -148,6 +148,26 @@ final class ArmorBarGlintRenderer {
     private static boolean glintTextureTransformReady = false;
     *///?}
 
+    //? if >=1.21.11 {
+    /*static record ClipBounds(int minX, int minY, int maxX, int maxY) {
+        static final ClipBounds NONE = new ClipBounds(0, 0, 0, 0);
+
+        boolean isPresent() {
+            return maxX > minX && maxY > minY;
+        }
+    }
+
+    private record GlintRequest(
+            Identifier leftMaskTexture,
+            Identifier rightMaskTexture,
+            int leftMaskU,
+            int rightMaskU,
+            float xStart,
+            float xEnd,
+            float alpha) {
+    }
+    *///?}
+
     private ArmorBarGlintRenderer() {
     }
 
@@ -159,8 +179,9 @@ final class ArmorBarGlintRenderer {
     static void renderFullIconEnchantment(DrawContext ctx, int x, int y, float alpha) {
     //?}
         //? if >=1.21.11 {
-        /*renderGuiGlint(ctx, x, y, texture, texture,
-                0, 0, 0.0f, 9.0f, alpha, 0, 0, 0, 0);
+        /*renderGuiGlint(ctx, x, y,
+                new GlintRequest(texture, texture, 0, 0, 0.0f, 9.0f, alpha),
+                ClipBounds.NONE);
         *///?} else {
         renderSlotEnchantments(ctx, true, true, x, y, alpha);
         //?}
@@ -231,46 +252,59 @@ final class ArmorBarGlintRenderer {
     ^///?} else {
     static void renderSlotEnchantments(DrawContext ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y, float alpha) {
     //?}
-        renderSlotEnchantments(ctx, left, right, x, y, alpha, 0, 0, 0, 0);
+        renderSlotEnchantments(ctx, left, right, x, y, alpha, ClipBounds.NONE);
     }
 
     //? if >=26.1.2 {
     /^static void renderSlotEnchantments(GuiGraphicsExtractor ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right,
                                        int x, int y, float alpha,
-                                       int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+                                       ClipBounds clipBounds) {
     ^///?} else {
     static void renderSlotEnchantments(DrawContext ctx, ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right,
                                        int x, int y, float alpha,
-                                       int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+                                       ClipBounds clipBounds) {
     //?}
         if ((!left.enchanted && !right.enchanted) || alpha <= 0.01f) return;
 
         if (left.enchanted && right.enchanted && left.materialTex != null && right.materialTex != null) {
             if (ArmorBarRenderer.isSame(left, right)) {
-                renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex,
-                        U_FULL, U_FULL, 0.0f, 9.0f, alpha,
-                        clipMinX, clipMinY, clipMaxX, clipMaxY);
+                renderGuiGlint(ctx, x, y,
+                        new GlintRequest(left.materialTex, left.materialTex,
+                                U_FULL, U_FULL, 0.0f, 9.0f, alpha),
+                        clipBounds);
             } else {
-                renderGuiGlint(ctx, x, y, left.materialTex, right.materialTex,
-                        U_LEFT, U_RIGHT, 0.0f, 9.0f, alpha,
-                        clipMinX, clipMinY, clipMaxX, clipMaxY);
+                renderGuiGlint(ctx, x, y,
+                        new GlintRequest(left.materialTex, right.materialTex,
+                                U_LEFT, U_RIGHT, 0.0f, 9.0f, alpha),
+                        clipBounds);
             }
         } else if (left.enchanted && left.materialTex != null) {
-            renderGuiGlint(ctx, x, y, left.materialTex, left.materialTex,
-                    U_LEFT, U_LEFT, 0.0f, 4.5f, alpha,
-                    clipMinX, clipMinY, clipMaxX, clipMaxY);
+            renderGuiGlint(ctx, x, y,
+                    new GlintRequest(left.materialTex, left.materialTex,
+                            U_LEFT, U_LEFT, 0.0f, 4.5f, alpha),
+                    clipBounds);
         } else if (right.enchanted && right.materialTex != null) {
-            renderGuiGlint(ctx, x, y, right.materialTex, right.materialTex,
-                    U_RIGHT, U_RIGHT, 4.5f, 9.0f, alpha,
-                    clipMinX, clipMinY, clipMaxX, clipMaxY);
+            renderGuiGlint(ctx, x, y,
+                    new GlintRequest(right.materialTex, right.materialTex,
+                            U_RIGHT, U_RIGHT, 4.5f, 9.0f, alpha),
+                    clipBounds);
         }
     }
 
     //? if >=26.1.2 {
-    /^private static void renderGuiGlint(GuiGraphicsExtractor ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd, float alpha, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+    /^private static void renderGuiGlint(
+            GuiGraphicsExtractor ctx, int x, int y, GlintRequest request, ClipBounds clipBounds) {
     ^///?} else {
-    private static void renderGuiGlint(DrawContext ctx, int x, int y, Identifier leftMaskTexture, Identifier rightMaskTexture, int leftMaskU, int rightMaskU, float xStart, float xEnd, float alpha, int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+    private static void renderGuiGlint(
+            DrawContext ctx, int x, int y, GlintRequest request, ClipBounds clipBounds) {
     //?}
+        Identifier leftMaskTexture = request.leftMaskTexture();
+        Identifier rightMaskTexture = request.rightMaskTexture();
+        int leftMaskU = request.leftMaskU();
+        int rightMaskU = request.rightMaskU();
+        float xStart = request.xStart();
+        float xEnd = request.xEnd();
+        float alpha = request.alpha();
         if (leftMaskTexture == null || rightMaskTexture == null) return;
 
         GlintTextureTransform transform = getGlintTextureTransform();
@@ -283,13 +317,19 @@ final class ArmorBarGlintRenderer {
         int maxX = x + ceilPositiveIconCoord(xEnd);
         //? if >=26.1.2 {
         /^ScreenRectangle bounds = new ScreenRectangle(minX, y, maxX - minX, 9).transformMaxBounds(pose);
-        ScreenRectangle scissor = clipMaxX > clipMinX && clipMaxY > clipMinY
-                ? new ScreenRectangle(clipMinX, clipMinY, clipMaxX - clipMinX, clipMaxY - clipMinY)
+        ScreenRectangle scissor = clipBounds.isPresent()
+                ? new ScreenRectangle(
+                        clipBounds.minX(), clipBounds.minY(),
+                        clipBounds.maxX() - clipBounds.minX(),
+                        clipBounds.maxY() - clipBounds.minY())
                 : null;
         ^///?} else {
         ScreenRect bounds = new ScreenRect(minX, y, maxX - minX, 9).transformEachVertex(pose);
-        ScreenRect scissor = clipMaxX > clipMinX && clipMaxY > clipMinY
-                ? new ScreenRect(clipMinX, clipMinY, clipMaxX - clipMinX, clipMaxY - clipMinY)
+        ScreenRect scissor = clipBounds.isPresent()
+                ? new ScreenRect(
+                        clipBounds.minX(), clipBounds.minY(),
+                        clipBounds.maxX() - clipBounds.minX(),
+                        clipBounds.maxY() - clipBounds.minY())
                 : null;
         //?}
         GuiRenderState state = getGuiRenderState(ctx);

@@ -1962,7 +1962,8 @@ final class ArmorBarAnimation {
             try {
                 //? if >=1.21.11 {
                 /*renderClippedCanonicalSprite(
-                        ctx, data, variant, x, y, alpha, minX, minY, maxX, maxY);
+                        ctx, data, variant, x, y, alpha,
+                        new ArmorBarGlintRenderer.ClipBounds(minX, minY, maxX, maxY));
                 *///?} else {
                 renderClippedCanonicalSprite(ctx, data, variant, x, y, alpha);
                 //?}
@@ -1977,11 +1978,11 @@ final class ArmorBarAnimation {
     //? if >=26.1.2 {
     /*private static void renderClippedCanonicalSprite(
             GuiGraphicsExtractor ctx, SlotData data, int variant, int x, int y, float alpha,
-            int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+            ArmorBarGlintRenderer.ClipBounds clipBounds) {
     *///?} else if >=1.21.11 {
     /*private static void renderClippedCanonicalSprite(
             DrawContext ctx, SlotData data, int variant, int x, int y, float alpha,
-            int clipMinX, int clipMinY, int clipMaxX, int clipMaxY) {
+            ArmorBarGlintRenderer.ClipBounds clipBounds) {
     *///?} else {
     private static void renderClippedCanonicalSprite(
             DrawContext ctx, SlotData data, int variant, int x, int y, float alpha) {
@@ -1998,10 +1999,7 @@ final class ArmorBarAnimation {
                 x,
                 y,
                 alpha,
-                clipMinX,
-                clipMinY,
-                clipMaxX,
-                clipMaxY);
+                clipBounds);
         *///?} else {
         ArmorBarGlintRenderer.renderSlotEnchantments(
                 ctx, variant != U_RIGHT, variant != U_LEFT, x, y, alpha);

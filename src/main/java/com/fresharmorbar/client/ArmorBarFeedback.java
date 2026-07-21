@@ -149,39 +149,12 @@ public final class ArmorBarFeedback {
             lastHalfEnd[i] = halfEnd;
 
             //? if >=1.21.11 {
-            /*//? if >=26.1.2
-            //boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageableItem();
-            /^^///? if <26.1.2
-            boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageable();
+            /*ArmorUpdateKind updateKind = updateArmorPiece(i, stack, protection, kind, now);
             *///?} else {
-            boolean validArmorStack = !stack.isEmpty() && stack.getItem() instanceof ArmorItem && stack.isDamageable();
+            ArmorUpdateKind updateKind = updateArmorPiece(i, stack, kind, now);
             //?}
-            if (!validArmorStack) {
-                rememberEmpty(i);
-            } else {
-                //? if >=26.1.2
-                //int damage = stack.getDamageValue();
-                //? if <26.1.2
-                int damage = stack.getDamage();
-                int maxDamage = stack.getMaxDamage();
-                //? if >=26.1.2
-                //boolean firstSeenStack = !ItemStack.isSameItem(stack, LAST_STACKS[i]) || LAST_MAX_DAMAGE[i] != maxDamage || LAST_DAMAGE[i] < 0;
-                //? if <26.1.2
-                boolean firstSeenStack = !ItemStack.areItemsEqual(stack, LAST_STACKS[i]) || LAST_MAX_DAMAGE[i] != maxDamage || LAST_DAMAGE[i] < 0;
-                if (!firstSeenStack) {
-                    int lostDurability = damage - LAST_DAMAGE[i];
-                    if (lostDurability > 0) {
-                        anyDurabilityDamage = true;
-                        if (damageEffectEnabled(kind)) {
-                            PULSES[i] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
-                            anyBlastDamage |= kind == DamageKind.BLAST;
-                        }
-                    } else if (lostDurability < 0 && hasMending(stack) && FreshArmorBarConfig.mendingEffectEnabled()) {
-                        REPAIR_PULSES[i] = new RepairPulse(now);
-                    }
-                }
-                rememberStack(i, stack, damage, maxDamage);
-            }
+            anyDurabilityDamage |= updateKind.durabilityDamage;
+            anyBlastDamage |= updateKind.blastDamage;
         }
 
         if (anyBlastDamage) {
@@ -191,6 +164,60 @@ public final class ArmorBarFeedback {
         }
 
         lastHurtTime = player.hurtTime;
+    }
+
+    //? if >=1.21.11 {
+    /*private static ArmorUpdateKind updateArmorPiece(
+            int index, ItemStack stack, int protection, DamageKind kind, long now) {
+    *///?} else {
+    private static ArmorUpdateKind updateArmorPiece(
+            int index, ItemStack stack, DamageKind kind, long now) {
+    //?}
+        //? if >=1.21.11 {
+        /*//? if >=26.1.2
+        //boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageableItem();
+        /^^///? if <26.1.2
+        boolean validArmorStack = !stack.isEmpty() && protection > 0 && stack.isDamageable();
+        *///?} else {
+        boolean validArmorStack = !stack.isEmpty() && stack.getItem() instanceof ArmorItem && stack.isDamageable();
+        //?}
+        if (!validArmorStack) {
+            rememberEmpty(index);
+            return ArmorUpdateKind.NONE;
+        }
+
+        //? if >=26.1.2
+        //int damage = stack.getDamageValue();
+        //? if <26.1.2
+        int damage = stack.getDamage();
+        int maxDamage = stack.getMaxDamage();
+        //? if >=26.1.2
+        //boolean firstSeenStack = !ItemStack.isSameItem(stack, LAST_STACKS[index]) || LAST_MAX_DAMAGE[index] != maxDamage || LAST_DAMAGE[index] < 0;
+        //? if <26.1.2
+        boolean firstSeenStack = !ItemStack.areItemsEqual(stack, LAST_STACKS[index]) || LAST_MAX_DAMAGE[index] != maxDamage || LAST_DAMAGE[index] < 0;
+        ArmorUpdateKind updateKind = firstSeenStack
+                ? ArmorUpdateKind.NONE
+                : updateDurabilityFeedback(index, stack, damage, maxDamage, kind, now);
+        rememberStack(index, stack, damage, maxDamage);
+        return updateKind;
+    }
+
+    private static ArmorUpdateKind updateDurabilityFeedback(
+            int index, ItemStack stack, int damage, int maxDamage, DamageKind kind, long now) {
+        int lostDurability = damage - LAST_DAMAGE[index];
+        if (lostDurability > 0) {
+            boolean effectEnabled = damageEffectEnabled(kind);
+            if (effectEnabled) {
+                PULSES[index] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
+            }
+            return effectEnabled && kind == DamageKind.BLAST
+                    ? ArmorUpdateKind.BLAST_DAMAGE
+                    : ArmorUpdateKind.DURABILITY_DAMAGE;
+        }
+        if (lostDurability < 0 && hasMending(stack) && FreshArmorBarConfig.mendingEffectEnabled()) {
+            REPAIR_PULSES[index] = new RepairPulse(now);
+        }
+        return ArmorUpdateKind.NONE;
     }
 
     static void renderSlotFeedback(
@@ -227,13 +254,12 @@ public final class ArmorBarFeedback {
         if (hasDamagePulse) {
             float progress = pulse.progress(now);
             if (progress < 1.0f) {
-                float fade = 1.0f - smoothStep(progress);
-                float wave = (float)Math.sin(progress * Math.PI);
-                renderMaskedFeedback(ctx, left, right, x, y, pulse, progress, fade, wave);
+                renderMaskedFeedback(ctx, left, right, x, y, pulse, progress);
             }
         }
         if (hasRepairPulse) {
-            renderMendingOutline(ctx, left, right, x, y, leftHalf, rightHalf, now);
+            MendingRenderContext render = new MendingRenderContext(left, right, x, y, leftHalf, rightHalf, now);
+            renderMendingOutline(ctx, render);
         }
         //? if <1.21.11
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -249,66 +275,115 @@ public final class ArmorBarFeedback {
             int x,
             int y,
             Pulse pulse,
-            float progress,
-            float fade,
-            float wave) {
-        float sweepCenter = -3.0f + smoothStep(progress) * 15.5f;
-        float rippleCenter = smoothStep(progress) * 7.2f;
-        int lift = Math.round((1.0f - smoothStep(progress)) * 2.0f);
+            float progress) {
+        FeedbackRenderContext render = new FeedbackRenderContext(left, right, x, y, pulse, progress);
 
         // Disegna pixel-per-pixel sopra la texture dell'armatura, ma solo dove la mask dice che esiste armatura.
         for (int py = 0; py < ICON_SIZE; py++) {
             for (int px = 0; px < ICON_SIZE; px++) {
-                if (!isEmptyArmorPixel(left, right, px, py)) {
-                    float diagonal = px + py * 0.58f;
-                    float sweep = band(diagonal, sweepCenter, pulse.heavy ? 3.2f : 2.35f);
-                    float pulseGlow = 0.45f + wave * 0.55f;
-                    float ripple = pulse.kind == DamageKind.BLAST ? band(distanceFromCenter(px, py), rippleCenter, 1.9f) : 0.0f;
-
-                    if (pulse.kind == DamageKind.FIRE) {
-                        // Il fuoco ha un ramo dedicato per non ereditare flash bianchi o forme degli altri danni.
-                        float glow = fireGlow(px, py, progress, wave);
-                        float flame = fireFlame(px, py, progress, wave);
-                        float spark = fireSpark(px, py, progress);
-                        float diagonalGlow = fireDiagonalGlow(px, py, progress);
-                        float heat = Math.max(Math.max(glow, flame), Math.max(spark, diagonalGlow));
-                        if (heat > 0.0f) {
-                            int alpha = clamp255((int)(fade * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
-                            int rgb = fireFlameRgb(px, py, progress, flame, glow, spark, diagonalGlow);
-                            ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
-                        }
-                    } else if (pulse.kind == DamageKind.GENERIC) {
-                        GenericHitPixel hit = genericHitPixel(px, py, progress, pulse.heavy);
-                        if (hit.alpha > 0) {
-                            int alpha = clamp255((int)(hit.alpha * fade));
-                            int rgb = hit.rgb;
-                            ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
-                        }
-                    } else {
-                        int rgb = blendRgb(pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
-                        int alpha = clamp255((int)((pulse.heavy ? 92 : 54) * fade
-                                + (pulse.heavy ? 78 : 46) * sweep * fade
-                                + 28 * pulseGlow * fade
-                                + 68 * ripple * fade));
-
-                        int effectPatternY = py + lift;
-                        if (isEffectPixel(pulse.kind, px, effectPatternY)) {
-                            float effectBoost = 0.72f + 0.28f * Math.max(wave, sweep);
-                            alpha = Math.max(alpha, clamp255((int)(230 * fade * effectBoost)));
-                            rgb = blendRgb(effectRgb(pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
-                        }
-                        if (pulse.heavy && progress < 0.35f && isEdgePixel(left, right, px, py)) {
-                            float edgeFade = 1.0f - smoothStep(progress / 0.35f);
-                            alpha = Math.max(alpha, clamp255((int)(210 * edgeFade)));
-                            rgb = blendRgb(rgb, 0xFFFFFF, 0.62f * edgeFade);
-                        }
-
-                        if (alpha > 0) {
-                            ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | rgb);
-                        }
-                    }
-                }
+                if (isEmptyArmorPixel(left, right, px, py)) continue;
+                renderFeedbackPixel(ctx, render, px, py);
             }
+        }
+    }
+
+    private static void renderFeedbackPixel(
+            //? if >=26.1.2
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1.2
+            DrawContext ctx,
+            FeedbackRenderContext render,
+            int px,
+            int py) {
+        float diagonal = px + py * 0.58f;
+        float sweep = band(diagonal, render.sweepCenter, render.pulse.heavy ? 3.2f : 2.35f);
+        float pulseGlow = 0.45f + render.wave * 0.55f;
+        float ripple = render.pulse.kind == DamageKind.BLAST
+                ? band(distanceFromCenter(px, py), render.rippleCenter, 1.9f)
+                : 0.0f;
+
+        if (render.pulse.kind == DamageKind.FIRE) {
+            renderFireFeedbackPixel(ctx, render, px, py);
+            return;
+        }
+        if (render.pulse.kind == DamageKind.GENERIC) {
+            renderGenericFeedbackPixel(ctx, render, px, py);
+            return;
+        }
+        renderOtherFeedbackPixel(ctx, render, px, py, sweep, pulseGlow, ripple);
+    }
+
+    private static void renderFireFeedbackPixel(
+            //? if >=26.1.2
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1.2
+            DrawContext ctx,
+            FeedbackRenderContext render,
+            int px,
+            int py) {
+        // Il fuoco ha un ramo dedicato per non ereditare flash bianchi o forme degli altri danni.
+        float glow = fireGlow(px, py, render.progress, render.wave);
+        float flame = fireFlame(px, py, render.progress, render.wave);
+        float spark = fireSpark(px, py, render.progress);
+        float diagonalGlow = fireDiagonalGlow(px, py, render.progress);
+        float heat = Math.max(Math.max(glow, flame), Math.max(spark, diagonalGlow));
+        if (heat > 0.0f) {
+            int alpha = clamp255((int)(render.fade
+                    * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
+            int rgb = fireFlameRgb(px, py, render.progress, flame, glow, spark, diagonalGlow);
+            ctx.fill(render.x + px, render.y + py, render.x + px + 1, render.y + py + 1, (alpha << 24) | rgb);
+        }
+    }
+
+    private static void renderGenericFeedbackPixel(
+            //? if >=26.1.2
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1.2
+            DrawContext ctx,
+            FeedbackRenderContext render,
+            int px,
+            int py) {
+        GenericHitPixel hit = genericHitPixel(px, py, render.progress, render.pulse.heavy);
+        if (hit.alpha > 0) {
+            int alpha = clamp255((int)(hit.alpha * render.fade));
+            int rgb = hit.rgb;
+            ctx.fill(render.x + px, render.y + py, render.x + px + 1, render.y + py + 1, (alpha << 24) | rgb);
+        }
+    }
+
+    private static void renderOtherFeedbackPixel(
+            //? if >=26.1.2
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1.2
+            DrawContext ctx,
+            FeedbackRenderContext render,
+            int px,
+            int py,
+            float sweep,
+            float pulseGlow,
+            float ripple) {
+        int rgb = blendRgb(render.pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
+        int alpha = clamp255((int)((render.pulse.heavy ? 92 : 54) * render.fade
+                + (render.pulse.heavy ? 78 : 46) * sweep * render.fade
+                + 28 * pulseGlow * render.fade
+                + 68 * ripple * render.fade));
+
+        int effectPatternY = py + render.lift;
+        if (isEffectPixel(render.pulse.kind, px, effectPatternY)) {
+            float effectBoost = 0.72f + 0.28f * Math.max(render.wave, sweep);
+            alpha = Math.max(alpha, clamp255((int)(230 * render.fade * effectBoost)));
+            rgb = blendRgb(effectRgb(render.pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
+        }
+        if (render.pulse.heavy
+                && render.progress < 0.35f
+                && isEdgePixel(render.left, render.right, px, py)) {
+            float edgeFade = 1.0f - smoothStep(render.progress / 0.35f);
+            alpha = Math.max(alpha, clamp255((int)(210 * edgeFade)));
+            rgb = blendRgb(rgb, 0xFFFFFF, 0.62f * edgeFade);
+        }
+
+        if (alpha > 0) {
+            ctx.fill(render.x + px, render.y + py, render.x + px + 1, render.y + py + 1, (alpha << 24) | rgb);
         }
     }
 
@@ -384,26 +459,41 @@ public final class ArmorBarFeedback {
 
     private static boolean isEffectPixel(DamageKind kind, int x, int y) {
         if (x < 0 || x >= ICON_SIZE || y < 0 || y >= ICON_SIZE) return false;
-        if (kind == DamageKind.FIRE) return false;
 
         return switch (kind) {
-            case BLAST -> (x == 4 && y >= 1 && y <= 7)
-                    || (y == 4 && x >= 1 && x <= 7)
-                    || (x == y && x >= 2 && x <= 6)
-                    || (x + y == 8 && x >= 2 && x <= 6);
-            case PROJECTILE -> (y == 4 && x >= 1 && x <= 6)
-                    || (x == 6 && y >= 3 && y <= 5)
-                    || (x == 7 && y == 4)
-                    || (x == 2 && y == 5)
-                    || (x == 1 && y == 6);
-            case FALL -> (y == 2 && x >= 2 && x <= 6)
-                    || (y == 3 && x >= 3 && x <= 5)
-                    || (x == 4 && y >= 4 && y <= 7)
-                    || (y == 6 && (x == 3 || x == 5));
-            case GENERIC -> ((x == 1 || x == 7) && y >= 1 && y <= 7)
-                    || ((y == 1 || y == 7) && x >= 1 && x <= 7);
+            case BLAST -> isBlastEffectPixel(x, y);
+            case PROJECTILE -> isProjectileEffectPixel(x, y);
+            case FALL -> isFallEffectPixel(x, y);
+            case GENERIC -> isGenericEffectPixel(x, y);
             default -> false;
         };
+    }
+
+    private static boolean isBlastEffectPixel(int x, int y) {
+        return (x == 4 && y >= 1 && y <= 7)
+                || (y == 4 && x >= 1 && x <= 7)
+                || (x == y && x >= 2 && x <= 6)
+                || (x + y == 8 && x >= 2 && x <= 6);
+    }
+
+    private static boolean isProjectileEffectPixel(int x, int y) {
+        return (y == 4 && x >= 1 && x <= 6)
+                || (x == 6 && y >= 3 && y <= 5)
+                || (x == 7 && y == 4)
+                || (x == 2 && y == 5)
+                || (x == 1 && y == 6);
+    }
+
+    private static boolean isFallEffectPixel(int x, int y) {
+        return (y == 2 && x >= 2 && x <= 6)
+                || (y == 3 && x >= 3 && x <= 5)
+                || (x == 4 && y >= 4 && y <= 7)
+                || (y == 6 && (x == 3 || x == 5));
+    }
+
+    private static boolean isGenericEffectPixel(int x, int y) {
+        return ((x == 1 || x == 7) && y >= 1 && y <= 7)
+                || ((y == 1 || y == 7) && x >= 1 && x <= 7);
     }
 
     private static int effectRgb(DamageKind kind, int x, int y) {
@@ -756,31 +846,39 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            ArmorBarRenderer.SlotData left,
-            ArmorBarRenderer.SlotData right,
-            int x,
-            int y,
-            int leftHalf,
-            int rightHalf,
-            long now) {
+            MendingRenderContext render) {
         // Mending deve colorare solo il pezzo riparato, anche se nello stesso slot grafico c'e un altro materiale.
         for (int i = 0; i < REPAIR_PULSES.length; i++) {
             RepairPulse pulse = REPAIR_PULSES[i];
-            if (!pulse.isExpired(now)) {
-                boolean leftActive = leftHalf >= lastHalfStart[i] && leftHalf < lastHalfEnd[i];
-                boolean rightActive = rightHalf >= lastHalfStart[i] && rightHalf < lastHalfEnd[i];
-                if (leftActive || rightActive) {
-                    float progress = pulse.progress(now);
-                    float fade = 1.0f - smoothStep(progress);
-                    int alpha = clamp255((int)(fade * 238.0f));
+            if (pulse.isExpired(render.now)) continue;
+            renderMendingPulse(ctx, render, i, pulse);
+        }
+    }
 
-                    for (int py = 0; py < ICON_SIZE; py++) {
-                        for (int px = 0; px < ICON_SIZE; px++) {
-                            if (isActiveRepairEdgePixel(left, right, leftActive, rightActive, px, py)) {
-                                ctx.fill(x + px, y + py, x + px + 1, y + py + 1, (alpha << 24) | MENDING_XP_YELLOW);
-                            }
-                        }
-                    }
+    private static void renderMendingPulse(
+            //? if >=26.1.2
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1.2
+            DrawContext ctx,
+            MendingRenderContext render,
+            int index,
+            RepairPulse pulse) {
+        boolean leftActive = render.leftHalf >= lastHalfStart[index] && render.leftHalf < lastHalfEnd[index];
+        boolean rightActive = render.rightHalf >= lastHalfStart[index] && render.rightHalf < lastHalfEnd[index];
+        if (!leftActive && !rightActive) return;
+
+        float progress = pulse.progress(render.now);
+        float fade = 1.0f - smoothStep(progress);
+        int alpha = clamp255((int)(fade * 238.0f));
+        for (int py = 0; py < ICON_SIZE; py++) {
+            for (int px = 0; px < ICON_SIZE; px++) {
+                if (isActiveRepairEdgePixel(render.left, render.right, leftActive, rightActive, px, py)) {
+                    ctx.fill(
+                            render.x + px,
+                            render.y + py,
+                            render.x + px + 1,
+                            render.y + py + 1,
+                            (alpha << 24) | MENDING_XP_YELLOW);
                 }
             }
         }
@@ -819,6 +917,50 @@ public final class ArmorBarFeedback {
         return visible;
     }
 
+    private static final class FeedbackRenderContext {
+        private final ArmorBarRenderer.SlotData left;
+        private final ArmorBarRenderer.SlotData right;
+        private final int x;
+        private final int y;
+        private final Pulse pulse;
+        private final float progress;
+        private final float fade;
+        private final float wave;
+        private final float sweepCenter;
+        private final float rippleCenter;
+        private final int lift;
+
+        private FeedbackRenderContext(
+                ArmorBarRenderer.SlotData left,
+                ArmorBarRenderer.SlotData right,
+                int x,
+                int y,
+                Pulse pulse,
+                float progress) {
+            this.left = left;
+            this.right = right;
+            this.x = x;
+            this.y = y;
+            this.pulse = pulse;
+            this.progress = progress;
+            this.fade = 1.0f - smoothStep(progress);
+            this.wave = (float)Math.sin(progress * Math.PI);
+            this.sweepCenter = -3.0f + smoothStep(progress) * 15.5f;
+            this.rippleCenter = smoothStep(progress) * 7.2f;
+            this.lift = Math.round((1.0f - smoothStep(progress)) * 2.0f);
+        }
+    }
+
+    private record MendingRenderContext(
+            ArmorBarRenderer.SlotData left,
+            ArmorBarRenderer.SlotData right,
+            int x,
+            int y,
+            int leftHalf,
+            int rightHalf,
+            long now) {
+    }
+
     private record MaskKey(Identifier texture, int u) {
     }
 
@@ -849,6 +991,20 @@ public final class ArmorBarFeedback {
         DamageKind(int flashRgb, int markRgb) {
             this.flashRgb = flashRgb;
             this.markRgb = markRgb;
+        }
+    }
+
+    private enum ArmorUpdateKind {
+        NONE(false, false),
+        DURABILITY_DAMAGE(true, false),
+        BLAST_DAMAGE(true, true);
+
+        final boolean durabilityDamage;
+        final boolean blastDamage;
+
+        ArmorUpdateKind(boolean durabilityDamage, boolean blastDamage) {
+            this.durabilityDamage = durabilityDamage;
+            this.blastDamage = blastDamage;
         }
     }
 

@@ -414,102 +414,140 @@ public class ArmorBarRenderer {
             LAST_STACKS[i] = stack.copy(); // Aggiorna cache con una copia per rilevare modifiche NBT in-place
 
             //? if >=1.21.11 {
-            /*if (stack.isEmpty()) continue;
-
-            int protection = getProtection(stack, slot);
-            if (protection <= 0) continue;
-            *///?} else {
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) continue;
-
-            int protection = getProtection(armor);
-            //?}
-            //? if >=26.1.2 {
-            /*var trimOpt = stack.get(DataComponents.TRIM);
+            /*half = cacheArmorSlot(stack, slot, i, half);
             *///?} else if >=1.21 {
-            /*var trimOpt = stack.get(DataComponentTypes.TRIM);
+            /*half = cacheArmorSlot(stack, i, half);
             *///?} else {
-            var trimOpt = ArmorTrim.getTrim(registry, stack);
+            half = cacheArmorSlot(registry, stack, i, half);
             //?}
-            int rgb = -1;
-            float tr = 1f;
-            float tg = 1f;
-            float tb = 1f;
-            boolean glow = false;
-
-            //? if >=1.21 {
-            /*if (trimOpt != null) {
-                //? if >=1.21.11 {
-                /^String asset = trimOpt.material().value().assets().base().suffix();
-                ^///?} else {
-                String asset = trimOpt.getMaterial().value().assetName();
-                //?}
-                rgb = trimRgb(asset);
-                tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
-                glow = isGlowTrim(asset);
-            }
-            *///?} else {
-            if (trimOpt.isPresent()) {
-                String asset = trimOpt.get().getMaterial().value().assetName();
-                rgb = trimRgb(asset);
-                tr = ch(rgb, 16); tg = ch(rgb, 8); tb = ch(rgb, 0);
-                glow = isGlowTrim(asset);
-            }
-            //?}
-
-            //? if >=26.1.2
-            //boolean isEnchanted = stack.isEnchanted();
-            //? if <26.1.2
-            boolean isEnchanted = stack.hasEnchantments();
-            //? if >=1.21.11 {
-            /*Identifier tex = getMaterialTex(stack);
-            *///?} else if >=1.21 {
-            /*Identifier tex = getMaterialTex(armor.getMaterial());
-            *///?} else {
-            Identifier tex = getMaterialTex(stack, armor.getMaterial());
-            //?}
-
-            int color = -1;
-            float mr = 1f;
-            float mg = 1f;
-            float mb = 1f;
-            //? if >=26.1.2 {
-            /*var dyedColor = stack.get(DataComponents.DYED_COLOR);
-            if (dyedColor != null || LEATHER_STRIP.equals(tex)) {
-                color = dyedColor != null ? dyedColor.rgb() : DEFAULT_LEATHER_COLOR;
-                float darken = 0.8f;
-                mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
-            }
-            *///?} else if >=1.21 {
-            /*var dyedColor = stack.get(DataComponentTypes.DYED_COLOR);
-            if (dyedColor != null || LEATHER_STRIP.equals(tex)) {
-                color = dyedColor != null ? dyedColor.rgb() : DEFAULT_LEATHER_COLOR;
-                float darken = 0.8f;
-                mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
-            }
-            *///?} else {
-            if (armor instanceof DyeableArmorItem dyeable) {
-                color = dyeable.getColor(stack);
-                float darken = 0.8f; // Riduce la saturazione per un look più naturale
-                mr = ch(color, 16) * darken; mg = ch(color, 8) * darken; mb = ch(color, 0) * darken;
-            }
-            //?}
-
-            for (int j = 0; j < protection && half < CACHE.length; j++, half++) {
-                SlotData data = CACHE[half];
-                data.materialTex = tex;
-                data.trimRgb = rgb;
-                data.trimR = tr; data.trimG = tg; data.trimB = tb;
-                data.trimGlow = glow;
-                data.enchanted = isEnchanted;
-                data.armorColor = color;
-                data.matR = mr; data.matG = mg; data.matB = mb;
-                data.sourceItem = stack.getItem();
-                data.equipmentIndex = i;
-                data.pieceHalfIndex = j;
-            }
         }
         // Non serve il fallback BASE_STRIP: il totale è calcolato dai pezzi reali,
         // quindi half == totalArmor sempre.
+    }
+
+    //? if >=1.21.11 {
+    /*private static int cacheArmorSlot(
+            ItemStack stack, EquipmentSlot slot, int equipmentIndex, int half) {
+    *///?} else if >=1.21 {
+    /*private static int cacheArmorSlot(ItemStack stack, int equipmentIndex, int half) {
+    *///?} else {
+    private static int cacheArmorSlot(
+            net.minecraft.registry.DynamicRegistryManager registry,
+            ItemStack stack,
+            int equipmentIndex,
+            int half) {
+    //?}
+        //? if >=1.21.11 {
+        /*if (stack.isEmpty()) return half;
+
+        int protection = getProtection(stack, slot);
+        if (protection <= 0) return half;
+        *///?} else {
+        if (stack.isEmpty() || !(stack.getItem() instanceof ArmorItem armor)) return half;
+
+        int protection = getProtection(armor);
+        //?}
+
+        SlotData appearance = new SlotData();
+        //? if >=26.1.2 {
+        /*var trimOpt = stack.get(DataComponents.TRIM);
+        *///?} else if >=1.21 {
+        /*var trimOpt = stack.get(DataComponentTypes.TRIM);
+        *///?} else {
+        var trimOpt = ArmorTrim.getTrim(registry, stack);
+        //?}
+
+        //? if >=1.21 {
+        /*if (trimOpt != null) {
+            //? if >=1.21.11 {
+            /^String asset = trimOpt.material().value().assets().base().suffix();
+            ^///?} else {
+            String asset = trimOpt.getMaterial().value().assetName();
+            //?}
+            applyTrimAppearance(appearance, asset);
+        }
+        *///?} else {
+        if (trimOpt.isPresent()) {
+            applyTrimAppearance(appearance, trimOpt.get().getMaterial().value().assetName());
+        }
+        //?}
+
+        //? if >=26.1.2
+        //appearance.enchanted = stack.isEnchanted();
+        //? if <26.1.2
+        appearance.enchanted = stack.hasEnchantments();
+        //? if >=1.21.11 {
+        /*appearance.materialTex = getMaterialTex(stack);
+        *///?} else if >=1.21 {
+        /*appearance.materialTex = getMaterialTex(armor.getMaterial());
+        *///?} else {
+        appearance.materialTex = getMaterialTex(stack, armor.getMaterial());
+        //?}
+
+        //? if >=26.1.2 {
+        /*var dyedColor = stack.get(DataComponents.DYED_COLOR);
+        if (dyedColor != null || LEATHER_STRIP.equals(appearance.materialTex)) {
+            applyArmorColor(
+                    appearance,
+                    dyedColor != null ? dyedColor.rgb() : DEFAULT_LEATHER_COLOR);
+        }
+        *///?} else if >=1.21 {
+        /*var dyedColor = stack.get(DataComponentTypes.DYED_COLOR);
+        if (dyedColor != null || LEATHER_STRIP.equals(appearance.materialTex)) {
+            applyArmorColor(
+                    appearance,
+                    dyedColor != null ? dyedColor.rgb() : DEFAULT_LEATHER_COLOR);
+        }
+        *///?} else {
+        if (armor instanceof DyeableArmorItem dyeable) {
+            applyArmorColor(appearance, dyeable.getColor(stack));
+        }
+        //?}
+
+        return appendArmorHalves(appearance, stack, equipmentIndex, protection, half);
+    }
+
+    private static void applyTrimAppearance(SlotData appearance, String asset) {
+        int rgb = trimRgb(asset);
+        appearance.trimRgb = rgb;
+        appearance.trimR = ch(rgb, 16);
+        appearance.trimG = ch(rgb, 8);
+        appearance.trimB = ch(rgb, 0);
+        appearance.trimGlow = isGlowTrim(asset);
+    }
+
+    private static void applyArmorColor(SlotData appearance, int color) {
+        float darken = 0.8f;
+        appearance.armorColor = color;
+        appearance.matR = ch(color, 16) * darken;
+        appearance.matG = ch(color, 8) * darken;
+        appearance.matB = ch(color, 0) * darken;
+    }
+
+    private static int appendArmorHalves(
+            SlotData appearance,
+            ItemStack stack,
+            int equipmentIndex,
+            int protection,
+            int half) {
+        for (int j = 0; j < protection && half < CACHE.length; j++, half++) {
+            SlotData data = CACHE[half];
+            data.materialTex = appearance.materialTex;
+            data.trimRgb = appearance.trimRgb;
+            data.trimR = appearance.trimR;
+            data.trimG = appearance.trimG;
+            data.trimB = appearance.trimB;
+            data.trimGlow = appearance.trimGlow;
+            data.enchanted = appearance.enchanted;
+            data.armorColor = appearance.armorColor;
+            data.matR = appearance.matR;
+            data.matG = appearance.matG;
+            data.matB = appearance.matB;
+            data.sourceItem = stack.getItem();
+            data.equipmentIndex = equipmentIndex;
+            data.pieceHalfIndex = j;
+        }
+        return half;
     }
 
     // L'alpha varia nelle transizioni chiamate da ArmorBarAnimation; l'ispezione
