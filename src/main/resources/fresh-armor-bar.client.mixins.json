@@ -3,7 +3,8 @@
 	"package": "com.fresharmorbar.mixin.client",
 	"compatibilityLevel": "JAVA_17",
 	"client": [
-		"InGameHudMixin"
+		"InGameHudMixin",
+		"MinecraftResourceReloadMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
