@@ -187,29 +187,39 @@ public class ArmorBarRenderer {
             return;
         }
 
-        int maxRows = rowsForArmor(renderArmorValue);
-        for (int row = 0; row < maxRows; row++) {
-            int currentSlot = slotIndex + (row * 10);
-            int currentY = y - (row * 10);
-            boolean newBackground = hasBackground(renderArmorValue, row, currentSlot);
-            boolean newPart = hasArmorPart(renderArmorValue, currentSlot);
-
-            if (newBackground) drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
-            if (newPart) {
-                renderSlotMaterials(ctx, currentSlot, x, currentY);
-                if (frameHasFeedback) {
-                    ArmorBarFeedback.renderSlotFeedback(
-                            ctx, currentSlot, x, currentY, renderArmorValue,
-                            CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
-                }
-            }
-        }
+        renderArmorRows(ctx, slotIndex, x, y, renderArmorValue);
 
         if (slotIndex == 0 && hasElytra) {
             int elytraY = renderArmorValue > 0
                     ? y - (rowsForArmor(renderArmorValue) * 10)
                     : y;
             renderElytra(ctx, lastElytraState, x, elytraY, 1.0f, elytraEnchanted);
+        }
+    }
+
+    //? if >=26.1.2 {
+    /*private static void renderArmorRows(
+            GuiGraphicsExtractor ctx, int slotIndex, int x, int y, int armorValue) {
+    *///?} else {
+    private static void renderArmorRows(
+            DrawContext ctx, int slotIndex, int x, int y, int armorValue) {
+    //?}
+        int maxRows = rowsForArmor(armorValue);
+        for (int row = 0; row < maxRows; row++) {
+            int currentSlot = slotIndex + (row * 10);
+            int currentY = y - (row * 10);
+            boolean newBackground = hasBackground(armorValue, row, currentSlot);
+            boolean newPart = hasArmorPart(armorValue, currentSlot);
+
+            if (newBackground) drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
+            if (newPart) {
+                renderSlotMaterials(ctx, currentSlot, x, currentY);
+                if (frameHasFeedback) {
+                    ArmorBarFeedback.renderSlotFeedback(
+                            ctx, currentSlot, x, currentY, armorValue,
+                            CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
+                }
+            }
         }
     }
 

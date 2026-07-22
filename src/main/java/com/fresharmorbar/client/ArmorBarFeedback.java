@@ -262,6 +262,7 @@ public final class ArmorBarFeedback {
         boolean sameArmor = ArmorBarRenderer.isSame(left, right);
         TextureMasks leftMasks = getMasks(left);
         TextureMasks rightMasks = sameArmor ? leftMasks : getMasks(right);
+        FeedbackMasks masks = new FeedbackMasks(leftMasks, rightMasks, sameArmor);
 
         //? if <1.21.11 {
         RenderSystem.enableBlend();
@@ -271,12 +272,12 @@ public final class ArmorBarFeedback {
             if (hasDamagePulse) {
                 float progress = pulse.progress(now);
                 if (progress < 1.0f) {
-                    renderMaskedFeedback(ctx, leftMasks, rightMasks, sameArmor, x, y, pulse, progress);
+                    renderMaskedFeedback(ctx, masks, x, y, pulse, progress);
                 }
             }
             if (hasRepairPulse) {
                 renderMendingOutline(
-                        ctx, leftMasks, rightMasks, sameArmor, x, y, leftHalf, rightHalf, now);
+                        ctx, new MendingRenderContext(masks, x, y, leftHalf, rightHalf, now));
             }
         } finally {
             // 1.20.1: tutti i quad colorati dello slot condividono il layer GUI e vengono inviati insieme.
@@ -311,9 +312,7 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            TextureMasks leftMasks,
-            TextureMasks rightMasks,
-            boolean sameArmor,
+            FeedbackMasks masks,
             int x,
             int y,
             Pulse pulse,
@@ -324,27 +323,16 @@ public final class ArmorBarFeedback {
         float sweepCenter = -3.0f + eased * 15.5f;
         float rippleCenter = eased * 7.2f;
         int lift = Math.round((1.0f - eased) * 2.0f);
+        DamageFrame frame = new DamageFrame(
+                pulse, progress, fade, wave, sweepCenter, rippleCenter, lift);
+        FeedbackOrigin origin = new FeedbackOrigin(x, y);
 
         // Disegna pixel-per-pixel sopra la texture dell'armatura, ma solo dove la mask dice che esiste armatura.
         for (int py = 0; py < ICON_SIZE; py++) {
             for (int px = 0; px < ICON_SIZE; px++) {
-                if (isEmptyArmorPixel(leftMasks, rightMasks, sameArmor, px, py)) continue;
-                renderFeedbackPixel(
-                        ctx,
-                        leftMasks,
-                        rightMasks,
-                        sameArmor,
-                        x,
-                        y,
-                        pulse,
-                        progress,
-                        fade,
-                        wave,
-                        sweepCenter,
-                        rippleCenter,
-                        lift,
-                        px,
-                        py);
+                if (isEmptyArmorPixel(
+                        masks.left(), masks.right(), masks.sameArmor(), px, py)) continue;
+                renderFeedbackPixel(ctx, masks, frame, origin, px, py);
             }
         }
     }
@@ -354,52 +342,21 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            TextureMasks leftMasks,
-            TextureMasks rightMasks,
-            boolean sameArmor,
-            int x,
-            int y,
-            Pulse pulse,
-            float progress,
-            float fade,
-            float wave,
-            float sweepCenter,
-            float rippleCenter,
-            int lift,
+            FeedbackMasks masks,
+            DamageFrame frame,
+            FeedbackOrigin origin,
             int px,
             int py) {
-        if (pulse.kind == DamageKind.FIRE) {
-            renderFireFeedbackPixel(ctx, x, y, progress, fade, wave, px, py);
+        if (frame.pulse().kind == DamageKind.FIRE) {
+            renderFireFeedbackPixel(ctx, frame, origin, px, py);
             return;
         }
-        if (pulse.kind == DamageKind.GENERIC) {
-            renderGenericFeedbackPixel(ctx, x, y, progress, fade, pulse.heavy, px, py);
+        if (frame.pulse().kind == DamageKind.GENERIC) {
+            renderGenericFeedbackPixel(ctx, frame, origin, px, py);
             return;
         }
 
-        float diagonal = px + py * 0.58f;
-        float sweep = band(diagonal, sweepCenter, pulse.heavy ? 3.2f : 2.35f);
-        float pulseGlow = 0.45f + wave * 0.55f;
-        float ripple = pulse.kind == DamageKind.BLAST
-                ? band(distanceFromCenter(px, py), rippleCenter, 1.9f)
-                : 0.0f;
-        renderOtherFeedbackPixel(
-                ctx,
-                leftMasks,
-                rightMasks,
-                sameArmor,
-                x,
-                y,
-                pulse,
-                progress,
-                fade,
-                wave,
-                lift,
-                px,
-                py,
-                sweep,
-                pulseGlow,
-                ripple);
+        renderOtherFeedbackPixel(ctx, masks, frame, origin, px, py);
     }
 
     private static void renderFireFeedbackPixel(
@@ -407,24 +364,23 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            int x,
-            int y,
-            float progress,
-            float fade,
-            float wave,
+            DamageFrame frame,
+            FeedbackOrigin origin,
             int px,
             int py) {
         // Il fuoco ha un ramo dedicato per non ereditare flash bianchi o forme degli altri danni.
-        float glow = fireGlow(px, py, progress, wave);
-        float flame = fireFlame(px, py, progress, wave);
-        float spark = fireSpark(px, py, progress);
-        float diagonalGlow = fireDiagonalGlow(px, py, progress);
+        float glow = fireGlow(px, py, frame.progress(), frame.wave());
+        float flame = fireFlame(px, py, frame.progress(), frame.wave());
+        float spark = fireSpark(px, py, frame.progress());
+        float diagonalGlow = fireDiagonalGlow(px, py, frame.progress());
         float heat = Math.max(Math.max(glow, flame), Math.max(spark, diagonalGlow));
         if (heat > 0.0f) {
-            int alpha = clamp255((int)(fade
+            int alpha = clamp255((int)(frame.fade()
                     * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
-            int rgb = fireFlameRgb(px, py, progress, flame, glow, spark, diagonalGlow);
-            fillFeedbackPixel(ctx, x + px, y + py, (alpha << 24) | rgb);
+            int rgb = fireFlameRgb(
+                    px, py, frame.progress(), flame, glow, spark, diagonalGlow);
+            fillFeedbackPixel(
+                    ctx, origin.screenX(px), origin.screenY(py), (alpha << 24) | rgb);
         }
     }
 
@@ -433,19 +389,18 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            int x,
-            int y,
-            float progress,
-            float fade,
-            boolean heavy,
+            DamageFrame frame,
+            FeedbackOrigin origin,
             int px,
             int py) {
-        long hit = genericHitPixel(px, py, progress, heavy);
+        long hit = genericHitPixel(
+                px, py, frame.progress(), frame.pulse().heavy());
         int hitAlpha = (int)(hit >>> 32);
         if (hitAlpha > 0) {
-            int alpha = clamp255((int)(hitAlpha * fade));
+            int alpha = clamp255((int)(hitAlpha * frame.fade()));
             int rgb = (int)hit;
-            fillFeedbackPixel(ctx, x + px, y + py, (alpha << 24) | rgb);
+            fillFeedbackPixel(
+                    ctx, origin.screenX(px), origin.screenY(py), (alpha << 24) | rgb);
         }
     }
 
@@ -454,43 +409,49 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            TextureMasks leftMasks,
-            TextureMasks rightMasks,
-            boolean sameArmor,
-            int x,
-            int y,
-            Pulse pulse,
-            float progress,
-            float fade,
-            float wave,
-            int lift,
+            FeedbackMasks masks,
+            DamageFrame frame,
+            FeedbackOrigin origin,
             int px,
-            int py,
-            float sweep,
-            float pulseGlow,
-            float ripple) {
-        int rgb = blendRgb(pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
-        int alpha = clamp255((int)((pulse.heavy ? 92 : 54) * fade
-                + (pulse.heavy ? 78 : 46) * sweep * fade
-                + 28 * pulseGlow * fade
-                + 68 * ripple * fade));
+            int py) {
+        Pulse pulse = frame.pulse();
+        float diagonal = px + py * 0.58f;
+        float sweep = band(
+                diagonal, frame.sweepCenter(), pulse.heavy ? 3.2f : 2.35f);
+        float pulseGlow = 0.45f + frame.wave() * 0.55f;
+        float ripple = pulse.kind == DamageKind.BLAST
+                ? band(distanceFromCenter(px, py), frame.rippleCenter(), 1.9f)
+                : 0.0f;
+        int rgb = blendRgb(
+                pulse.kind.flashRgb,
+                0xFFFFFF,
+                sweep * 0.38f + ripple * 0.28f);
+        int alpha = clamp255((int)((pulse.heavy ? 92 : 54) * frame.fade()
+                + (pulse.heavy ? 78 : 46) * sweep * frame.fade()
+                + 28 * pulseGlow * frame.fade()
+                + 68 * ripple * frame.fade()));
 
-        int effectPatternY = py + lift;
+        int effectPatternY = py + frame.lift();
         if (isEffectPixel(pulse.kind, px, effectPatternY)) {
-            float effectBoost = 0.72f + 0.28f * Math.max(wave, sweep);
-            alpha = Math.max(alpha, clamp255((int)(230 * fade * effectBoost)));
-            rgb = blendRgb(effectRgb(pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
+            float effectBoost = 0.72f + 0.28f * Math.max(frame.wave(), sweep);
+            alpha = Math.max(alpha, clamp255((int)(230 * frame.fade() * effectBoost)));
+            rgb = blendRgb(
+                    effectRgb(pulse.kind, px, effectPatternY),
+                    0xFFFFFF,
+                    sweep * 0.25f);
         }
         if (pulse.heavy
-                && progress < 0.35f
-                && isEdgePixel(leftMasks, rightMasks, sameArmor, px, py)) {
-            float edgeFade = 1.0f - smoothStep(progress / 0.35f);
+                && frame.progress() < 0.35f
+                && isEdgePixel(
+                        masks.left(), masks.right(), masks.sameArmor(), px, py)) {
+            float edgeFade = 1.0f - smoothStep(frame.progress() / 0.35f);
             alpha = Math.max(alpha, clamp255((int)(210 * edgeFade)));
             rgb = blendRgb(rgb, 0xFFFFFF, 0.62f * edgeFade);
         }
 
         if (alpha > 0) {
-            fillFeedbackPixel(ctx, x + px, y + py, (alpha << 24) | rgb);
+            fillFeedbackPixel(
+                    ctx, origin.screenX(px), origin.screenY(py), (alpha << 24) | rgb);
         }
     }
 
@@ -1001,30 +962,12 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            TextureMasks leftMasks,
-            TextureMasks rightMasks,
-            boolean sameArmor,
-            int x,
-            int y,
-            int leftHalf,
-            int rightHalf,
-            long now) {
+            MendingRenderContext renderContext) {
         // Mending deve colorare solo il pezzo riparato, anche se nello stesso slot grafico c'e un altro materiale.
         for (int i = 0; i < REPAIR_PULSES.length; i++) {
             RepairPulse pulse = REPAIR_PULSES[i];
-            if (pulse.isExpired(now)) continue;
-            renderMendingPulse(
-                    ctx,
-                    leftMasks,
-                    rightMasks,
-                    sameArmor,
-                    x,
-                    y,
-                    leftHalf,
-                    rightHalf,
-                    now,
-                    i,
-                    pulse);
+            if (pulse.isExpired(renderContext.now())) continue;
+            renderMendingPulse(ctx, renderContext, i, pulse);
         }
     }
 
@@ -1033,29 +976,28 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            TextureMasks leftMasks,
-            TextureMasks rightMasks,
-            boolean sameArmor,
-            int x,
-            int y,
-            int leftHalf,
-            int rightHalf,
-            long now,
+            MendingRenderContext renderContext,
             int index,
             RepairPulse pulse) {
-        boolean leftActive = leftHalf >= lastHalfStart[index] && leftHalf < lastHalfEnd[index];
-        boolean rightActive = rightHalf >= lastHalfStart[index] && rightHalf < lastHalfEnd[index];
+        boolean leftActive = renderContext.leftHalf() >= lastHalfStart[index]
+                && renderContext.leftHalf() < lastHalfEnd[index];
+        boolean rightActive = renderContext.rightHalf() >= lastHalfStart[index]
+                && renderContext.rightHalf() < lastHalfEnd[index];
         if (!leftActive && !rightActive) return;
 
-        float progress = pulse.progress(now);
+        float progress = pulse.progress(renderContext.now());
         float fade = 1.0f - smoothStep(progress);
         int alpha = clamp255((int)(fade * 238.0f));
+        FeedbackMasks masks = renderContext.masks();
         for (int py = 0; py < ICON_SIZE; py++) {
             for (int px = 0; px < ICON_SIZE; px++) {
                 if (isActiveRepairEdgePixel(
-                        leftMasks, rightMasks, sameArmor, leftActive, rightActive, px, py)) {
+                        masks.left(), masks.right(), masks.sameArmor(), leftActive, rightActive, px, py)) {
                     fillFeedbackPixel(
-                            ctx, x + px, y + py, (alpha << 24) | MENDING_XP_YELLOW);
+                            ctx,
+                            renderContext.x() + px,
+                            renderContext.y() + py,
+                            (alpha << 24) | MENDING_XP_YELLOW);
                 }
             }
         }
@@ -1103,6 +1045,33 @@ public final class ArmorBarFeedback {
     record TextureMasks(PixelMask left, PixelMask right, PixelMask full) {
         private static final TextureMasks EMPTY = new TextureMasks(
                 PixelMask.EMPTY, PixelMask.EMPTY, PixelMask.EMPTY);
+    }
+
+    private record FeedbackMasks(TextureMasks left, TextureMasks right, boolean sameArmor) {
+    }
+
+    private record FeedbackOrigin(int x, int y) {
+        int screenX(int offset) {
+            return x + offset;
+        }
+
+        int screenY(int offset) {
+            return y + offset;
+        }
+    }
+
+    private record DamageFrame(
+            Pulse pulse,
+            float progress,
+            float fade,
+            float wave,
+            float sweepCenter,
+            float rippleCenter,
+            int lift) {
+    }
+
+    private record MendingRenderContext(
+            FeedbackMasks masks, int x, int y, int leftHalf, int rightHalf, long now) {
     }
 
     @SuppressWarnings("ClassCanBeRecord") // Non e un record: contiene un array e Sonar richiede equality basata sul contenuto.
