@@ -61,6 +61,14 @@ final class ArmorBarTextures {
     private ArmorBarTextures() {
     }
 
+    static void clearResourceCaches() {
+        MATERIAL_TEXTURE_CACHE.clear();
+        ELYTRA_TEXTURE_CACHE.clear();
+        LOGGED_MATERIALS.clear();
+        LOGGED_ELYTRAS.clear();
+        lastResourceManager = null;
+    }
+
     static boolean isGlowTrim(String asset) {
         return GLOW_TRIMS.contains(asset);
     }

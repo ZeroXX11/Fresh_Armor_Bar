@@ -171,6 +171,14 @@ final class ArmorBarGlintRenderer {
     private ArmorBarGlintRenderer() {
     }
 
+    static void clearResourceCaches() {
+        //? if >=1.21.11 {
+        /*GLINT_TEXTURE_SETUP_CACHE.clear();
+        lastGlintTextureSetupResourceManager = null;
+        glintTextureTransformReady = false;
+        *///?}
+    }
+
     //? if >=26.1.2 {
     /*static void renderFullIconEnchantment(GuiGraphicsExtractor ctx, int x, int y, Identifier texture, float alpha) {
     *///?} else if >=1.21.11 {
@@ -199,42 +207,50 @@ final class ArmorBarGlintRenderer {
         if ((!leftEnch && !rightEnch) || alpha <= 0.01f) return;
 
         // Abbassa l'intensità del colore per renderlo meno "forte" e meno "viola acceso"
+        RenderLayer glintLayer = RenderLayer.getGlint();
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(0.85f, 0.85f, 0.85f, alpha);
+        try {
+            VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(glintLayer);
+            Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
 
-        // Usa il layer nativo getGlint() per le strisce animate
-        VertexConsumer vertexConsumer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGlint());
-        Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
+            // Scala dei fasci di luce animati
+            float scale = 0.025f;
 
-        // Scala dei fasci di luce animati
-        float scale = 0.025f;
+            // Base UV
+            float baseMinU = (leftEnch ? 0.0f : scale * 0.5f);
+            float baseMaxU = (rightEnch ? scale : scale * 0.5f);
 
-        // Base UV
-        float baseMinU = (leftEnch ? 0.0f : scale * 0.5f);
-        float baseMaxU = (rightEnch ? scale : scale * 0.5f);
+            // Seleziona quali pixel del quad coprire col glint
+            float x1 = x + (leftEnch ? 0 : 4.5f);
+            float x2 = x + (rightEnch ? 9 : 4.5f);
 
-        // Seleziona quali pixel del quad coprire col glint
-        float x1 = x + (leftEnch ? 0 : 4.5f);
-        float x2 = x + (rightEnch ? 9 : 4.5f);
+            // Disegna il glint 2 volte con un "offset" delle coordinate UV
+            for (int i = 0; i < 2; i++) {
+                float offset = i * 0.5f; // Sposta i fasci del 50%
+                float minU = baseMinU + offset;
+                float maxU = baseMaxU + offset;
+                float maxV = scale + offset; // scale + offset
 
-        // Disegna il glint 2 volte con un "offset" delle coordinate UV
-        for (int i = 0; i < 2; i++) {
-            float offset = i * 0.5f; // Sposta i fasci del 50%
-            float minU = baseMinU + offset;
-            float maxU = baseMaxU + offset;
-            float maxV = scale + offset; // scale + offset
-
-            addGlintVertex(vertexConsumer, matrix, x1, y + 9.0f, minU, maxV);
-            addGlintVertex(vertexConsumer, matrix, x2, y + 9.0f, maxU, maxV);
-            addGlintVertex(vertexConsumer, matrix, x2, y, maxU, offset);
-            addGlintVertex(vertexConsumer, matrix, x1, y, minU, offset);
+                addGlintVertex(vertexConsumer, matrix, x1, y + 9.0f, minU, maxV);
+                addGlintVertex(vertexConsumer, matrix, x2, y + 9.0f, maxU, maxV);
+                addGlintVertex(vertexConsumer, matrix, x2, y, maxU, offset);
+                addGlintVertex(vertexConsumer, matrix, x1, y, minU, offset);
+            }
+        } finally {
+            try {
+                // Svuota soltanto il layer glint e non tutti i buffer GUI condivisi.
+                RenderSystem.disableDepthTest();
+                try {
+                    ctx.getVertexConsumers().draw(glintLayer);
+                } finally {
+                    RenderSystem.enableDepthTest();
+                }
+            } finally {
+                // Il colore shader e' globale: ripristinalo anche se il flush fallisce.
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            }
         }
-
-        // Svuota il buffer per disegnare tutti i fasci di luce accumulati
-        ctx.draw();
-
-        // Ripristina il colore standard per la GUI
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     private static void addGlintVertex(VertexConsumer vertexConsumer, Matrix4f matrix, float x, float y, float u, float v) {

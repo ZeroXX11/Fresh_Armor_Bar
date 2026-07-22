@@ -26,6 +26,7 @@ import net.fabricmc.loader.api.FabricLoader;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -49,6 +50,7 @@ public class ModCompat {
     //?}
     private static final String[] STACK_ACCESSORS =
             {"stack", "getStack", "getRight", "getB", "getSecond", "right", "second"};
+    private static ElytraState lastResolvedElytraState = ElytraState.NONE;
 
     public record ElytraState(boolean equipped, boolean enchanted, Identifier texture) {
         public static final ElytraState NONE = new ElytraState(false, false, null);
@@ -141,7 +143,17 @@ public class ModCompat {
     }
 
     private static ElytraState stateFromStack(ItemStack stack) {
-        return new ElytraState(true, isEnchanted(stack), ArmorBarTextures.getElytraTex(stack));
+        boolean enchanted = isEnchanted(stack);
+        Identifier texture = ArmorBarTextures.getElytraTex(stack);
+        ElytraState previous = lastResolvedElytraState;
+        if (previous.equipped()
+                && previous.enchanted() == enchanted
+                && Objects.equals(previous.texture(), texture)) {
+            return previous;
+        }
+
+        lastResolvedElytraState = new ElytraState(true, enchanted, texture);
+        return lastResolvedElytraState;
     }
 
     private static ItemStack extractStack(Object entry) {

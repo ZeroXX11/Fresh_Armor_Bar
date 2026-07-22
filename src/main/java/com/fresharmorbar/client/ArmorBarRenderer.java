@@ -69,6 +69,9 @@ public class ArmorBarRenderer {
     private static int lastArmorValue = -1;
     private static UUID lastPlayerUuid = null;
     private static ModCompat.ElytraState lastElytraState = ModCompat.ElytraState.NONE;
+    private static long frameNowNanos = 0L;
+    private static boolean frameAnimating = false;
+    private static boolean frameHasFeedback = false;
 
     static {
         for (int i = 0; i < 60; i++) {
@@ -82,6 +85,14 @@ public class ArmorBarRenderer {
         ArmorBarAnimation.reset();
         for (int i = 0; i < 4; i++) LAST_STACKS[i] = ItemStack.EMPTY;
         for (SlotData data : CACHE) data.reset();
+    }
+
+    /** Invalida tutte le cache che dipendono dal contenuto dei resource pack appena ricaricati. */
+    public static void onResourceReload() {
+        ArmorBarFeedback.clearMaskCache();
+        ArmorBarTextures.clearResourceCaches();
+        ArmorBarGlintRenderer.clearResourceCaches();
+        invalidate();
     }
 
     static class SlotData {
@@ -144,11 +155,15 @@ public class ArmorBarRenderer {
             }
         }
 
+        frameNowNanos = System.nanoTime();
+        frameAnimating = ArmorBarAnimation.isAnimating(frameNowNanos);
+        frameHasFeedback = ArmorBarFeedback.hasActiveFeedback();
+
     }
 
     /** Mantiene vivo il pass vanilla per il breve fade-out dell'ultimo pezzo rimosso. */
     public static boolean shouldKeepRendering() {
-        return ArmorBarAnimation.isAnimating(System.nanoTime());
+        return frameAnimating;
     }
 
     //? if >=26.1.2 {
@@ -156,8 +171,8 @@ public class ArmorBarRenderer {
     *///?} else {
     public static void renderSlot(DrawContext ctx, int slotIndex, int x, int y, int armorValue, boolean hasElytra, boolean elytraEnchanted) {
     //?}
-        long now = System.nanoTime();
-        boolean animating = ArmorBarAnimation.isAnimating(now);
+        long now = frameNowNanos;
+        boolean animating = frameAnimating;
         if (armorValue <= 0 && !hasElytra && !animating) return;
         //? if >=1.21.11
         //if (slotIndex == 0) ArmorBarGlintRenderer.resetFrame();
@@ -182,9 +197,11 @@ public class ArmorBarRenderer {
             if (newBackground) drawTexture(ctx, EMPTY_TEX, x, currentY, 0, 9);
             if (newPart) {
                 renderSlotMaterials(ctx, currentSlot, x, currentY);
-                ArmorBarFeedback.renderSlotFeedback(
-                        ctx, currentSlot, x, currentY, renderArmorValue,
-                        CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
+                if (frameHasFeedback) {
+                    ArmorBarFeedback.renderSlotFeedback(
+                            ctx, currentSlot, x, currentY, renderArmorValue,
+                            CACHE[currentSlot * 2], CACHE[currentSlot * 2 + 1]);
+                }
             }
         }
 

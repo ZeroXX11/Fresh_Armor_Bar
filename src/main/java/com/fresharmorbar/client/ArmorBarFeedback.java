@@ -16,6 +16,7 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
 *///?} else {
@@ -24,6 +25,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.NativeImage;
+//? if <1.21 {
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import org.joml.Matrix4f;
+//?}
 //? if <1.21
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -37,6 +43,7 @@ import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
 //? if <1.21.11
 import net.minecraft.item.ArmorItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.registry.tag.DamageTypeTags;
@@ -61,12 +68,12 @@ public final class ArmorBarFeedback {
 
     private static final int[] LAST_DAMAGE = new int[4];
     private static final int[] LAST_MAX_DAMAGE = new int[4];
-    private static final ItemStack[] LAST_STACKS = new ItemStack[4];
+    private static final Item[] LAST_ITEMS = new Item[4];
     private static final Pulse[] PULSES = new Pulse[4];
     private static final RepairPulse[] REPAIR_PULSES = new RepairPulse[4];
 
     // Le mask vengono lette dalla texture reale dell'armatura, cosi gli effetti restano dentro i pixel visibili.
-    private static final Map<MaskKey, PixelMask> MASK_CACHE = new HashMap<>();
+    private static final Map<Identifier, TextureMasks> MASK_CACHE = new HashMap<>();
 
     private static UUID lastPlayerUuid = null;
 
@@ -75,14 +82,16 @@ public final class ArmorBarFeedback {
     private static final int[] lastHalfStart = new int[4];
     private static final int[] lastHalfEnd = new int[4];
     private static boolean initialized = false;
+    private static boolean feedbackDisabled = false;
     private static int lastHurtTime = 0;
+    private static long activeUntilMs = 0L;
     private static ResourceManager lastResourceManager = null;
 
     static {
         for (int i = 0; i < ARMOR_ORDER.length; i++) {
             LAST_DAMAGE[i] = -1;
             LAST_MAX_DAMAGE[i] = -1;
-            LAST_STACKS[i] = ItemStack.EMPTY;
+            LAST_ITEMS[i] = null;
             PULSES[i] = Pulse.EMPTY;
             REPAIR_PULSES[i] = RepairPulse.EMPTY;
         }
@@ -97,9 +106,11 @@ public final class ArmorBarFeedback {
     public static void update(PlayerEntity player) {
     //?}
         if (FreshArmorBarConfig.allFeedbackEffectsDisabled()) {
-            reset();
+            if (!feedbackDisabled) reset();
+            feedbackDisabled = true;
             return;
         }
+        feedbackDisabled = false;
 
         if (player == null) {
             reset();
@@ -191,10 +202,8 @@ public final class ArmorBarFeedback {
         //? if <26.1.2
         int damage = stack.getDamage();
         int maxDamage = stack.getMaxDamage();
-        //? if >=26.1.2
-        //boolean firstSeenStack = !ItemStack.isSameItem(stack, LAST_STACKS[index]) || LAST_MAX_DAMAGE[index] != maxDamage || LAST_DAMAGE[index] < 0;
-        //? if <26.1.2
-        boolean firstSeenStack = !ItemStack.areItemsEqual(stack, LAST_STACKS[index]) || LAST_MAX_DAMAGE[index] != maxDamage || LAST_DAMAGE[index] < 0;
+        boolean firstSeenStack = isFirstSeenArmorItem(
+                stack.getItem(), LAST_ITEMS[index], maxDamage, LAST_MAX_DAMAGE[index], LAST_DAMAGE[index]);
         ArmorUpdateKind updateKind = firstSeenStack
                 ? ArmorUpdateKind.NONE
                 : updateDurabilityFeedback(index, stack, damage, maxDamage, kind, now);
@@ -209,6 +218,7 @@ public final class ArmorBarFeedback {
             boolean effectEnabled = damageEffectEnabled(kind);
             if (effectEnabled) {
                 PULSES[index] = new Pulse(now, kind, isHeavyLoss(lostDurability, maxDamage));
+                activeUntilMs = Math.max(activeUntilMs, now + Pulse.DURATION_MS);
             }
             return effectEnabled && kind == DamageKind.BLAST
                     ? ArmorUpdateKind.BLAST_DAMAGE
@@ -216,6 +226,7 @@ public final class ArmorBarFeedback {
         }
         if (lostDurability < 0 && hasMending(stack) && FreshArmorBarConfig.mendingEffectEnabled()) {
             REPAIR_PULSES[index] = new RepairPulse(now);
+            activeUntilMs = Math.max(activeUntilMs, now + RepairPulse.DURATION_MS);
         }
         return ArmorUpdateKind.NONE;
     }
@@ -240,6 +251,7 @@ public final class ArmorBarFeedback {
         //long now = Util.getMillis();
         //? if <26.1.2
         long now = Util.getMeasuringTimeMs();
+        if (now >= activeUntilMs) return;
 
         // Uno slot grafico contiene due mezzi-slot: possono appartenere allo stesso pezzo o a pezzi diversi.
         Pulse pulse = pulseFor(leftHalf, rightHalf, now);
@@ -247,22 +259,51 @@ public final class ArmorBarFeedback {
         boolean hasRepairPulse = FreshArmorBarConfig.mendingEffectEnabled() && hasRepairPulse(leftHalf, rightHalf, now);
         if (!hasDamagePulse && !hasRepairPulse) return;
 
+        boolean sameArmor = ArmorBarRenderer.isSame(left, right);
+        TextureMasks leftMasks = getMasks(left);
+        TextureMasks rightMasks = sameArmor ? leftMasks : getMasks(right);
+
         //? if <1.21.11 {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         //?}
-        if (hasDamagePulse) {
-            float progress = pulse.progress(now);
-            if (progress < 1.0f) {
-                renderMaskedFeedback(ctx, left, right, x, y, pulse, progress);
+        try {
+            if (hasDamagePulse) {
+                float progress = pulse.progress(now);
+                if (progress < 1.0f) {
+                    renderMaskedFeedback(ctx, leftMasks, rightMasks, sameArmor, x, y, pulse, progress);
+                }
             }
+            if (hasRepairPulse) {
+                renderMendingOutline(
+                        ctx, leftMasks, rightMasks, sameArmor, x, y, leftHalf, rightHalf, now);
+            }
+        } finally {
+            // 1.20.1: tutti i quad colorati dello slot condividono il layer GUI e vengono inviati insieme.
+            //? if <1.21 {
+            try {
+                RenderSystem.disableDepthTest();
+                try {
+                    ctx.getVertexConsumers().draw(RenderLayer.getGui());
+                } finally {
+                    RenderSystem.enableDepthTest();
+                }
+            } finally {
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            }
+            //?} else if <1.21.11 {
+            /*RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            *///?}
         }
-        if (hasRepairPulse) {
-            MendingRenderContext render = new MendingRenderContext(left, right, x, y, leftHalf, rightHalf, now);
-            renderMendingOutline(ctx, render);
-        }
-        //? if <1.21.11
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    static boolean hasActiveFeedback() {
+        if (FreshArmorBarConfig.allFeedbackEffectsDisabled()) return false;
+        //? if >=26.1.2
+        //long now = Util.getMillis();
+        //? if <26.1.2
+        long now = Util.getMeasuringTimeMs();
+        return now < activeUntilMs;
     }
 
     private static void renderMaskedFeedback(
@@ -270,19 +311,40 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            ArmorBarRenderer.SlotData left,
-            ArmorBarRenderer.SlotData right,
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
             int x,
             int y,
             Pulse pulse,
             float progress) {
-        FeedbackRenderContext render = new FeedbackRenderContext(left, right, x, y, pulse, progress);
+        float eased = smoothStep(progress);
+        float fade = 1.0f - eased;
+        float wave = (float)Math.sin(progress * Math.PI);
+        float sweepCenter = -3.0f + eased * 15.5f;
+        float rippleCenter = eased * 7.2f;
+        int lift = Math.round((1.0f - eased) * 2.0f);
 
         // Disegna pixel-per-pixel sopra la texture dell'armatura, ma solo dove la mask dice che esiste armatura.
         for (int py = 0; py < ICON_SIZE; py++) {
             for (int px = 0; px < ICON_SIZE; px++) {
-                if (isEmptyArmorPixel(left, right, px, py)) continue;
-                renderFeedbackPixel(ctx, render, px, py);
+                if (isEmptyArmorPixel(leftMasks, rightMasks, sameArmor, px, py)) continue;
+                renderFeedbackPixel(
+                        ctx,
+                        leftMasks,
+                        rightMasks,
+                        sameArmor,
+                        x,
+                        y,
+                        pulse,
+                        progress,
+                        fade,
+                        wave,
+                        sweepCenter,
+                        rippleCenter,
+                        lift,
+                        px,
+                        py);
             }
         }
     }
@@ -292,25 +354,52 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            FeedbackRenderContext render,
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
+            int x,
+            int y,
+            Pulse pulse,
+            float progress,
+            float fade,
+            float wave,
+            float sweepCenter,
+            float rippleCenter,
+            int lift,
             int px,
             int py) {
-        float diagonal = px + py * 0.58f;
-        float sweep = band(diagonal, render.sweepCenter, render.pulse.heavy ? 3.2f : 2.35f);
-        float pulseGlow = 0.45f + render.wave * 0.55f;
-        float ripple = render.pulse.kind == DamageKind.BLAST
-                ? band(distanceFromCenter(px, py), render.rippleCenter, 1.9f)
-                : 0.0f;
+        if (pulse.kind == DamageKind.FIRE) {
+            renderFireFeedbackPixel(ctx, x, y, progress, fade, wave, px, py);
+            return;
+        }
+        if (pulse.kind == DamageKind.GENERIC) {
+            renderGenericFeedbackPixel(ctx, x, y, progress, fade, pulse.heavy, px, py);
+            return;
+        }
 
-        if (render.pulse.kind == DamageKind.FIRE) {
-            renderFireFeedbackPixel(ctx, render, px, py);
-            return;
-        }
-        if (render.pulse.kind == DamageKind.GENERIC) {
-            renderGenericFeedbackPixel(ctx, render, px, py);
-            return;
-        }
-        renderOtherFeedbackPixel(ctx, render, px, py, sweep, pulseGlow, ripple);
+        float diagonal = px + py * 0.58f;
+        float sweep = band(diagonal, sweepCenter, pulse.heavy ? 3.2f : 2.35f);
+        float pulseGlow = 0.45f + wave * 0.55f;
+        float ripple = pulse.kind == DamageKind.BLAST
+                ? band(distanceFromCenter(px, py), rippleCenter, 1.9f)
+                : 0.0f;
+        renderOtherFeedbackPixel(
+                ctx,
+                leftMasks,
+                rightMasks,
+                sameArmor,
+                x,
+                y,
+                pulse,
+                progress,
+                fade,
+                wave,
+                lift,
+                px,
+                py,
+                sweep,
+                pulseGlow,
+                ripple);
     }
 
     private static void renderFireFeedbackPixel(
@@ -318,20 +407,24 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            FeedbackRenderContext render,
+            int x,
+            int y,
+            float progress,
+            float fade,
+            float wave,
             int px,
             int py) {
         // Il fuoco ha un ramo dedicato per non ereditare flash bianchi o forme degli altri danni.
-        float glow = fireGlow(px, py, render.progress, render.wave);
-        float flame = fireFlame(px, py, render.progress, render.wave);
-        float spark = fireSpark(px, py, render.progress);
-        float diagonalGlow = fireDiagonalGlow(px, py, render.progress);
+        float glow = fireGlow(px, py, progress, wave);
+        float flame = fireFlame(px, py, progress, wave);
+        float spark = fireSpark(px, py, progress);
+        float diagonalGlow = fireDiagonalGlow(px, py, progress);
         float heat = Math.max(Math.max(glow, flame), Math.max(spark, diagonalGlow));
         if (heat > 0.0f) {
-            int alpha = clamp255((int)(render.fade
+            int alpha = clamp255((int)(fade
                     * (46.0f + 118.0f * glow + 150.0f * flame + 225.0f * spark + 210.0f * diagonalGlow)));
-            int rgb = fireFlameRgb(px, py, render.progress, flame, glow, spark, diagonalGlow);
-            ctx.fill(render.x + px, render.y + py, render.x + px + 1, render.y + py + 1, (alpha << 24) | rgb);
+            int rgb = fireFlameRgb(px, py, progress, flame, glow, spark, diagonalGlow);
+            fillFeedbackPixel(ctx, x + px, y + py, (alpha << 24) | rgb);
         }
     }
 
@@ -340,14 +433,19 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            FeedbackRenderContext render,
+            int x,
+            int y,
+            float progress,
+            float fade,
+            boolean heavy,
             int px,
             int py) {
-        GenericHitPixel hit = genericHitPixel(px, py, render.progress, render.pulse.heavy);
-        if (hit.alpha > 0) {
-            int alpha = clamp255((int)(hit.alpha * render.fade));
-            int rgb = hit.rgb;
-            ctx.fill(render.x + px, render.y + py, render.x + px + 1, render.y + py + 1, (alpha << 24) | rgb);
+        long hit = genericHitPixel(px, py, progress, heavy);
+        int hitAlpha = (int)(hit >>> 32);
+        if (hitAlpha > 0) {
+            int alpha = clamp255((int)(hitAlpha * fade));
+            int rgb = (int)hit;
+            fillFeedbackPixel(ctx, x + px, y + py, (alpha << 24) | rgb);
         }
     }
 
@@ -356,68 +454,79 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            FeedbackRenderContext render,
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
+            int x,
+            int y,
+            Pulse pulse,
+            float progress,
+            float fade,
+            float wave,
+            int lift,
             int px,
             int py,
             float sweep,
             float pulseGlow,
             float ripple) {
-        int rgb = blendRgb(render.pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
-        int alpha = clamp255((int)((render.pulse.heavy ? 92 : 54) * render.fade
-                + (render.pulse.heavy ? 78 : 46) * sweep * render.fade
-                + 28 * pulseGlow * render.fade
-                + 68 * ripple * render.fade));
+        int rgb = blendRgb(pulse.kind.flashRgb, 0xFFFFFF, sweep * 0.38f + ripple * 0.28f);
+        int alpha = clamp255((int)((pulse.heavy ? 92 : 54) * fade
+                + (pulse.heavy ? 78 : 46) * sweep * fade
+                + 28 * pulseGlow * fade
+                + 68 * ripple * fade));
 
-        int effectPatternY = py + render.lift;
-        if (isEffectPixel(render.pulse.kind, px, effectPatternY)) {
-            float effectBoost = 0.72f + 0.28f * Math.max(render.wave, sweep);
-            alpha = Math.max(alpha, clamp255((int)(230 * render.fade * effectBoost)));
-            rgb = blendRgb(effectRgb(render.pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
+        int effectPatternY = py + lift;
+        if (isEffectPixel(pulse.kind, px, effectPatternY)) {
+            float effectBoost = 0.72f + 0.28f * Math.max(wave, sweep);
+            alpha = Math.max(alpha, clamp255((int)(230 * fade * effectBoost)));
+            rgb = blendRgb(effectRgb(pulse.kind, px, effectPatternY), 0xFFFFFF, sweep * 0.25f);
         }
-        if (render.pulse.heavy
-                && render.progress < 0.35f
-                && isEdgePixel(render.left, render.right, px, py)) {
-            float edgeFade = 1.0f - smoothStep(render.progress / 0.35f);
+        if (pulse.heavy
+                && progress < 0.35f
+                && isEdgePixel(leftMasks, rightMasks, sameArmor, px, py)) {
+            float edgeFade = 1.0f - smoothStep(progress / 0.35f);
             alpha = Math.max(alpha, clamp255((int)(210 * edgeFade)));
             rgb = blendRgb(rgb, 0xFFFFFF, 0.62f * edgeFade);
         }
 
         if (alpha > 0) {
-            ctx.fill(render.x + px, render.y + py, render.x + px + 1, render.y + py + 1, (alpha << 24) | rgb);
+            fillFeedbackPixel(ctx, x + px, y + py, (alpha << 24) | rgb);
         }
     }
 
-    private static boolean isEmptyArmorPixel(ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
+    static boolean isEmptyArmorPixel(
+            TextureMasks leftMasks, TextureMasks rightMasks, boolean sameArmor, int x, int y) {
         if (x < 0 || x >= ICON_SIZE || y < 0 || y >= ICON_SIZE) return true;
-        if (ArmorBarRenderer.isSame(left, right)) {
-            return isTransparentMaskPixel(left, U_FULL, x, y);
+        if (sameArmor) {
+            return !leftMasks.full.isVisible(x, y);
         }
-        return isTransparentMaskPixel(left, U_LEFT, x, y) && isTransparentMaskPixel(right, U_RIGHT, x, y);
+        return !leftMasks.left.isVisible(x, y) && !rightMasks.right.isVisible(x, y);
     }
 
-    private static boolean isEdgePixel(ArmorBarRenderer.SlotData left, ArmorBarRenderer.SlotData right, int x, int y) {
-        return isEmptyArmorPixel(left, right, x - 1, y)
-                || isEmptyArmorPixel(left, right, x + 1, y)
-                || isEmptyArmorPixel(left, right, x, y - 1)
-                || isEmptyArmorPixel(left, right, x, y + 1);
+    private static boolean isEdgePixel(
+            TextureMasks leftMasks, TextureMasks rightMasks, boolean sameArmor, int x, int y) {
+        return isEmptyArmorPixel(leftMasks, rightMasks, sameArmor, x - 1, y)
+                || isEmptyArmorPixel(leftMasks, rightMasks, sameArmor, x + 1, y)
+                || isEmptyArmorPixel(leftMasks, rightMasks, sameArmor, x, y - 1)
+                || isEmptyArmorPixel(leftMasks, rightMasks, sameArmor, x, y + 1);
     }
 
-    private static boolean isTransparentMaskPixel(ArmorBarRenderer.SlotData data, int u, int x, int y) {
-        if (data == null || data.materialTex == null) return true;
-        return !getMask(data.materialTex, u).isVisible(x, y);
+    private static TextureMasks getMasks(ArmorBarRenderer.SlotData data) {
+        return data == null || data.materialTex == null
+                ? TextureMasks.EMPTY
+                : getMasks(data.materialTex);
     }
 
-    private static PixelMask getMask(Identifier texture, int u) {
+    private static TextureMasks getMasks(Identifier texture) {
         ResourceManager manager = currentResourceManager();
         if (manager != lastResourceManager) {
             MASK_CACHE.clear();
             lastResourceManager = manager;
         }
         //? if <26.1.2
-        if (manager == null) return PixelMask.EMPTY;
+        if (manager == null) return TextureMasks.EMPTY;
 
-        MaskKey key = new MaskKey(texture, u);
-        return MASK_CACHE.computeIfAbsent(key, maskKey -> loadMask(manager, maskKey));
+        return MASK_CACHE.computeIfAbsent(texture, key -> loadMasks(manager, key));
     }
 
     private static ResourceManager currentResourceManager() {
@@ -429,32 +538,83 @@ public final class ArmorBarFeedback {
         //?}
     }
 
-    private static PixelMask loadMask(ResourceManager manager, MaskKey key) {
-        var resource = manager.getResource(key.texture());
-        if (resource.isEmpty()) return PixelMask.EMPTY;
+    private static TextureMasks loadMasks(ResourceManager manager, Identifier texture) {
+        var resource = manager.getResource(texture);
+        if (resource.isEmpty()) return TextureMasks.EMPTY;
 
-        // Le texture della armor bar sono sprite 9x9 affiancati: u sceglie left, right o full icon.
+        // Le tre sprite 9x9 affiancate vengono estratte dalla stessa decodifica della PNG.
         //? if >=26.1.2 {
         /*try (InputStream stream = resource.get().open(); NativeImage image = NativeImage.read(stream)) {
         *///?} else {
         try (InputStream stream = resource.get().getInputStream(); NativeImage image = NativeImage.read(stream)) {
         //?}
-            boolean[] pixels = new boolean[ICON_SIZE * ICON_SIZE];
-            for (int y = 0; y < ICON_SIZE; y++) {
-                for (int x = 0; x < ICON_SIZE; x++) {
-                    int sourceX = key.u() + x;
-                    if (sourceX < image.getWidth() && y < image.getHeight()) {
-                        //? if >=26.1.2
-                        //pixels[y * ICON_SIZE + x] = (image.getLuminanceOrAlpha(sourceX, y) & 0xFF) > 16;
-                        //? if <26.1.2
-                        pixels[y * ICON_SIZE + x] = (image.getOpacity(sourceX, y) & 0xFF) > 16;
-                    }
+            return new TextureMasks(
+                    loadMask(image, U_LEFT),
+                    loadMask(image, U_RIGHT),
+                    loadMask(image, U_FULL));
+        } catch (IOException ignored) {
+            return TextureMasks.EMPTY;
+        }
+    }
+
+    private static PixelMask loadMask(NativeImage image, int u) {
+        boolean[] pixels = new boolean[ICON_SIZE * ICON_SIZE];
+        for (int y = 0; y < ICON_SIZE; y++) {
+            for (int x = 0; x < ICON_SIZE; x++) {
+                int sourceX = u + x;
+                if (sourceX < image.getWidth() && y < image.getHeight()) {
+                    //? if >=26.1.2
+                    //pixels[y * ICON_SIZE + x] = isVisibleOpacity(image.getLuminanceOrAlpha(sourceX, y));
+                    //? if <26.1.2
+                    pixels[y * ICON_SIZE + x] = isVisibleOpacity(image.getOpacity(sourceX, y));
                 }
             }
-            return new PixelMask(pixels);
-        } catch (IOException ignored) {
-            return PixelMask.EMPTY;
         }
+        return new PixelMask(pixels);
+    }
+
+    static void clearMaskCache() {
+        MASK_CACHE.clear();
+        lastResourceManager = null;
+    }
+
+    static boolean isVisibleOpacity(int opacity) {
+        return (opacity & 0xFF) > 16;
+    }
+
+    static boolean isFirstSeenArmorItem(
+            Object currentItem,
+            Object previousItem,
+            int currentMaxDamage,
+            int previousMaxDamage,
+            int previousDamage) {
+        return currentItem != previousItem
+                || currentMaxDamage != previousMaxDamage
+                || previousDamage < 0;
+    }
+
+    private static void fillFeedbackPixel(
+            //? if >=26.1.2
+            //GuiGraphicsExtractor ctx,
+            /**///? if <26.1.2
+            DrawContext ctx,
+            int x,
+            int y,
+            int color) {
+        //? if <1.21 {
+        Matrix4f matrix = ctx.getMatrices().peek().getPositionMatrix();
+        VertexConsumer buffer = ctx.getVertexConsumers().getBuffer(RenderLayer.getGui());
+        int alpha = color >>> 24;
+        int red = color >> 16 & 0xFF;
+        int green = color >> 8 & 0xFF;
+        int blue = color & 0xFF;
+        buffer.vertex(matrix, x + 1, y + 1, 0.0f).color(red, green, blue, alpha).next();
+        buffer.vertex(matrix, x + 1, y, 0.0f).color(red, green, blue, alpha).next();
+        buffer.vertex(matrix, x, y, 0.0f).color(red, green, blue, alpha).next();
+        buffer.vertex(matrix, x, y + 1, 0.0f).color(red, green, blue, alpha).next();
+        //?} else {
+        /*ctx.fill(x, y, x + 1, y + 1, color);
+        *///?}
     }
 
     private static boolean isEffectPixel(DamageKind kind, int x, int y) {
@@ -559,7 +719,7 @@ public final class ArmorBarFeedback {
         return clamp01((sparkA + sparkB + sparkC) * 1.55f);
     }
 
-    private static GenericHitPixel genericHitPixel(int x, int y, float progress, boolean heavy) {
+    private static long genericHitPixel(int x, int y, float progress, boolean heavy) {
         float eased = smoothStep(progress);
         float fade = 1.0f - smoothStep(progress / 0.92f);
         float distance = distanceFromCenter(x, y);
@@ -572,18 +732,11 @@ public final class ArmorBarFeedback {
         float coolShadow = (1.0f - smoothStep(distance / 4.8f)) * fade * clamp01((x + y - 4.5f) / 8.5f);
 
         float energy = Math.max(Math.max(core, wave), Math.max(slash, coolShadow));
-        if (energy <= 0.0f) return GenericHitPixel.EMPTY;
+        if (energy <= 0.0f) return 0L;
 
         int alpha = clamp255((int)((heavy ? 198.0f : 164.0f) * energy));
-        int tone = genericHitTone(core, wave, slash, coolShadow);
         int rgb = genericHitRgb(core, wave, slash, coolShadow);
-        return new GenericHitPixel(rgb, alpha, tone);
-    }
-
-    private static int genericHitTone(float core, float wave, float slash, float coolShadow) {
-        if (slash > wave && slash > core) return 0;
-        if (coolShadow > core && coolShadow > wave) return 2;
-        return 1;
+        return ((long)alpha << 32) | (rgb & 0xFFFFFFFFL);
     }
 
     private static int genericHitRgb(float core, float wave, float slash, float coolShadow) {
@@ -686,6 +839,7 @@ public final class ArmorBarFeedback {
         if (lastHalfEnd[index] <= lastHalfStart[index]) return;
         if (!damageEffectEnabled(kind)) return;
         PULSES[index] = new Pulse(now, kind, heavy);
+        activeUntilMs = Math.max(activeUntilMs, now + Pulse.DURATION_MS);
     }
 
     private static boolean damageEffectEnabled(DamageKind kind) {
@@ -811,6 +965,7 @@ public final class ArmorBarFeedback {
         initialized = false;
         lastPlayerUuid = null;
         lastHurtTime = 0;
+        activeUntilMs = 0L;
         for (int i = 0; i < ARMOR_ORDER.length; i++) {
             rememberEmpty(i);
             PULSES[i] = Pulse.EMPTY;
@@ -821,13 +976,13 @@ public final class ArmorBarFeedback {
     }
 
     private static void rememberStack(int index, ItemStack stack, int damage, int maxDamage) {
-        LAST_STACKS[index] = stack.copy();
+        LAST_ITEMS[index] = stack.getItem();
         LAST_DAMAGE[index] = damage;
         LAST_MAX_DAMAGE[index] = maxDamage;
     }
 
     private static void rememberEmpty(int index) {
-        LAST_STACKS[index] = ItemStack.EMPTY;
+        LAST_ITEMS[index] = null;
         LAST_DAMAGE[index] = -1;
         LAST_MAX_DAMAGE[index] = -1;
         REPAIR_PULSES[index] = RepairPulse.EMPTY;
@@ -846,12 +1001,30 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            MendingRenderContext render) {
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
+            int x,
+            int y,
+            int leftHalf,
+            int rightHalf,
+            long now) {
         // Mending deve colorare solo il pezzo riparato, anche se nello stesso slot grafico c'e un altro materiale.
         for (int i = 0; i < REPAIR_PULSES.length; i++) {
             RepairPulse pulse = REPAIR_PULSES[i];
-            if (pulse.isExpired(render.now)) continue;
-            renderMendingPulse(ctx, render, i, pulse);
+            if (pulse.isExpired(now)) continue;
+            renderMendingPulse(
+                    ctx,
+                    leftMasks,
+                    rightMasks,
+                    sameArmor,
+                    x,
+                    y,
+                    leftHalf,
+                    rightHalf,
+                    now,
+                    i,
+                    pulse);
         }
     }
 
@@ -860,116 +1033,84 @@ public final class ArmorBarFeedback {
             //GuiGraphicsExtractor ctx,
             /**///? if <26.1.2
             DrawContext ctx,
-            MendingRenderContext render,
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
+            int x,
+            int y,
+            int leftHalf,
+            int rightHalf,
+            long now,
             int index,
             RepairPulse pulse) {
-        boolean leftActive = render.leftHalf >= lastHalfStart[index] && render.leftHalf < lastHalfEnd[index];
-        boolean rightActive = render.rightHalf >= lastHalfStart[index] && render.rightHalf < lastHalfEnd[index];
+        boolean leftActive = leftHalf >= lastHalfStart[index] && leftHalf < lastHalfEnd[index];
+        boolean rightActive = rightHalf >= lastHalfStart[index] && rightHalf < lastHalfEnd[index];
         if (!leftActive && !rightActive) return;
 
-        float progress = pulse.progress(render.now);
+        float progress = pulse.progress(now);
         float fade = 1.0f - smoothStep(progress);
         int alpha = clamp255((int)(fade * 238.0f));
         for (int py = 0; py < ICON_SIZE; py++) {
             for (int px = 0; px < ICON_SIZE; px++) {
-                if (isActiveRepairEdgePixel(render.left, render.right, leftActive, rightActive, px, py)) {
-                    ctx.fill(
-                            render.x + px,
-                            render.y + py,
-                            render.x + px + 1,
-                            render.y + py + 1,
-                            (alpha << 24) | MENDING_XP_YELLOW);
+                if (isActiveRepairEdgePixel(
+                        leftMasks, rightMasks, sameArmor, leftActive, rightActive, px, py)) {
+                    fillFeedbackPixel(
+                            ctx, x + px, y + py, (alpha << 24) | MENDING_XP_YELLOW);
                 }
             }
         }
     }
 
-    private static boolean isActiveRepairEdgePixel(
-            ArmorBarRenderer.SlotData left,
-            ArmorBarRenderer.SlotData right,
+    static boolean isActiveRepairEdgePixel(
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
             boolean leftActive,
             boolean rightActive,
             int x,
             int y) {
         // Il contorno e calcolato sulla sola porzione attiva, non sull'intera icona 9x9.
-        return isActiveRepairPixel(left, right, leftActive, rightActive, x, y)
-                && (!isActiveRepairPixel(left, right, leftActive, rightActive, x - 1, y)
-                        || !isActiveRepairPixel(left, right, leftActive, rightActive, x + 1, y)
-                        || !isActiveRepairPixel(left, right, leftActive, rightActive, x, y - 1)
-                        || !isActiveRepairPixel(left, right, leftActive, rightActive, x, y + 1));
+        return isActiveRepairPixel(leftMasks, rightMasks, sameArmor, leftActive, rightActive, x, y)
+                && (!isActiveRepairPixel(
+                                leftMasks, rightMasks, sameArmor, leftActive, rightActive, x - 1, y)
+                        || !isActiveRepairPixel(
+                                leftMasks, rightMasks, sameArmor, leftActive, rightActive, x + 1, y)
+                        || !isActiveRepairPixel(
+                                leftMasks, rightMasks, sameArmor, leftActive, rightActive, x, y - 1)
+                        || !isActiveRepairPixel(
+                                leftMasks, rightMasks, sameArmor, leftActive, rightActive, x, y + 1));
     }
 
-    private static boolean isActiveRepairPixel(
-            ArmorBarRenderer.SlotData left,
-            ArmorBarRenderer.SlotData right,
+    static boolean isActiveRepairPixel(
+            TextureMasks leftMasks,
+            TextureMasks rightMasks,
+            boolean sameArmor,
             boolean leftActive,
             boolean rightActive,
             int x,
             int y) {
         // Se entrambe le meta appartengono allo stesso pezzo, usa la mask full; altrimenti filtra left/right.
         if (x < 0 || x >= ICON_SIZE || y < 0 || y >= ICON_SIZE) return false;
-        if (leftActive && rightActive && ArmorBarRenderer.isSame(left, right)) {
-            return !isTransparentMaskPixel(left, U_FULL, x, y);
+        if (leftActive && rightActive && sameArmor) {
+            return leftMasks.full.isVisible(x, y);
         }
         boolean visible = false;
-        if (leftActive) visible |= !isTransparentMaskPixel(left, U_LEFT, x, y);
-        if (rightActive) visible |= !isTransparentMaskPixel(right, U_RIGHT, x, y);
+        if (leftActive) visible |= leftMasks.left.isVisible(x, y);
+        if (rightActive) visible |= rightMasks.right.isVisible(x, y);
         return visible;
     }
 
-    private static final class FeedbackRenderContext {
-        private final ArmorBarRenderer.SlotData left;
-        private final ArmorBarRenderer.SlotData right;
-        private final int x;
-        private final int y;
-        private final Pulse pulse;
-        private final float progress;
-        private final float fade;
-        private final float wave;
-        private final float sweepCenter;
-        private final float rippleCenter;
-        private final int lift;
-
-        private FeedbackRenderContext(
-                ArmorBarRenderer.SlotData left,
-                ArmorBarRenderer.SlotData right,
-                int x,
-                int y,
-                Pulse pulse,
-                float progress) {
-            this.left = left;
-            this.right = right;
-            this.x = x;
-            this.y = y;
-            this.pulse = pulse;
-            this.progress = progress;
-            this.fade = 1.0f - smoothStep(progress);
-            this.wave = (float)Math.sin(progress * Math.PI);
-            this.sweepCenter = -3.0f + smoothStep(progress) * 15.5f;
-            this.rippleCenter = smoothStep(progress) * 7.2f;
-            this.lift = Math.round((1.0f - smoothStep(progress)) * 2.0f);
-        }
-    }
-
-    private record MendingRenderContext(
-            ArmorBarRenderer.SlotData left,
-            ArmorBarRenderer.SlotData right,
-            int x,
-            int y,
-            int leftHalf,
-            int rightHalf,
-            long now) {
-    }
-
-    private record MaskKey(Identifier texture, int u) {
+    record TextureMasks(PixelMask left, PixelMask right, PixelMask full) {
+        private static final TextureMasks EMPTY = new TextureMasks(
+                PixelMask.EMPTY, PixelMask.EMPTY, PixelMask.EMPTY);
     }
 
     @SuppressWarnings("ClassCanBeRecord") // Non e un record: contiene un array e Sonar richiede equality basata sul contenuto.
-    private static final class PixelMask {
+    static final class PixelMask {
         private static final PixelMask EMPTY = new PixelMask(new boolean[ICON_SIZE * ICON_SIZE]);
         private final boolean[] pixels;
 
-        private PixelMask(boolean[] pixels) {
+        PixelMask(boolean[] pixels) {
             this.pixels = pixels;
         }
 
@@ -1006,10 +1147,6 @@ public final class ArmorBarFeedback {
             this.durabilityDamage = durabilityDamage;
             this.blastDamage = blastDamage;
         }
-    }
-
-    private record GenericHitPixel(int rgb, int alpha, int tone) {
-        private static final GenericHitPixel EMPTY = new GenericHitPixel(0, 0, 0);
     }
 
     private record Pulse(long startedAt, DamageKind kind, boolean heavy) {
