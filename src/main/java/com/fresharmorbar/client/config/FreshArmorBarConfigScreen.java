@@ -27,7 +27,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     //? if >=1.21
     //private static final int COLUMN_GAP = 8;
     private static final int GRID_WIDTH = BUTTON_WIDTH * 2 + COLUMN_GAP;
-    // On 1.20.1 the master and Mending controls no longer span both columns.
+    // Nella 1.20.1 i controlli generali e Mending non occupano più entrambe le colonne.
     //? if <1.21
     private static final int WIDE_BUTTON_WIDTH = BUTTON_WIDTH;
     //? if >=1.21
@@ -38,7 +38,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     //private static final int DONE_BUTTON_WIDTH = 200;
     private static final int BUTTON_HEIGHT = 20;
 
-    // The compact icon treatment is intentionally limited to the 1.20.1 target.
+    // La disposizione compatta delle icone è intenzionalmente limitata alla versione 1.20.1.
     //? if <1.21 {
     private static final int CONTENT_HEIGHT = 224;
     private static final int BUTTON_ROW_GAP = 24;

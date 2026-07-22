@@ -494,9 +494,8 @@ public class ArmorBarRenderer {
             applyTrimAppearance(appearance, asset);
         }
         *///?} else {
-        if (trimOpt.isPresent()) {
-            applyTrimAppearance(appearance, trimOpt.get().getMaterial().value().assetName());
-        }
+        trimOpt.ifPresent(trim ->
+                applyTrimAppearance(appearance, trim.getMaterial().value().assetName()));
         //?}
 
         //? if >=26.1.2

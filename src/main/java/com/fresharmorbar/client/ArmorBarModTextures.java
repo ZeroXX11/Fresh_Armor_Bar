@@ -10,7 +10,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.Set;
 
-/** Resolves textures bundled by Fresh Armor Bar for armor materials from supported mods. */
+/** Individua le texture incluse in Fresh Armor Bar per i materiali delle mod supportate. */
 final class ArmorBarModTextures {
     private static final Set<String> SUPPORTED_MODS = Set.of(
             "advancednetherite",
