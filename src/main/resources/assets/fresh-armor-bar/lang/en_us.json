@@ -4,6 +4,7 @@
   "fresharmorbar.config.category.damage": "DAMAGE FEEDBACK",
   "fresharmorbar.config.category.damage_hint": "Master toggle first, then fine tune each hit type.",
   "fresharmorbar.config.category.mending": "MENDING",
+  "fresharmorbar.config.category.animation": "ANIMATION",
   "fresharmorbar.config.damage.all": "All damage feedback",
   "fresharmorbar.config.damage.all.short": "All Damage",
   "fresharmorbar.config.damage.generic": "Normal hit feedback",
@@ -17,5 +18,7 @@
   "fresharmorbar.config.damage.fall": "Fall hit feedback",
   "fresharmorbar.config.damage.fall.short": "Fall",
   "fresharmorbar.config.mending.effect": "Repair flash",
-  "fresharmorbar.config.mending.effect.short": "Mending Flash"
+  "fresharmorbar.config.mending.effect.short": "Mending Flash",
+  "fresharmorbar.config.animation.effect": "Armor bar animation",
+  "fresharmorbar.config.animation.effect.short": "Animation"
 }

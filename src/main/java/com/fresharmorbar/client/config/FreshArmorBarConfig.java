@@ -19,6 +19,7 @@ public final class FreshArmorBarConfig {
     private static final String PROJECTILE_DAMAGE_EFFECT_KEY = "projectile_damage_effect";
     private static final String FALL_DAMAGE_EFFECT_KEY = "fall_damage_effect";
     private static final String MENDING_EFFECT_KEY = "mending_effect";
+    private static final String ANIMATION_EFFECT_KEY = "animation_effect";
 
     private static boolean loaded = false;
     private static boolean damageEffects = true;
@@ -28,6 +29,7 @@ public final class FreshArmorBarConfig {
     private static boolean projectileDamageEffect = true;
     private static boolean fallDamageEffect = true;
     private static boolean mendingEffect = true;
+    private static boolean animationEffect = true;
 
     private FreshArmorBarConfig() {
     }
@@ -103,6 +105,11 @@ public final class FreshArmorBarConfig {
         return mendingEffect;
     }
 
+    public static boolean animationEffectEnabled() {
+        load();
+        return animationEffect;
+    }
+
     public static void setDamageEffectsEnabled(boolean enabled) {
         load();
         if (damageEffects == enabled) return;
@@ -152,6 +159,13 @@ public final class FreshArmorBarConfig {
         save();
     }
 
+    public static void setAnimationEffectEnabled(boolean enabled) {
+        load();
+        if (animationEffect == enabled) return;
+        animationEffect = enabled;
+        save();
+    }
+
     public static void load() {
         if (loaded) return;
         loaded = true;
@@ -173,6 +187,7 @@ public final class FreshArmorBarConfig {
             projectileDamageEffect = readBoolean(properties, PROJECTILE_DAMAGE_EFFECT_KEY, legacyDefault);
             fallDamageEffect = readBoolean(properties, FALL_DAMAGE_EFFECT_KEY, legacyDefault);
             mendingEffect = readBoolean(properties, MENDING_EFFECT_KEY, legacyDefault);
+            animationEffect = readBoolean(properties, ANIMATION_EFFECT_KEY, true);
         } catch (IOException ignored) {
             damageEffects = true;
             genericDamageEffect = true;
@@ -181,6 +196,7 @@ public final class FreshArmorBarConfig {
             projectileDamageEffect = true;
             fallDamageEffect = true;
             mendingEffect = true;
+            animationEffect = true;
         }
     }
 
@@ -197,6 +213,7 @@ public final class FreshArmorBarConfig {
         properties.setProperty(PROJECTILE_DAMAGE_EFFECT_KEY, Boolean.toString(projectileDamageEffect));
         properties.setProperty(FALL_DAMAGE_EFFECT_KEY, Boolean.toString(fallDamageEffect));
         properties.setProperty(MENDING_EFFECT_KEY, Boolean.toString(mendingEffect));
+        properties.setProperty(ANIMATION_EFFECT_KEY, Boolean.toString(animationEffect));
 
         Path path = configPath();
         try {

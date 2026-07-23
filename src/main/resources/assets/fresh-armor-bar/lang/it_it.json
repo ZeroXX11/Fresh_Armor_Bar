@@ -4,6 +4,7 @@
   "fresharmorbar.config.category.damage": "FEEDBACK DANNO",
   "fresharmorbar.config.category.damage_hint": "Interruttore generale, poi regoli ogni tipo di colpo.",
   "fresharmorbar.config.category.mending": "MENDING",
+  "fresharmorbar.config.category.animation": "ANIMAZIONE",
   "fresharmorbar.config.damage.all": "Tutto il feedback danno",
   "fresharmorbar.config.damage.all.short": "Tutti i danni",
   "fresharmorbar.config.damage.generic": "Feedback colpo normale",
@@ -17,5 +18,7 @@
   "fresharmorbar.config.damage.fall": "Feedback caduta",
   "fresharmorbar.config.damage.fall.short": "Caduta",
   "fresharmorbar.config.mending.effect": "Flash riparazione",
-  "fresharmorbar.config.mending.effect.short": "Flash Mending"
+  "fresharmorbar.config.mending.effect.short": "Flash Mending",
+  "fresharmorbar.config.animation.effect": "Animazione barra armatura",
+  "fresharmorbar.config.animation.effect.short": "Animazione"
 }

@@ -10,6 +10,8 @@ import static com.fresharmorbar.client.ArmorBarTextures.getMaterialTex;
 import static com.fresharmorbar.client.ArmorBarTextures.isGlowTrim;
 import static com.fresharmorbar.client.ArmorBarTextures.trimRgb;
 
+import com.fresharmorbar.client.config.FreshArmorBarConfig;
+
 //? if >=26.1.2 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -72,6 +74,7 @@ public class ArmorBarRenderer {
     private static long frameNowNanos = 0L;
     private static boolean frameAnimating = false;
     private static boolean frameHasFeedback = false;
+    private static boolean lastAnimationSetting = true;
 
     static {
         for (int i = 0; i < 60; i++) {
@@ -144,8 +147,13 @@ public class ArmorBarRenderer {
     public static void updateIfNeeded(PlayerEntity player, int armorValue, ModCompat.ElytraState elytraState) {
     //?}
         ArmorBarFeedback.update(player);
+        boolean animationEnabled = FreshArmorBarConfig.animationEffectEnabled();
+        if (animationEnabled != lastAnimationSetting) {
+            ArmorBarAnimation.reset();
+            lastAnimationSetting = animationEnabled;
+        }
         if (needsUpdate(player, armorValue, elytraState)) {
-            boolean animate = lastArmorValue >= 0;
+            boolean animate = animationEnabled && lastArmorValue >= 0;
             if (animate) {
                 ArmorBarAnimation.capturePrevious(lastArmorValue, lastElytraState);
             }
@@ -156,7 +164,7 @@ public class ArmorBarRenderer {
         }
 
         frameNowNanos = System.nanoTime();
-        frameAnimating = ArmorBarAnimation.isAnimating(frameNowNanos);
+        frameAnimating = animationEnabled && ArmorBarAnimation.isAnimating(frameNowNanos);
         frameHasFeedback = ArmorBarFeedback.hasActiveFeedback();
 
     }

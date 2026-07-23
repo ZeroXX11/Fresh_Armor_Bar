@@ -53,6 +53,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     private static final Identifier BLAST_ICON = icon("damage_blast");
     private static final Identifier PROJECTILE_ICON = icon("damage_projectile");
     private static final Identifier FALL_ICON = icon("damage_fall");
+    private static final Identifier ANIMATION_ICON = icon("animation");
     private static final Identifier MENDING_ICON = icon("mending");
     //?}
 
@@ -65,6 +66,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     private Button blastDamageButton;
     private Button projectileDamageButton;
     private Button fallDamageButton;
+    private Button animationButton;
     private Button mendingButton;
     *///?} else {
     private ButtonWidget damageEffectsButton;
@@ -73,6 +75,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
     private ButtonWidget blastDamageButton;
     private ButtonWidget projectileDamageButton;
     private ButtonWidget fallDamageButton;
+    private ButtonWidget animationButton;
     private ButtonWidget mendingButton;
     //?}
 
@@ -119,7 +122,10 @@ public final class FreshArmorBarConfigScreen extends Screen {
                 () -> FreshArmorBarConfig.setFallDamageEffectEnabled(!FreshArmorBarConfig.fallDamageEffectSelected()));
 
         y += 54;
-        this.mendingButton = addButton(single, y, WIDE_BUTTON_WIDTH,
+        this.animationButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.animation.effect", FreshArmorBarConfig.animationEffectEnabled()),
+                () -> FreshArmorBarConfig.setAnimationEffectEnabled(!FreshArmorBarConfig.animationEffectEnabled()));
+        this.mendingButton = addButton(right, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
@@ -161,12 +167,10 @@ public final class FreshArmorBarConfigScreen extends Screen {
         y = contentTop + 168;
         //? if >=1.21
         //y += 54;
-        this.mendingButton = addButton(
-                //? if <1.21
-                single,
-                //? if >=1.21
-                //single,
-                y, WIDE_BUTTON_WIDTH,
+        this.animationButton = addButton(left, y, BUTTON_WIDTH,
+                optionText("fresharmorbar.config.animation.effect", FreshArmorBarConfig.animationEffectEnabled()),
+                () -> FreshArmorBarConfig.setAnimationEffectEnabled(!FreshArmorBarConfig.animationEffectEnabled()));
+        this.mendingButton = addButton(right, y, BUTTON_WIDTH,
                 optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()),
                 () -> FreshArmorBarConfig.setMendingEffectEnabled(!FreshArmorBarConfig.mendingEffectEnabled()));
 
@@ -187,6 +191,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         setButtonIcon(this.blastDamageButton, BLAST_ICON);
         setButtonIcon(this.projectileDamageButton, PROJECTILE_ICON);
         setButtonIcon(this.fallDamageButton, FALL_ICON);
+        setButtonIcon(this.animationButton, ANIMATION_ICON);
         setButtonIcon(this.mendingButton, MENDING_ICON);
         //?}
     }
@@ -227,6 +232,7 @@ public final class FreshArmorBarConfigScreen extends Screen {
         this.blastDamageButton.setMessage(optionText("fresharmorbar.config.damage.blast", FreshArmorBarConfig.blastDamageEffectSelected()));
         this.projectileDamageButton.setMessage(optionText("fresharmorbar.config.damage.projectile", FreshArmorBarConfig.projectileDamageEffectSelected()));
         this.fallDamageButton.setMessage(optionText("fresharmorbar.config.damage.fall", FreshArmorBarConfig.fallDamageEffectSelected()));
+        this.animationButton.setMessage(optionText("fresharmorbar.config.animation.effect", FreshArmorBarConfig.animationEffectEnabled()));
         this.mendingButton.setMessage(optionText("fresharmorbar.config.mending.effect", FreshArmorBarConfig.mendingEffectEnabled()));
     }
 
@@ -270,7 +276,8 @@ public final class FreshArmorBarConfigScreen extends Screen {
         drawCentered(context, text("fresharmorbar.config.title"), centerX, 16);
         drawCentered(context, text("fresharmorbar.config.category.damage"), centerX, 48);
         drawDivider(context, dividerLeft, dividerRight);
-        drawCentered(context, text("fresharmorbar.config.category.mending"), centerX, 190);
+        drawCentered(context, text("fresharmorbar.config.category.animation"), dividerLeft + BUTTON_WIDTH / 2, 190);
+        drawCentered(context, text("fresharmorbar.config.category.mending"), dividerRight - BUTTON_WIDTH / 2, 190);
         *///?}
     }
 
@@ -360,7 +367,10 @@ public final class FreshArmorBarConfigScreen extends Screen {
         drawCentered(context, text("fresharmorbar.config.title"), centerX, contentTop);
         context.fill(centerX - 18, contentTop + 14, centerX + 18, contentTop + 15, 0x66FFFFFF);
         drawSectionHeading(context, text("fresharmorbar.config.category.damage"), centerX, contentTop + 25);
-        drawSectionHeading(context, text("fresharmorbar.config.category.mending"), centerX, contentTop + 154);
+        int leftCenter = centerX - (BUTTON_WIDTH + COLUMN_GAP) / 2;
+        int rightCenter = centerX + (BUTTON_WIDTH + COLUMN_GAP) / 2;
+        drawColumnHeading(context, text("fresharmorbar.config.category.animation"), leftCenter, contentTop + 154);
+        drawColumnHeading(context, text("fresharmorbar.config.category.mending"), rightCenter, contentTop + 154);
     }
 
     private void drawSectionHeading(DrawContext context, Text label, int centerX, int y) {
@@ -372,6 +382,18 @@ public final class FreshArmorBarConfigScreen extends Screen {
 
         context.fill(sectionLeft, lineY, centerX - gap, lineY + 1, 0x44FFFFFF);
         context.fill(centerX + gap, lineY, sectionRight, lineY + 1, 0x44FFFFFF);
+        drawMutedCentered(context, label, centerX, y);
+    }
+
+    private void drawColumnHeading(DrawContext context, Text label, int centerX, int y) {
+        int textWidth = this.textRenderer.getWidth(label);
+        int gap = textWidth / 2 + 5;
+        int lineY = y + 4;
+        int columnLeft = centerX - BUTTON_WIDTH / 2;
+        int columnRight = centerX + BUTTON_WIDTH / 2;
+
+        context.fill(columnLeft, lineY, centerX - gap, lineY + 1, 0x44FFFFFF);
+        context.fill(centerX + gap, lineY, columnRight, lineY + 1, 0x44FFFFFF);
         drawMutedCentered(context, label, centerX, y);
     }
 
