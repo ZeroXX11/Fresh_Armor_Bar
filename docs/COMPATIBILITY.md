@@ -66,7 +66,7 @@ When diagnosing a conflict:
 - Fresh Armor Bar is client-side only.
 - It does not change protection, durability, enchantments or damage calculations.
 - Animations are visual only and do not delay equipment or attribute changes.
-- Animation timings are currently internal and cannot be disabled from the configuration screen.
+- Equipment-change animations can be disabled from the configuration screen or with `animation_effect=false`; their individual timings remain internal.
 - Unknown materials use a visual fallback rather than preventing the game from starting.
 - Third-party slot integrations are best-effort because their APIs and availability can differ between Minecraft versions.
 

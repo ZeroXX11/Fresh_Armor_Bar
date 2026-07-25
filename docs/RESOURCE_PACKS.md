@@ -218,6 +218,6 @@ The first existing resource wins. Resource-pack priority still applies when mult
 - Test an enchanted transition on Minecraft 1.21.11 or newer to verify the material alpha mask.
 - Read `latest.log` to find the `modid:material` requested by Fresh Armor Bar and compare it with the lookup order above.
 - For an Elytra, search `latest.log` for `modded Elytra`; the warning includes its complete item id and both custom paths.
-- Reload resources after changing files.
+- Reload resources with `F3+T` after changing files. Fresh Armor Bar automatically clears its material, Elytra, feedback-mask and glint resource caches when the reload completes.
 
 Return to the [main README](../README.md).

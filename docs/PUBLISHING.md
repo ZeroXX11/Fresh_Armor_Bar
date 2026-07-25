@@ -17,7 +17,7 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 ## Prepare a release
 
-1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.1-1.20.1` or `2.1-26.2`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.1 | 26.2`.
+1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.2-1.20.1` or `2.2-26.2`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.2 | 26.2`.
 2. Review the single source of truth in `gradle/release-versions.gradle`. Each entry maps its Stonecutter project, platform Minecraft versions, display label, artifact task, and changelog role.
 3. Update `README.md`, `MULTIVERSION.md` and the applicable files under `docs/` whenever supported versions, renderer behavior, integrations, resource paths or release commands change.
 4. Write or update `CHANGELOG.md` with the real release notes for Modrinth, then keep the equivalent CurseForge HTML in `CHANGELOG_CURSEFORGE.html`. The titles must be `# <current mod_version> | CHANGELOG` and `<h1><current mod_version> | CHANGELOG</h1>` respectively.
@@ -37,6 +37,7 @@ Compilation cannot verify HUD animation output. Before creating final artifacts,
 - enchanted versions of the movement and replacement cases, with glint strength and speed enabled;
 - Elytra appearing, disappearing and changing HUD row;
 - an armor value above 20 when a compatible test setup is available;
+- disabling animation during a transition, changing equipment while it is disabled, then enabling it again;
 - damage and Mending feedback after a transition completes.
 
 Inspect enchanted transitions frame by frame for glint outside the material alpha mask, stale seams or overlays left at the source position. Also run one pass without resource packs and unrelated HUD mods so a compatibility conflict is not mistaken for a renderer regression.

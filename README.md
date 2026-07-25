@@ -35,7 +35,7 @@ Fresh Armor Bar is a client-side Fabric mod that replaces Minecraft's vanilla ar
 - Stable `LEFT`, `RIGHT` and `FULL` icon transitions without moving a whole armor point when only one half changes.
 - Vanilla and modded Elytra detection in the chest slot and optional Trinkets-family slots.
 - Extra HUD rows for armor values above the normal vanilla row.
-- Configurable feedback for damage and Mending repairs.
+- Configurable armor transitions plus feedback for damage and Mending repairs.
 - A configuration screen when Mod Menu is installed.
 - Resource-pack support for built-in and modded armor textures.
 - Official compatibility with selected third-party armor mods.
@@ -79,17 +79,18 @@ If Mod Menu is installed, open Fresh Armor Bar from its Mods screen. Mod Menu is
 config/fresh-armor-bar.properties
 ```
 
-| Property                   | Default | Accepted values | Effect                                              |
-|----------------------------|---------|-----------------|-----------------------------------------------------|
-| `damage_effects`           | `true`  | `true`, `false` | Master switch for every damage feedback effect      |
-| `generic_damage_effect`    | `true`  | `true`, `false` | Feedback for ordinary damage                        |
-| `fire_damage_effect`       | `true`  | `true`, `false` | Feedback for fire damage                            |
-| `blast_damage_effect`      | `true`  | `true`, `false` | Feedback for explosions                             |
-| `projectile_damage_effect` | `true`  | `true`, `false` | Feedback for projectile damage                      |
-| `fall_damage_effect`       | `true`  | `true`, `false` | Feedback for fall damage                            |
-| `mending_effect`           | `true`  | `true`, `false` | Repair flash when Mending restores armor durability |
+| Property                   | Default | Accepted values | Effect                                               |
+|----------------------------|---------|-----------------|------------------------------------------------------|
+| `damage_effects`           | `true`  | `true`, `false` | Master switch for every damage feedback effect       |
+| `generic_damage_effect`    | `true`  | `true`, `false` | Feedback for ordinary damage                         |
+| `fire_damage_effect`       | `true`  | `true`, `false` | Feedback for fire damage                             |
+| `blast_damage_effect`      | `true`  | `true`, `false` | Feedback for explosions                              |
+| `projectile_damage_effect` | `true`  | `true`, `false` | Feedback for projectile damage                       |
+| `fall_damage_effect`       | `true`  | `true`, `false` | Feedback for fall damage                             |
+| `animation_effect`         | `true`  | `true`, `false` | Animated armor and Elytra equipment transitions      |
+| `mending_effect`           | `true`  | `true`, `false` | Repair flash when Mending restores armor durability  |
 
-`damage_effects=false` suppresses all five damage categories regardless of their individual values. The Mending effect remains independent.
+`damage_effects=false` suppresses all five damage categories regardless of their individual values. Animation and Mending remain independent.
 
 ## Animated transitions
 
@@ -104,7 +105,7 @@ The transition engine also handles:
 - enchanted moving sprites, whose glint is clipped with the material texture on the modern GUI renderer;
 - damage and Mending feedback only after the destination state is stable.
 
-Animation timings are currently internal and are not configuration properties. Resource-pack authors should keep transparent pixels and all three strip variants aligned; see the [resource-pack guide](docs/RESOURCE_PACKS.md#animation-and-glint-masks).
+Set `animation_effect=false` to render equipment changes immediately. Individual animation timings remain internal and are not configuration properties. Resource-pack authors should keep transparent pixels and all three strip variants aligned; see the [resource-pack guide](docs/RESOURCE_PACKS.md#animation-and-glint-masks).
 
 ## Compatibility and limitations
 
@@ -141,6 +142,8 @@ assets/<modid>/textures/gui/armorbar/strips/<material>.png
 ```
 
 See [Resource-pack guide](docs/RESOURCE_PACKS.md) for the complete directory layout, texture sizes, strip format and `pack.mcmeta` example.
+
+Reloading resources with `F3+T` clears Fresh Armor Bar's texture and mask caches, so pack changes can be tested without restarting the game.
 
 ## Troubleshooting
 
@@ -221,11 +224,23 @@ Final jars are collected in `build/libs`. For version switching, task descriptio
 ```text
 Fresh_Armor_Bar/
 |- src/                          Shared Java code and resources
-|  `- main/java/com/fresharmorbar/client/
-|     |- ArmorBarRenderer.java   Equipment/cache facade and stable rendering
-|     |- ArmorBarAnimation.java  Complete transition engine
-|     `- ArmorBarGlintRenderer.java
-|                                Enchantment rendering and moving masks
+|  `- main/java/com/fresharmorbar/
+|     |- client/
+|     |  |- ArmorBarRenderer.java
+|     |  |                       Equipment/cache facade and stable rendering
+|     |  |- ArmorBarAnimation.java
+|     |  |                       Complete transition engine
+|     |  |- ArmorBarFeedback.java
+|     |  |                       Damage and Mending visual feedback
+|     |  |- ArmorBarTextures.java
+|     |  |                       Resource lookup and texture caches
+|     |  |- ArmorBarGlintRenderer.java
+|     |  |                       Enchantment rendering and moving masks
+|     |  `- config/              Properties and Mod Menu screen
+|     `- mixin/client/
+|        |- InGameHudMixin.java  Vanilla armor HUD hook
+|        `- MinecraftResourceReloadMixin.java
+|                                Cache invalidation after resource reloads
 |- versions/                     Properties and generated work for each target
 |- docs/                         User and integration guides
 |- gradle/                       Dedicated build-logic scripts

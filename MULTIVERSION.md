@@ -139,9 +139,13 @@ The HUD implementation is split by responsibility. Keep this boundary when addin
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `ArmorBarRenderer.java`             | Equipment reads, the current `SlotData` cache, static slot rendering, colors, trims and stable Elytra rendering                               | The equipment data model or non-animated appearance changes                      |
 | `ArmorBarAnimation.java`            | Previous snapshots, logical half matching, incoming/outgoing pieces, replacements, conveyors, odd runs, seams, transforms and animated Elytra | Timing, movement, replacement or seam behavior changes                           |
+| `ArmorBarFeedback.java`             | Damage and Mending state tracking, masks and feedback rendering                                                                               | Damage classification, feedback shapes or repair behavior changes                |
+| `ArmorBarTextures.java`             | Material and Elytra resource lookup, fallbacks, logging and resource caches                                                                   | Texture paths, lookup order or cache behavior changes                            |
 | `ArmorBarGlintRenderer.java`        | Native glint on older targets and the masked GUI render state on newer targets                                                                | Enchantment strength, speed, clipping, texture masks or GUI pipeline APIs change |
+| `FreshArmorBarConfig.java`          | Persistent client options, defaults and legacy feedback-option migration                                                                      | A configurable option is added, renamed or migrated                              |
 | `fab_gui_glint_mask.vsh` and `.fsh` | Sampling the moving glint and material alpha masks                                                                                            | The modern masked-glint vertex format or pixel composition changes               |
 | `InGameHudMixin.java`               | Resetting HUD state, preserving the last removal animation and forwarding vanilla slot coordinates                                            | Minecraft changes the armor HUD hook or draw signature                           |
+| `MinecraftResourceReloadMixin.java` | Invalidating renderer, texture, feedback-mask and glint cache during reload                                                                   | Minecraft changes its asynchronous resource-reload entry point                   |
 
 The update and render flow is:
 
@@ -166,6 +170,8 @@ Each populated `SlotData` carries both visual data and logical identity:
 `ArmorBarAnimation` uses that identity to distinguish a piece that only moved from a genuinely replaced item. Do not match halves by texture alone: two items can look identical while requiring separate enter and exit animations. Do not move this state back into `ArmorBarRenderer`; the facade must remain usable without knowing conveyor internals.
 
 The animation cache supports 60 half-points, matching the renderer's maximum of 30 icons. Timings are expressed in nanoseconds near the top of `ArmorBarAnimation`. Changing a duration requires manual tests in both directions because enter, exit, distance-based movement and seam timing overlap.
+
+The user-facing `animation_effect` option gates capture and rendering of transitions. Changing the option resets any active animation so stale previous-state data cannot reappear; equipment caching and static rendering continue normally while it is disabled.
 
 ### Half-icon and conveyor rules
 
@@ -202,6 +208,8 @@ src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips/<m
 ```
 
 `ArmorBarTextures` handles material resolution and fallbacks, while `ArmorBarModTextures` tracks the namespaces with official support. Compatibility uses identifiers and resources only, so supported armor mods remain optional dependencies. Version-specific directives normalize the different Minecraft material APIs to the same `<modid>:<material>` form.
+
+Successful resource reloads call `ArmorBarRenderer.onResourceReload()` through `MinecraftResourceReloadMixin`. This clears material and Elytra lookup results, feedback masks, glint resources, logged-missing-resource sets and the current equipment snapshot. Keep that invalidation path synchronized whenever a new resource-derived cache is added.
 
 ## Changing the active version
 
@@ -268,7 +276,7 @@ The Gradle daemon JVM is described by `gradle/gradle-daemon-jvm.properties`. In 
 
 What the main tasks do:
 
-- `verifyAllVersions` compiles all five targets.
+- `verifyAllVersions` builds all five targets, including their configured JUnit checks.
 - `releaseBuild` clears `build/libs` and rebuilds the configured release jars.
 - `validateReleaseArtifacts` checks jar names, sources jars and generated metadata. It also rejects unexpected jars and Fabric API metadata dependencies.
 - `fullVerify` combines compilation, release validation and Stonecutter model generation.
@@ -364,25 +372,32 @@ The same central `loader_version=0.19.3` is used for development, compilation an
 
 ## Release groups
 
-`stonecutterMinecraftVersions` lists every target that must compile. `releaseMinecraftVersionSets` separately defines which targets produce distinct published artifacts:
+`releaseTargets` in `gradle/release-versions.gradle` is the single source of truth. Every entry declares its Stonecutter project, platform version lists, display label, artifact task and whether it owns the full Modrinth changelog:
 
 ```groovy
-ext.releaseMinecraftVersionSets = [
-        ['1.20.1'],
-        ['1.21.1'],
-        ['1.21.11'],
-        ['26.1.2'],
-        ['26.2']
+ext.releaseTargets = [
+        [
+                id                        : 'minecraft_1_20_1',
+                projectPath               : ':1.20.1',
+                stonecutterTarget         : '1.20.1',
+                minecraftVersionsModrinth : ['1.20.1'],
+                minecraftVersionsCurseForge: ['1.20.1'],
+                displayMinecraft          : '1.20.1',
+                artifactTask              : 'remapJar',
+                primaryChangelogTarget    : true
+        ]
 ]
 ```
 
-At present each target has its own JAR. A group can contain multiple versions only when the exact same compiled artifact and metadata are valid for every member. For example, this hypothetical group:
+`stonecutterMinecraftVersions`, `releaseMinecraftVersionSets` and `releaseBuildMinecraftVersions` are derived from these entries; do not maintain parallel lists manually.
+
+At present each target has its own JAR. A platform version list can contain multiple versions only when the exact same compiled artifact and metadata are valid for every member. For example, this hypothetical Modrinth list:
 
 ```groovy
 ['1.21.1', '1.21.2', '1.21.3']
 ```
 
-would use the compact suffix `1.21.1-3`, declare all three Minecraft versions in `fabric.mod.json`, and build the first target as the representative release project. Every version can still remain in `stonecutterMinecraftVersions` and be compiled by `verifyAllVersions` even when it does not produce a separate JAR.
+would use the compact suffix `1.21.1-3`, declare all three Minecraft versions in `fabric.mod.json`, and build `stonecutterTarget` as the representative release project. Every member of either platform list is also derived into the Stonecutter version list and compiled by `verifyAllVersions`, even when only the representative target produces the grouped JAR.
 
 Never group versions merely because their source currently compiles. The representative bytecode, mappings, runtime behavior and metadata must all be interchangeable. A wrong group can produce a valid-looking JAR that fails when loaded on one of its declared versions; test every member manually before merging a group.
 
@@ -438,9 +453,9 @@ A second identical run should report that the cache entry was reused.
 
 ## Adding a target
 
-1. Add the version to `stonecutterMinecraftVersions` in `gradle/release-versions.gradle`.
-2. Add its release group to `releaseMinecraftVersionSets`.
-3. Create `versions/<version>/gradle.properties` with only target-specific values.
+1. Create `versions/<version>/gradle.properties` with only target-specific values.
+2. Add one complete entry to `releaseTargets` in `gradle/release-versions.gradle`; the Stonecutter and release lists are derived automatically.
+3. Choose `remapJar` for Yarn targets or `jar` for the current official-mapping targets, then verify both platform version lists and the changelog role.
 4. Switch to the new target and build it by itself.
 5. Add the smallest necessary Stonecutter directives for API differences.
 6. Run `clean fullVerify`.
@@ -494,9 +509,10 @@ For every release candidate:
 - [ ] Test an optional Elytra-slot integration where available.
 - [ ] Test every damage feedback category.
 - [ ] Test Mending repair feedback.
+- [ ] Disable animations during a transition, change equipment while disabled, then enable them again.
 - [ ] Open and save the Mod Menu configuration.
 - [ ] Confirm that configuration persists after restart.
-- [ ] Test a resource-pack override and the unknown-material fallback.
+- [ ] Test a resource-pack override and the unknown-material fallback, then change the pack and confirm `F3+T` invalidates every resource cache.
 - [ ] Test the officially supported armor mods on the oldest and newest targets.
 - [ ] Run `.\gradlew.bat clean fullVerify --no-daemon`.
 - [ ] Inspect the final binary and sources JAR names in `build/libs`.
@@ -524,8 +540,13 @@ For every release candidate:
 | `src/main/resources`                                                              | Shared metadata, mixins and assets        |
 | `src/main/java/com/fresharmorbar/client/ArmorBarRenderer.java`                    | Equipment cache and stable HUD rendering  |
 | `src/main/java/com/fresharmorbar/client/ArmorBarAnimation.java`                   | Transition engine and half-point movement |
+| `src/main/java/com/fresharmorbar/client/ArmorBarFeedback.java`                    | Damage and Mending feedback               |
+| `src/main/java/com/fresharmorbar/client/ArmorBarTextures.java`                    | Texture lookup, fallback and caches       |
 | `src/main/java/com/fresharmorbar/client/ArmorBarGlintRenderer.java`               | Native and masked enchantment rendering   |
+| `src/main/java/com/fresharmorbar/client/config/FreshArmorBarConfig.java`          | Persistent client configuration           |
 | `src/main/java/com/fresharmorbar/mixin/client/InGameHudMixin.java`                | Version-specific armor HUD hooks          |
+| `src/main/java/com/fresharmorbar/mixin/client/MinecraftResourceReloadMixin.java`  | Resource-reload cache invalidation        |
+| `src/test/java/com/fresharmorbar/client/ArmorBarFeedbackTest.java`                | Feedback mask and tracker unit tests      |
 | `src/main/resources/assets/fresh-armor-bar/shaders/core/fab_gui_glint_mask.*`     | Modern material-masked glint shaders      |
 | `src/main/resources/assets/fresh-armor-bar/textures/gui/armorbar/modded_strips`   | Official armor-mod textures               |
 | `versions/<version>/gradle.properties`                                            | Target-specific versions                  |
