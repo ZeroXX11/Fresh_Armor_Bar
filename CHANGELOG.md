@@ -1,6 +1,6 @@
 # 2.2 | CHANGELOG
 
-## 🎞️ ARMOR ANIMATIONS
+## ✨ ARMOR ANIMATIONS
 
 - Armor icons now animate smoothly when armor is equipped, removed or replaced;
 - Mixed armor sets and half-armor icons now transition naturally to their new positions;
