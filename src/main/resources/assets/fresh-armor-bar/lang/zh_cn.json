@@ -1,5 +1,5 @@
 {
-  "fresharmorbar.config.title": "Fresh Armor Bar",
+  "fresharmorbar.config.title": "焕新盔甲条",
   "fresharmorbar.config.option": "%s：%s",
   "fresharmorbar.config.category.damage": "伤害反馈",
   "fresharmorbar.config.category.damage_hint": "先开启总开关，再微调每种伤害类型。",
