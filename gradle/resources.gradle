@@ -38,4 +38,28 @@ if (stonecutter.eval(stonecutter.current.version, '<1.21.11')) {
 tasks.named('processResources').configure {
     dependsOn(tasks.named('generateFabricModJson'))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    if (stonecutter.eval(stonecutter.current.version, '>=26.3')) {
+        // RenderPearl requires standard includes and explicit shader interface locations.
+        // Keep one shader implementation and preserve the older targets' GLSL sources.
+        filesMatching('assets/fresh-armor-bar/shaders/core/fab_gui_glint_mask.*') {
+            filter { String line ->
+                def locations = [
+                        'in vec3 Position;' : 'layout(location = 0) in vec3 Position;',
+                        'in vec2 UV0;'      : 'layout(location = 1) in vec2 UV0;',
+                        'in vec4 Color;'    : 'layout(location = 2) in vec4 Color;',
+                        'in ivec2 UV2;'     : 'layout(location = 3) in ivec2 UV2;',
+                        'out vec4 fragColor;': 'layout(location = 0) out vec4 fragColor;'
+                ]
+                ['in', 'out'].each { direction ->
+                    ['vec2 glintCoord', 'vec2 maskCoord', 'vec4 vertexData'].eachWithIndex { varying, index ->
+                        locations["${direction} ${varying};".toString()] = "layout(location = ${index}) ${direction} ${varying};".toString()
+                    }
+                }
+                if (line == '#version 150') {
+                    return '#version 330\n#extension GL_ARB_separate_shader_objects : require'
+                }
+                locations.get(line, line.replace('#moj_import', '#include'))
+            }
+        }
+    }
 }

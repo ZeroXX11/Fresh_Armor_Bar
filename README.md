@@ -54,17 +54,18 @@ Download only the regular Fresh Armor Bar jar whose suffix matches your exact Mi
 
 | Minecraft | Java runtime | Minimum Fabric Loader | Status    | Release filename                |
 |-----------|-------------:|-----------------------|-----------|---------------------------------|
-| 1.20.1    |           17 | 0.19.3                | Supported | `FreshArmorBar-2.2-1.20.1.jar`  |
-| 1.21.1    |           21 | 0.19.3                | Supported | `FreshArmorBar-2.2-1.21.1.jar`  |
-| 1.21.11   |           21 | 0.19.3                | Supported | `FreshArmorBar-2.2-1.21.11.jar` |
-| 26.1.2    |           25 | 0.19.3                | Supported | `FreshArmorBar-2.2-26.1.2.jar`  |
-| 26.2      |           25 | 0.19.3                | Supported | `FreshArmorBar-2.2-26.2.jar`    |
+| 1.20.1    |           17 | 0.19.5                | Supported | `FreshArmorBar-2.2-1.20.1.jar`  |
+| 1.21.1    |           21 | 0.19.5                | Supported | `FreshArmorBar-2.2-1.21.1.jar`  |
+| 1.21.11   |           21 | 0.19.5                | Supported | `FreshArmorBar-2.2-1.21.11.jar` |
+| 26.1.2    |           25 | 0.19.5                | Supported | `FreshArmorBar-2.2-26.1.2.jar`  |
+| 26.2      |           25 | 0.19.5                | Supported | `FreshArmorBar-2.2-26.2.jar`    |
+| 26.3      |           25 | 0.19.5                | Supported | `FreshArmorBar-2.2-26.3.jar`    |
 
 The Java runtime in this table is the Java version used to start Minecraft. Developers building the project should follow the separate requirements in [For developers](#for-developers).
 
 ## Installation
 
-1. Install Fabric Loader 0.19.3 or newer for the exact Minecraft version you use.
+1. Install Fabric Loader 0.19.5 or newer for the exact Minecraft version you use.
 2. Download the matching Fresh Armor Bar jar from an [official source](#download).
 3. Place the jar in `.minecraft/mods`.
 4. Start Minecraft with the Fabric profile.
@@ -153,7 +154,7 @@ Confirm that the jar is in `.minecraft/mods`, the Fabric profile is running and 
 
 ### Minecraft reports an incompatible mod
 
-Confirm that the jar suffix matches the exact Minecraft version, the Java runtime matches the [supported-version table](#supported-versions), and Fabric Loader is 0.19.3 or newer.
+Confirm that the jar suffix matches the exact Minecraft version, the Java runtime matches the [supported-version table](#supported-versions), and Fabric Loader is 0.19.5 or newer.
 
 ### The configuration button is missing
 
@@ -187,7 +188,7 @@ Search existing issues first and remove unrelated mods when possible.
 
 ## For developers
 
-The repository uses one shared source tree and Stonecutter to build all five targets.
+The repository uses one shared source tree and Stonecutter to build all six targets.
 
 Rendering responsibilities are deliberately separated:
 
@@ -202,7 +203,7 @@ Requirements:
 
 - the included Gradle Wrapper;
 - Java 21 or newer for Gradle;
-- a Java 25 toolchain for Minecraft 26.1.2 and 26.2;
+- a Java 25 toolchain for Minecraft 26.1.2, 26.2 and 26.3;
 - IntelliJ IDEA with the Stonecutter Dev plugin, or another Gradle-capable IDE.
 
 Run the active client:

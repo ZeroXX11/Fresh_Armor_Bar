@@ -2,6 +2,12 @@
 
 Fresh Armor Bar is a client-side HUD renderer. It changes how armor is displayed, not how armor behaves.
 
+## Minecraft versions
+
+Separate builds are provided for Minecraft 1.20.1, 1.21.1, 1.21.11, 26.1.2, 26.2 and 26.3. Install the JAR matching your exact version; the 26.2 JAR is not the 26.3 build. See the [supported-version table](../README.md#supported-versions) for filenames and Java requirements.
+
+All builds require Fabric Loader 0.19.5 or newer. Minecraft 26.3 requires Java 25 and uses Mod Menu 21 for the optional configuration screen. Fabric API is not required by Fresh Armor Bar. Optional armor and slot mods must themselves support your Minecraft version.
+
 ## Armor materials
 
 Vanilla armor materials are supported directly. Modded armor can be supported through integrated textures or Minecraft's resource system.

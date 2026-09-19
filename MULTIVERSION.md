@@ -58,7 +58,7 @@ flowchart TD
     Libs --> Validation["release-validation.gradle"]
 ```
 
-This avoids maintaining five copies of the same mod. Stonecutter and Loom are build tools only; players do not need them.
+This avoids maintaining six copies of the same mod. Stonecutter and Loom are build tools only; players do not need them.
 
 Useful terms:
 
@@ -77,6 +77,7 @@ Useful terms:
 | 1.21.11   | Yarn              |  Java 21 | Trinkets 3.10.0                    |
 | 26.1.2    | Official mappings |  Java 25 | None                               |
 | 26.2      | Official mappings |  Java 25 | None                               |
+| 26.3      | Official mappings |  Java 25 | None                               |
 
 The committed default active version is `1.20.1`.
 
@@ -84,7 +85,7 @@ The committed default active version is `1.20.1`.
 
 Shared values are defined once:
 
-- `gradle.properties`: Loader `0.19.3`, mod name, group and mod version.
+- `gradle.properties`: Loader `0.19.5`, mod name, group and mod version.
 - `stonecutter.gradle`: Loom `1.17-SNAPSHOT` and the active-version marker.
 - `gradle/wrapper/gradle-wrapper.properties`: Gradle `9.6.1`.
 - `gradle/release-versions.gradle`: targets and release groups.
@@ -100,6 +101,15 @@ They contain only values that change between targets: Minecraft, mappings, devel
 Do not duplicate shared values such as `mod_version`, `loader_version` or Loom in those files.
 
 `dev_fabric_api_version` is only for the development environment. Fabric API is not a required or suggested dependency in the published mod metadata.
+
+The Minecraft 26.3 target uses development Fabric API `0.161.0+26.3`, Mod Menu `21.0.0-beta.1` and MixinExtras `0.5.4`. It has its own release JAR and publication entries; it is not grouped with 26.2. The existing Loom 1.17 and Gradle 9.6.1 toolchain also builds this target.
+
+To build or launch 26.3 directly without changing the committed active version:
+
+```powershell
+.\gradlew.bat :26.3:build --no-daemon
+.\gradlew.bat :26.3:runClient
+```
 
 ## Shared and version-specific code
 
@@ -189,6 +199,8 @@ Targets before 1.21.11 use Minecraft's native glint buffer. Targets 1.21.11 and 
 
 During the movement layer, auxiliary seam and cap sprites must not create an independent enchantment overlay. The moving-sprite path is the owner of its glint. If the glint API changes, test static icons, moving `FULL` icons, both half variants, replacements between enchanted and unenchanted items, and the user's glint strength/speed options.
 
+Minecraft 26.3 uses RenderPearl pipeline types and combined image/sampler uniforms. `resources.gradle` converts the shared glint shaders to GLSL 330, standard `#include` directives and explicit interface locations only for 26.3 and newer targets. Earlier targets retain their existing shader source. The armor HUD mixin selects the matching RenderPearl method descriptor, and trim colors resolve the material name from its new palette identifier.
+
 ### Safe change procedure
 
 1. Identify the owning file in the table above.
@@ -257,7 +269,7 @@ The root task delegates to `runClient` in the active target. Every target uses t
 
 - Use the included Gradle Wrapper.
 - Gradle itself needs Java 21 or newer.
-- Minecraft 26.1.2 and 26.2 need a Java 25 toolchain.
+- Minecraft 26.1.2, 26.2 and 26.3 need a Java 25 toolchain.
 - Target bytecode remains Java 17, 21 or 25 as shown in the target table.
 
 The Gradle daemon JVM is described by `gradle/gradle-daemon-jvm.properties`. In IntelliJ, choose Java 21 or the wrapper/daemon JVM option for Gradle; do not select Java 17 as the Gradle JVM.
@@ -276,7 +288,7 @@ The Gradle daemon JVM is described by `gradle/gradle-daemon-jvm.properties`. In 
 
 What the main tasks do:
 
-- `verifyAllVersions` builds all five targets, including their configured JUnit checks.
+- `verifyAllVersions` builds all six targets, including their configured JUnit checks.
 - `releaseBuild` clears `build/libs` and rebuilds the configured release jars.
 - `validateReleaseArtifacts` checks jar names, sources jars and generated metadata. It also rejects unexpected jars and Fabric API metadata dependencies.
 - `fullVerify` combines compilation, release validation and Stonecutter model generation.
@@ -332,6 +344,7 @@ versions/1.21.1/build/stonecutter-cache/node.json
 versions/1.21.11/build/stonecutter-cache/node.json
 versions/26.1.2/build/stonecutter-cache/node.json
 versions/26.2/build/stonecutter-cache/node.json
+versions/26.3/build/stonecutter-cache/node.json
 ```
 
 Do not edit or commit them. The root `clean` task removes them together with the rest of `build/`, then automatically runs `stonecutterSaveModels` to restore them before Gradle exits. This prevents the IntelliJ plugin from observing a missing model when the project is opened after a clean.
@@ -354,6 +367,7 @@ FreshArmorBar-2.2-1.21.1.jar
 FreshArmorBar-2.2-1.21.11.jar
 FreshArmorBar-2.2-26.1.2.jar
 FreshArmorBar-2.2-26.2.jar
+FreshArmorBar-2.2-26.3.jar
 ```
 
 Do not publish jars from `versions/<version>/build` or `build/devlibs`; those are working artifacts.
@@ -364,11 +378,11 @@ Every final jar currently declares:
 
 ```json
 {
-  "fabricloader": ">=0.19.3"
+  "fabricloader": ">=0.19.5"
 }
 ```
 
-The same central `loader_version=0.19.3` is used for development, compilation and the minimum published requirement.
+The same central `loader_version=0.19.5` is used for development, compilation and the minimum published requirement.
 
 ## Release groups
 

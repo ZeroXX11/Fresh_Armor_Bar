@@ -17,6 +17,10 @@
 - Added support for BetterEnd armor and Elytra;
 - Added support for BetterNether armor.
 
+## 🔗 COMPATIBILITY
+
+- Ported to Minecraft **26.3**;
+
 ## 🔧 IMPROVEMENTS
 
 - Improved armor bar rendering performance;

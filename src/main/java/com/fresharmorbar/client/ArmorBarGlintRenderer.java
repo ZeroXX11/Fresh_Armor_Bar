@@ -1,6 +1,15 @@
 package com.fresharmorbar.client;
 
-//? if >=26.1.2 {
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.UniformType;
+*///?} else if >=26.1.2 {
 /*import com.mojang.blaze3d.pipeline.BlendFunction;
 //? if >=26.2 {
 /^import com.mojang.blaze3d.PrimitiveTopology;
@@ -11,7 +20,9 @@ import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+*///?}
+//? if >=26.1.2 {
+/*import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 //? if <26.2
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -80,13 +91,7 @@ final class ArmorBarGlintRenderer {
             .withLocation(id(MODID, "pipeline/gui_glint"))
             .withVertexShader(id("core/fab_gui_glint_mask"))
             .withFragmentShader(id("core/fab_gui_glint_mask"))
-            .withBindGroupLayout(BindGroupLayout.builder()
-                    .withSampler("Sampler0")
-                    .withSampler("Sampler1")
-                    .withSampler("Sampler2")
-                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-                    .withUniform("Projection", UniformType.UNIFORM_BUFFER)
-                    .build())
+            .withBindGroupLayout(createGlintBindGroupLayout())
             .withColorTargetState(new ColorTargetState(BlendFunction.GLINT))
             .withCull(false)
             .withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false, 0.0F, 0.0F))
@@ -170,6 +175,28 @@ final class ArmorBarGlintRenderer {
 
     private ArmorBarGlintRenderer() {
     }
+
+    //? if >=26.3 {
+    /*private static BindGroupLayout createGlintBindGroupLayout() {
+        return BindGroupLayout.builder()
+                .withUniform("Sampler0", UniformType.COMBINED_IMAGE_SAMPLER)
+                .withUniform("Sampler1", UniformType.COMBINED_IMAGE_SAMPLER)
+                .withUniform("Sampler2", UniformType.COMBINED_IMAGE_SAMPLER)
+                .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+                .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+                .build();
+    }
+    *///?} else if >=26.2 {
+    /*private static BindGroupLayout createGlintBindGroupLayout() {
+        return BindGroupLayout.builder()
+                .withSampler("Sampler0")
+                .withSampler("Sampler1")
+                .withSampler("Sampler2")
+                .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+                .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+                .build();
+    }
+    *///?}
 
     static void clearResourceCaches() {
         //? if >=1.21.11 {

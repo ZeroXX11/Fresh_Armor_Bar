@@ -17,7 +17,7 @@ Never store tokens in this repository, `gradle.properties`, command history, log
 
 ## Prepare a release
 
-1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.2-1.20.1` or `2.2-26.2`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.2 | 26.2`.
+1. Set `mod_version` in `gradle.properties`. Every publication appends its Minecraft group to this base value (for example, `2.2-1.20.1` or `2.2-26.3`). Modrinth uses that complete value in its version name, while CurseForge keeps the established display format `Fresh Armor Bar 2.2 | 26.3`.
 2. Review the single source of truth in `gradle/release-versions.gradle`. Each entry maps its Stonecutter project, platform Minecraft versions, display label, artifact task, and changelog role.
 3. Update `README.md`, `MULTIVERSION.md` and the applicable files under `docs/` whenever supported versions, renderer behavior, integrations, resource paths or release commands change.
 4. Write or update `CHANGELOG.md` with the real release notes for Modrinth, then keep the equivalent CurseForge HTML in `CHANGELOG_CURSEFORGE.html`. The titles must be `# <current mod_version> | CHANGELOG` and `<h1><current mod_version> | CHANGELOG</h1>` respectively.
@@ -95,7 +95,7 @@ Then choose exactly one command:
 
 Without the exact confirmation property, aggregate real-publication tasks fail. With confirmation enabled, each underlying plugin upload task also depends on release validation and the appropriate token guard, so invoking a target task directly cannot bypass the safety checks.
 
-Both platforms use the same deterministic order: 1.20.1, 1.21.1, 1.21.11, 26.1.2, then 26.2. Each task is constrained to run after the preceding target on its platform.
+Both platforms use the same deterministic order: 1.20.1, 1.21.1, 1.21.11, 26.1.2, 26.2, then 26.3. Each task is constrained to run after the preceding target on its platform.
 
 ## Recovery and partial publication
 
@@ -109,7 +109,7 @@ If only one target failed, invoke the actual plugin task for that Stonecutter pr
 
 ```powershell
 .\gradlew.bat :1.21.11:publishModrinth -PconfirmRelease=true --no-daemon
-.\gradlew.bat :26.2:publishCurseforge -PconfirmRelease=true --no-daemon
+.\gradlew.bat :26.3:publishCurseforge -PconfirmRelease=true --no-daemon
 ```
 
 Before retrying, confirm that the target is absent online. Never change `CHANGELOG.md`, `mod_version`, or rebuild inputs between a partial success and its retry. If an ambiguous timeout may have created a file, inspect the platform first and delete or correct duplicates manually in the platform dashboard rather than blindly rerunning the task.

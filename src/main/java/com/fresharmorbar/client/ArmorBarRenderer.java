@@ -494,7 +494,10 @@ public class ArmorBarRenderer {
 
         //? if >=1.21 {
         /*if (trimOpt != null) {
-            //? if >=1.21.11 {
+            //? if >=26.3 {
+            /^String palettePath = trimOpt.material().value().paletteId().getPath();
+            String asset = palettePath.substring(palettePath.lastIndexOf('/') + 1);
+            ^///?} else if >=1.21.11 {
             /^String asset = trimOpt.material().value().assets().base().suffix();
             ^///?} else {
             String asset = trimOpt.getMaterial().value().assetName();

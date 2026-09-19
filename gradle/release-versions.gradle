@@ -51,6 +51,16 @@ ext.releaseTargets = [
                 displayMinecraft           : '26.2',
                 artifactTask               : 'jar',
                 primaryChangelogTarget     : false
+        ],
+        [
+                id                         : 'minecraft_26_3',
+                projectPath                : ':26.3',
+                stonecutterTarget          : '26.3',
+                minecraftVersionsModrinth  : ['26.3'],
+                minecraftVersionsCurseForge: ['26.3'],
+                displayMinecraft           : '26.3',
+                artifactTask               : 'jar',
+                primaryChangelogTarget     : false
         ]
 ]
 

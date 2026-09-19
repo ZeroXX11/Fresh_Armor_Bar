@@ -6,9 +6,13 @@ import com.fresharmorbar.client.ModCompat;
 //import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-//? if >=26.1.2 {
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+*///?} else if >=26.1.2 {
 /*import com.mojang.blaze3d.pipeline.RenderPipeline;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
+//? if >=26.1.2 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
 //? if >=26.2 {
 /^import net.minecraft.client.gui.Hud;
 ^///?} else {
@@ -157,7 +161,11 @@ public class InGameHudMixin {
             method = "extractArmor",
             at = @At(
                     value = "INVOKE",
+                    //? if >=26.3 {
+                    /^target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
+                    ^///?} else {
                     target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V"
+                    //?}
             )
     )
     private static void fabReplaceVanillaArmorIcons(GuiGraphicsExtractor graphics, RenderPipeline renderPipeline, Identifier location, int x, int y, int width, int height, Operation<Void> original) {

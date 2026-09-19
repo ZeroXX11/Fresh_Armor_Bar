@@ -64,6 +64,10 @@ The `fresh-armor-bar` namespace contains the built-in textures and the overrides
 
 ## Pack metadata
 
+The texture paths and strip dimensions in this guide also apply to Minecraft 26.3. Use the dedicated 26.3 mod JAR and pack metadata accepted by that game version; a pack made for 26.2 may need its metadata updated even when its PNG files stay the same.
+
+Packs that override Fresh Armor Bar's glint shaders must also follow 26.3's GLSL 330 interface and standard `#include` syntax. Texture-only packs do not need to replace shaders; the mod supplies the correct shader variant for each target.
+
 Use the `pack_format` required by the Minecraft version being played:
 
 ```json
