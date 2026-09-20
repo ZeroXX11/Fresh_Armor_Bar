@@ -25,3 +25,7 @@
 
 - Improved armor bar rendering performance;
 - Resource-pack texture changes now appear correctly after reloading resources with `F3+T`.
+
+## 🐛 FIXED
+
+- Fixed a crash when opening the configuration screen from Mod Menu.
