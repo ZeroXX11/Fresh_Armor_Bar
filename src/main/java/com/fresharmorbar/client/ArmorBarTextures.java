@@ -48,7 +48,7 @@ final class ArmorBarTextures {
     private static final Identifier DIAMOND_STRIP = id("textures/gui/armorbar/strips/diamond.png");
     private static final Identifier NETHERITE_STRIP = id("textures/gui/armorbar/strips/netherite.png");
 
-    private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold");
+    private static final Set<String> GLOW_TRIMS = Set.of("diamond", "emerald", "gold", "resin");
     private static final Set<String> LOGGED_MATERIALS = new HashSet<>();
     private static final Set<String> LOGGED_ELYTRAS = new HashSet<>();
     private static final java.util.Map<String, Identifier> MATERIAL_TEXTURE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
@@ -85,6 +85,7 @@ final class ArmorBarTextures {
             case "emerald" -> 0x2BBE5A;
             case "diamond" -> 0x45D6D1;
             case "lapis" -> 0x1C4C9A;
+            case "resin" -> 0xF08A2E;
             default -> 0xFFFFFF;
         };
     }
