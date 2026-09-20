@@ -244,20 +244,8 @@ public final class FreshArmorBarConfigScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
     //?}
-        //? if >=26.1.2 {
-        /*//? if <26.2 {
-        context.fill(0, 0, this.width, this.height, 0x66000000);
-        //?} else {
-        /^this.extractBackground(context, mouseX, mouseY, delta);
-        ^///?}
-        *///?} else {
-        //? if >=1.21.11 {
-        /*context.fill(0, 0, this.width, this.height, 0x66000000);
-        *///?} else if >=1.21 {
-        /*this.renderBackground(context, mouseX, mouseY, delta);
-        *///?} else {
+        //? if <1.21 {
         this.renderBackground(context);
-        //?}
         //?}
 
         //? if >=26.1.2 {
